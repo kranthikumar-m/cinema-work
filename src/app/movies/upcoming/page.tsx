@@ -2,7 +2,7 @@ import { getUpcoming } from "@/services/tmdb";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 
-export const metadata = { title: "Upcoming Movies - TCU" };
+export const metadata = { title: "Upcoming Movies - Telugu Cinema Updates" };
 export const dynamic = "force-dynamic";
 
 export default async function UpcomingPage() {

@@ -3,9 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, User, Menu, X, Film } from "lucide-react";
+import { Search, User, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SearchOverlayLauncher } from "@/components/layout/SearchOverlayLauncher";
+import { SiteLogo } from "@/components/layout/SiteLogo";
 
 const tabs = [
   { label: "All", href: "/" },
@@ -26,11 +27,8 @@ export function TopNav() {
       <header className="sticky top-0 z-30 bg-gray-950/80 backdrop-blur-md border-b border-gray-800/50">
         <div className="flex h-14 items-center justify-between px-4 md:px-6 xl:px-8">
           {/* Mobile logo */}
-          <Link href="/" className="ml-14 flex items-center gap-2 lg:hidden">
-            <div className="w-8 h-8 rounded-full bg-cyan-500 flex items-center justify-center">
-              <Film className="w-4 h-4 text-black" />
-            </div>
-            <span className="text-sm font-bold text-cyan-400">TCU</span>
+          <Link href="/" className="ml-14 flex w-[86px] items-center lg:hidden">
+            <SiteLogo priority />
           </Link>
 
           {/* Desktop tabs */}

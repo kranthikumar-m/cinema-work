@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { Film } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SiteLogo } from "@/components/layout/SiteLogo";
 
 interface FooterProps {
   className?: string;
@@ -21,11 +21,8 @@ export function Footer({
       >
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-full bg-cyan-500 flex items-center justify-center">
-                <Film className="w-4 h-4 text-black" />
-              </div>
-              <span className="font-bold text-cyan-400">TCU</span>
+            <div className="mb-4 w-[158px]">
+              <SiteLogo />
             </div>
             <p className="text-sm text-gray-500">
               Your destination for Telugu cinema updates and Indian movie coverage in Hindi, Tamil, Kannada, and Malayalam.
@@ -62,7 +59,7 @@ export function Footer({
           </div>
         </div>
         <div className="border-t border-gray-800/50 mt-8 pt-6 text-center text-xs text-gray-600">
-          &copy; {new Date().getFullYear()} TCU. All rights reserved.
+          &copy; {new Date().getFullYear()} Telugu Cinema Updates. All rights reserved.
         </div>
       </div>
     </footer>

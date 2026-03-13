@@ -3,7 +3,7 @@ import "./globals.css";
 import { AppChrome } from "@/components/layout/AppChrome";
 
 export const metadata: Metadata = {
-  title: "TCU - Telugu Cinema Updates",
+  title: "Telugu Cinema Updates",
   description:
     "Discover updates across Indian cinema with a focus on Telugu films, plus Hindi, Tamil, Kannada, and Malayalam movie coverage.",
   keywords: [

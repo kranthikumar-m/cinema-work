@@ -1,7 +1,7 @@
 import { articles, getArticlesByCategory } from "@/data/editorial";
 import { ArticleList } from "@/components/shared/ArticleList";
 
-export const metadata = { title: "Interviews - TCU" };
+export const metadata = { title: "Interviews - Telugu Cinema Updates" };
 
 export default function InterviewsPage() {
   const interviewArticles = getArticlesByCategory("interview");

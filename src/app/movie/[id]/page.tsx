@@ -33,11 +33,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const movie = await getMovieDetails(Number(params.id));
     return {
-      title: `${movie.title} - TCU`,
+      title: `${movie.title} - Telugu Cinema Updates`,
       description: movie.overview,
     };
   } catch {
-    return { title: "Movie - TCU" };
+    return { title: "Movie - Telugu Cinema Updates" };
   }
 }
 
