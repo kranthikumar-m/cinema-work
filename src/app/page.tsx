@@ -74,7 +74,10 @@ function getActors(credits: Credits | null) {
 function getTrailerHref(videos: { results: Video[] } | null, movieId?: number) {
   const trailer =
     videos?.results.find(
-      (video) => video.site === "YouTube" && video.type === "Trailer" && video.official
+      (video) =>
+        video.site === "YouTube" &&
+        video.type === "Trailer" &&
+        video.official
     ) ||
     videos?.results.find(
       (video) => video.site === "YouTube" && video.type === "Trailer"
@@ -193,16 +196,15 @@ async function getData() {
       nowPlaying,
       featuredMatch,
       featuredFallbackMatch,
-    ] =
-      await Promise.all([
-        getTrending("week"),
-        getPopular(),
-        getUpcoming(),
-        getTopRated(),
-        getNowPlaying(),
-        searchMovies("Sankranthiki Vasthunnam"),
-        searchMovies("Sankrantiki Vasthunnam"),
-      ]);
+    ] = await Promise.all([
+      getTrending("week"),
+      getPopular(),
+      getUpcoming(),
+      getTopRated(),
+      getNowPlaying(),
+      searchMovies("Sankranthiki Vasthunnam"),
+      searchMovies("Sankrantiki Vasthunnam"),
+    ]);
 
     const featuredMovie =
       featuredMatch.results[0] ?? featuredFallbackMatch.results[0] ?? null;
@@ -226,11 +228,14 @@ export default async function HomePage() {
 
   if (!data) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-white mb-2">Unable to load content</h2>
+          <h2 className="mb-2 text-2xl font-bold text-white">
+            Unable to load content
+          </h2>
           <p className="text-gray-400">
-            Please check that the TMDB_API_KEY environment variable is set correctly.
+            Please check that the TMDB_API_KEY environment variable is set
+            correctly.
           </p>
         </div>
       </div>
@@ -251,7 +256,10 @@ export default async function HomePage() {
           <div className="flex flex-col gap-10 xl:flex-row xl:items-start xl:gap-12">
             <div className="min-w-0 flex-1 space-y-12">
               <div className="rounded-[30px] border border-white/8 bg-black/18 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.28)] backdrop-blur-sm md:p-8">
-                <SectionHeader title="Trending in Indian Cinema" href="/movies/trending" />
+                <SectionHeader
+                  title="Trending in Indian Cinema"
+                  href="/movies/trending"
+                />
                 <MovieGrid
                   movies={trending.results.slice(0, 10)}
                   columns="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5"
@@ -259,7 +267,10 @@ export default async function HomePage() {
               </div>
 
               <div className="rounded-[30px] border border-white/8 bg-black/18 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.28)] backdrop-blur-sm md:p-8">
-                <SectionHeader title="South & Indian Cinema Stories" href="/news" />
+                <SectionHeader
+                  title="South & Indian Cinema Stories"
+                  href="/news"
+                />
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {articles.slice(0, 3).map((article) => (
                     <FeaturedArticleCard key={article.id} article={article} />
@@ -268,7 +279,10 @@ export default async function HomePage() {
               </div>
 
               <div className="rounded-[30px] border border-white/8 bg-black/18 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.28)] backdrop-blur-sm md:p-8">
-                <SectionHeader title="Now Playing in Theatres" href="/movies/now-playing" />
+                <SectionHeader
+                  title="Now Playing in Theatres"
+                  href="/movies/now-playing"
+                />
                 <MovieGrid
                   movies={nowPlaying.results.slice(0, 10)}
                   columns="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5"
@@ -276,7 +290,10 @@ export default async function HomePage() {
               </div>
 
               <div className="rounded-[30px] border border-white/8 bg-black/18 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.28)] backdrop-blur-sm md:p-8">
-                <SectionHeader title="Popular Across Languages" href="/movies/popular" />
+                <SectionHeader
+                  title="Popular Across Languages"
+                  href="/movies/popular"
+                />
                 <MovieGrid
                   movies={popular.results.slice(0, 10)}
                   columns="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5"
