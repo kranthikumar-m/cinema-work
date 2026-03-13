@@ -17,9 +17,9 @@ function SidebarBrand() {
   return (
     <Link
       href="/"
-      className="mb-2 flex min-h-[116px] w-full items-center justify-center px-1 pt-3 text-center"
+      className="mb-1 flex h-[106px] w-full items-start justify-center px-[2px] pt-2 text-center"
     >
-      <SiteLogo className="max-w-[96px]" priority />
+      <SiteLogo className="max-w-[100px]" priority />
     </Link>
   );
 }
@@ -28,7 +28,7 @@ function SidebarDesktopNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex w-full flex-1 flex-col gap-0 px-2">
+    <nav className="flex w-full flex-col gap-[2px] px-[3px]">
       {APP_SIDEBAR_ITEMS.map((item) => {
         const isActive = isSidebarItemActive(item.href, pathname);
 
@@ -37,7 +37,7 @@ function SidebarDesktopNav() {
             key={item.label}
             href={item.href}
             className={cn(
-              "group flex min-h-[60px] flex-col items-center justify-center gap-1.5 rounded-[22px] px-1.5 text-center transition-all",
+              "group flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-[18px] px-0.5 text-center transition-all",
               isActive
                 ? "bg-[#19ecff] text-black shadow-[0_0_24px_rgba(25,236,255,0.25)]"
                 : "text-white/78 hover:bg-white/8 hover:text-white"
@@ -60,9 +60,9 @@ export function Sidebar() {
 
   return (
     <>
-    <aside
+      <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 hidden flex-col items-center bg-[#050505] pb-6 pt-4 shadow-[12px_0_35px_rgba(0,0,0,0.32)] lg:flex",
+          "fixed inset-y-0 left-0 z-40 hidden flex-col items-center bg-[#050505] pb-3 pt-3 shadow-[12px_0_35px_rgba(0,0,0,0.32)] lg:flex",
           APP_SIDEBAR_DESKTOP_WIDTH_CLASS
         )}
       >
@@ -70,7 +70,7 @@ export function Sidebar() {
         <SidebarDesktopNav />
         <button
           type="button"
-          className="mt-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/16 text-white/80 transition hover:border-white/32 hover:text-white"
+          className="mt-auto flex h-10 w-10 items-center justify-center rounded-full border border-white/16 text-white/80 transition hover:border-white/32 hover:text-white"
           aria-label="Help and info"
         >
           <Info className="h-3.5 w-3.5" />
