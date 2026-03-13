@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopNav } from "@/components/layout/TopNav";
 import { Footer } from "@/components/layout/Footer";
-import { HomeSidebar } from "@/components/home/HomeSidebar";
+import { APP_SIDEBAR_CONTENT_OFFSET_CLASS } from "@/components/layout/sidebar-config";
+import { cn } from "@/lib/utils";
 
 interface AppChromeProps {
   children: ReactNode;
@@ -18,8 +19,13 @@ export function AppChrome({ children }: AppChromeProps) {
   if (isHome) {
     return (
       <>
-        <HomeSidebar />
-        <div className="flex min-h-screen flex-col bg-[#050505] text-white md:pl-[88px] xl:pl-[120px]">
+        <Sidebar />
+        <div
+          className={cn(
+            "flex min-h-screen flex-col bg-[#050505] text-white",
+            APP_SIDEBAR_CONTENT_OFFSET_CLASS
+          )}
+        >
           <main className="flex-1">{children}</main>
           <Footer
             className="border-white/10 bg-[#050505]"
@@ -33,7 +39,12 @@ export function AppChrome({ children }: AppChromeProps) {
   return (
     <>
       <Sidebar />
-      <div className="flex min-h-screen flex-col lg:pl-20">
+      <div
+        className={cn(
+          "flex min-h-screen flex-col",
+          APP_SIDEBAR_CONTENT_OFFSET_CLASS
+        )}
+      >
         <TopNav />
         <main className="flex-1">{children}</main>
         <Footer />

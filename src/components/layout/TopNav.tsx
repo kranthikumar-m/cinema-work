@@ -24,9 +24,9 @@ export function TopNav() {
   return (
     <>
       <header className="sticky top-0 z-30 bg-gray-950/80 backdrop-blur-md border-b border-gray-800/50">
-        <div className="flex items-center justify-between h-14 px-4 lg:pl-24">
+        <div className="flex h-14 items-center justify-between px-4 md:px-6 xl:px-8">
           {/* Mobile logo */}
-          <Link href="/" className="lg:hidden flex items-center gap-2">
+          <Link href="/" className="ml-14 flex items-center gap-2 lg:hidden">
             <div className="w-8 h-8 rounded-full bg-cyan-500 flex items-center justify-center">
               <Film className="w-4 h-4 text-black" />
             </div>

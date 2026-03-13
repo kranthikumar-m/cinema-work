@@ -2,65 +2,154 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutGrid,
-  Film,
-  Play,
-  Star,
-  Users,
-  Image as ImageIcon,
-  Video,
-  Music,
-  Info,
-} from "lucide-react";
+import { useState } from "react";
+import { Info, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  APP_SIDEBAR_DESKTOP_WIDTH_CLASS,
+  APP_SIDEBAR_DRAWER_WIDTH_CLASS,
+  APP_SIDEBAR_ITEMS,
+  isSidebarItemActive,
+} from "@/components/layout/sidebar-config";
 
-const navItems = [
-  { icon: LayoutGrid, label: "Feed", href: "/" },
-  { icon: Film, label: "Movies", href: "/movies/trending" },
-  { icon: Play, label: "Trailers", href: "/videos" },
-  { icon: Star, label: "Reviews", href: "/reviews" },
-  { icon: Users, label: "Cast & Crew", href: "/movies/popular" },
-  { icon: ImageIcon, label: "Photos", href: "/photos" },
-  { icon: Video, label: "Videos", href: "/videos" },
-  { icon: Music, label: "Music", href: "/features" },
-  { icon: Info, label: "About", href: "/news" },
-];
+function SidebarBrand() {
+  return (
+    <Link
+      href="/"
+      className="mb-8 flex min-h-[120px] w-full items-center justify-center px-3 pt-4 text-center"
+    >
+      <span className="font-serif text-[3rem] leading-none tracking-[0.08em] text-white">
+        TCU
+      </span>
+    </Link>
+  );
+}
 
-export function Sidebar() {
+function SidebarDesktopNav() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 z-40 w-20 flex-col items-center bg-gray-950/95 border-r border-gray-800/50 backdrop-blur-sm pt-4 pb-6">
-      <Link href="/" className="mb-8 flex flex-col items-center gap-1">
-        <div className="w-10 h-10 rounded-full bg-cyan-500 flex items-center justify-center">
-          <Film className="w-5 h-5 text-black" />
-        </div>
-        <span className="text-[10px] font-bold text-cyan-400 tracking-wider">
-          TCU
-        </span>
-      </Link>
+    <nav className="flex w-full flex-1 flex-col gap-4 px-3">
+      {APP_SIDEBAR_ITEMS.map((item) => {
+        const isActive = isSidebarItemActive(item.href, pathname);
 
-      <nav className="flex-1 flex flex-col gap-1 w-full px-2">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href;
-          return (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={cn(
-                "flex flex-col items-center gap-1 py-2.5 rounded-lg text-[10px] font-medium transition-all",
-                isActive
-                  ? "bg-cyan-500/10 text-cyan-400 border-l-2 border-cyan-400"
-                  : "text-gray-500 hover:text-white hover:bg-gray-800/50"
-              )}
+        return (
+          <Link
+            key={item.label}
+            href={item.href}
+            className={cn(
+              "group flex min-h-[104px] flex-col items-center justify-center gap-4 rounded-[30px] px-3 text-center transition-all",
+              isActive
+                ? "bg-[#19ecff] text-black shadow-[0_0_24px_rgba(25,236,255,0.25)]"
+                : "text-white/78 hover:bg-white/8 hover:text-white"
+            )}
+          >
+            <item.icon className="h-8 w-8 shrink-0" strokeWidth={1.8} />
+            <span className="max-w-[86px] text-[0.84rem] font-medium uppercase leading-[1.35] tracking-[0.24em]">
+              {item.label}
+            </span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+export function Sidebar() {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-40 hidden flex-col items-center bg-[#050505] pb-6 pt-6 shadow-[12px_0_35px_rgba(0,0,0,0.32)] lg:flex",
+          APP_SIDEBAR_DESKTOP_WIDTH_CLASS
+        )}
+      >
+        <SidebarBrand />
+        <SidebarDesktopNav />
+        <button
+          type="button"
+          className="mt-6 flex h-12 w-12 items-center justify-center rounded-full border border-white/16 text-white/80 transition hover:border-white/32 hover:text-white"
+          aria-label="Help and info"
+        >
+          <Info className="h-5 w-5" />
+        </button>
+      </aside>
+
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="fixed left-4 top-4 z-50 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/15 bg-black/55 text-white backdrop-blur-md lg:hidden"
+        aria-label="Open navigation"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+
+      {open && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            type="button"
+            aria-label="Close navigation"
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setOpen(false)}
+          />
+          <div
+            className={cn(
+              "absolute inset-y-0 left-0 flex flex-col bg-[#050505] px-4 pb-6 pt-6 shadow-[16px_0_36px_rgba(0,0,0,0.35)]",
+              APP_SIDEBAR_DRAWER_WIDTH_CLASS
+            )}
+          >
+            <div className="mb-8 flex items-center justify-between">
+              <Link href="/" onClick={() => setOpen(false)} className="flex flex-col">
+                <span className="font-serif text-[2rem] leading-none tracking-[0.08em] text-white">
+                  TCU
+                </span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/12 text-white/70"
+                aria-label="Close navigation"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="flex flex-1 flex-col gap-2">
+              {APP_SIDEBAR_ITEMS.map((item) => {
+                const isActive = isSidebarItemActive(item.href, pathname);
+
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className={cn(
+                      "flex items-center gap-4 rounded-[20px] px-4 py-4 text-sm tracking-[0.18em] transition",
+                      isActive
+                        ? "bg-[#19ecff] text-black"
+                        : "text-white/84 hover:bg-white/8 hover:text-white"
+                    )}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+
+            <button
+              type="button"
+              className="mt-4 flex h-12 w-12 items-center justify-center rounded-full border border-white/16 text-white/80"
+              aria-label="Help and info"
             >
-              <item.icon className="w-5 h-5" />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
-    </aside>
+              <Info className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

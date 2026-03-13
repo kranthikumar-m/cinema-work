@@ -9,11 +9,16 @@ interface FooterProps {
 
 export function Footer({
   className,
-  contentClassName = "lg:pl-24",
+  contentClassName = "",
 }: FooterProps) {
   return (
     <footer className={cn("border-t border-gray-800/50 bg-gray-950", className)}>
-      <div className={cn("max-w-7xl mx-auto px-4 py-10", contentClassName)}>
+      <div
+        className={cn(
+          "mx-auto max-w-7xl px-4 py-10 md:px-6 xl:px-8",
+          contentClassName
+        )}
+      >
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           <div>
             <div className="flex items-center gap-2 mb-4">
