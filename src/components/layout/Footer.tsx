@@ -11,10 +11,10 @@ export function Footer() {
               <div className="w-8 h-8 rounded-full bg-cyan-500 flex items-center justify-center">
                 <Film className="w-4 h-4 text-black" />
               </div>
-              <span className="font-bold text-cyan-400">CINEMAX</span>
+              <span className="font-bold text-cyan-400">TCU</span>
             </div>
             <p className="text-sm text-gray-500">
-              Your premium destination for movie discovery, reviews, and entertainment news.
+              Your destination for Telugu cinema updates and Indian movie coverage in Hindi, Tamil, Kannada, and Malayalam.
             </p>
           </div>
           <div>
@@ -48,7 +48,7 @@ export function Footer() {
           </div>
         </div>
         <div className="border-t border-gray-800/50 mt-8 pt-6 text-center text-xs text-gray-600">
-          &copy; {new Date().getFullYear()} Cinemax. All rights reserved.
+          &copy; {new Date().getFullYear()} TCU. All rights reserved.
         </div>
       </div>
     </footer>

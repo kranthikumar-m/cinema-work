@@ -2,7 +2,7 @@ import { getTrending } from "@/services/tmdb";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 
-export const metadata = { title: "Videos & Trailers - Cinemax" };
+export const metadata = { title: "Videos & Trailers - TCU" };
 export const dynamic = "force-dynamic";
 
 export default async function VideosPage() {
