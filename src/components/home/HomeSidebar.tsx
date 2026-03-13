@@ -26,25 +26,6 @@ const navItems = [
   { icon: Info, label: "ABOUT", href: "/news" },
 ];
 
-function BrandMark() {
-  return (
-    <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/85">
-      <svg
-        viewBox="0 0 48 48"
-        aria-hidden="true"
-        className="h-8 w-8 text-white"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2.8"
-      >
-        <path d="M5 24h10l4-8 7 18 6-14h11" />
-      </svg>
-    </div>
-  );
-}
-
 function SidebarNav() {
   const pathname = usePathname();
 
@@ -88,12 +69,10 @@ export function HomeSidebar() {
   return (
     <>
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[88px] flex-col items-center bg-[#050505] pb-6 pt-6 shadow-[12px_0_35px_rgba(0,0,0,0.32)] md:flex xl:w-[120px]">
-        <Link href="/" className="mb-7 flex flex-col items-center gap-4 px-3 text-center">
-          <BrandMark />
-          <div className="space-y-1">
-            <p className="text-lg font-light tracking-[0.12em] text-white">TCU</p>
-            <p className="text-[10px] tracking-[0.35em] text-white/72">CINEMA</p>
-          </div>
+        <Link href="/" className="mb-7 flex flex-col items-center px-3 pt-6 text-center">
+          <p className="font-serif text-[2.2rem] leading-none tracking-[0.08em] text-white">
+            TCU
+          </p>
         </Link>
 
         <SidebarNav />
@@ -129,13 +108,11 @@ export function HomeSidebar() {
               <Link
                 href="/"
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-3"
+                className="flex flex-col"
               >
-                <BrandMark />
-                <div className="space-y-1">
-                  <p className="text-lg font-light tracking-[0.12em] text-white">TCU</p>
-                  <p className="text-[10px] tracking-[0.35em] text-white/72">CINEMA</p>
-                </div>
+                <p className="font-serif text-[2rem] leading-none tracking-[0.08em] text-white">
+                  TCU
+                </p>
               </Link>
               <button
                 type="button"
