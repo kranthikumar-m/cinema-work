@@ -16,7 +16,7 @@ function SidebarBrand() {
   return (
     <Link
       href="/"
-      className="mb-6 flex min-h-[92px] w-full items-center justify-center px-1 pt-4 text-center"
+      className="mb-4 flex min-h-[78px] w-full items-center justify-center px-1 pt-2 text-center"
     >
       <span className="font-serif text-[1.95rem] leading-none tracking-[0.04em] text-white">
         TCU
@@ -29,7 +29,7 @@ function SidebarDesktopNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex w-full flex-1 flex-col gap-2.5 px-2">
+    <nav className="flex w-full flex-1 flex-col gap-2 px-2">
       {APP_SIDEBAR_ITEMS.map((item) => {
         const isActive = isSidebarItemActive(item.href, pathname);
 
@@ -38,7 +38,7 @@ function SidebarDesktopNav() {
             key={item.label}
             href={item.href}
             className={cn(
-              "group flex min-h-[82px] flex-col items-center justify-center gap-2.5 rounded-[24px] px-1.5 text-center transition-all",
+              "group flex min-h-[78px] flex-col items-center justify-center gap-1.5 rounded-[24px] px-1.5 text-center transition-all",
               isActive
                 ? "bg-[#19ecff] text-black shadow-[0_0_24px_rgba(25,236,255,0.25)]"
                 : "text-white/78 hover:bg-white/8 hover:text-white"
@@ -61,9 +61,9 @@ export function Sidebar() {
 
   return (
     <>
-      <aside
+    <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 hidden flex-col items-center bg-[#050505] pb-6 pt-6 shadow-[12px_0_35px_rgba(0,0,0,0.32)] lg:flex",
+          "fixed inset-y-0 left-0 z-40 hidden flex-col items-center bg-[#050505] pb-6 pt-4 shadow-[12px_0_35px_rgba(0,0,0,0.32)] lg:flex",
           APP_SIDEBAR_DESKTOP_WIDTH_CLASS
         )}
       >
