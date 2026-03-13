@@ -1,10 +1,19 @@
 import Link from "next/link";
 import { Film } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export function Footer() {
+interface FooterProps {
+  className?: string;
+  contentClassName?: string;
+}
+
+export function Footer({
+  className,
+  contentClassName = "lg:pl-24",
+}: FooterProps) {
   return (
-    <footer className="border-t border-gray-800/50 bg-gray-950">
-      <div className="max-w-7xl mx-auto px-4 py-10 lg:pl-24">
+    <footer className={cn("border-t border-gray-800/50 bg-gray-950", className)}>
+      <div className={cn("max-w-7xl mx-auto px-4 py-10", contentClassName)}>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           <div>
             <div className="flex items-center gap-2 mb-4">
