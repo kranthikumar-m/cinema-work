@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Info, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SidebarLogo } from "@/components/layout/SidebarLogo";
 import {
   APP_SIDEBAR_DESKTOP_WIDTH_CLASS,
   APP_SIDEBAR_DRAWER_WIDTH_CLASS,
@@ -16,11 +17,9 @@ function SidebarBrand() {
   return (
     <Link
       href="/"
-      className="mb-2 flex min-h-[78px] w-full items-center justify-center px-1 pt-2 text-center"
+      className="mb-2 flex min-h-[94px] w-full items-center justify-center px-1 pt-2 text-center"
     >
-      <span className="font-serif text-[1.95rem] leading-none tracking-[0.04em] text-white">
-        TCU
-      </span>
+      <SidebarLogo className="max-w-[70px]" />
     </Link>
   );
 }
@@ -102,10 +101,8 @@ export function Sidebar() {
             )}
           >
             <div className="mb-8 flex items-center justify-between">
-              <Link href="/" onClick={() => setOpen(false)} className="flex flex-col">
-                <span className="font-serif text-[2rem] leading-none tracking-[0.08em] text-white">
-                  TCU
-                </span>
+              <Link href="/" onClick={() => setOpen(false)} className="flex w-[150px]">
+                <SidebarLogo />
               </Link>
               <button
                 type="button"
