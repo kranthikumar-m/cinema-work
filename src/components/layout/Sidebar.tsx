@@ -16,7 +16,7 @@ function SidebarBrand() {
   return (
     <Link
       href="/"
-      className="mb-4 flex min-h-[78px] w-full items-center justify-center px-1 pt-2 text-center"
+      className="mb-2 flex min-h-[78px] w-full items-center justify-center px-1 pt-2 text-center"
     >
       <span className="font-serif text-[1.95rem] leading-none tracking-[0.04em] text-white">
         TCU
@@ -29,7 +29,7 @@ function SidebarDesktopNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex w-full flex-1 flex-col gap-2 px-2">
+    <nav className="flex w-full flex-1 flex-col gap-0 px-2">
       {APP_SIDEBAR_ITEMS.map((item) => {
         const isActive = isSidebarItemActive(item.href, pathname);
 
