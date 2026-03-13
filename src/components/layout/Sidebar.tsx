@@ -44,7 +44,7 @@ function SidebarDesktopNav() {
                 : "text-white/78 hover:bg-white/8 hover:text-white"
             )}
           >
-            <item.icon className="h-6 w-6 shrink-0" strokeWidth={1.8} />
+            <item.icon className="h-5 w-5 shrink-0" strokeWidth={1.8} />
             <span className="max-w-[62px] text-[0.64rem] font-medium uppercase leading-[1.25] tracking-[0.16em]">
               {item.label}
             </span>
@@ -74,7 +74,7 @@ export function Sidebar() {
           className="mt-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/16 text-white/80 transition hover:border-white/32 hover:text-white"
           aria-label="Help and info"
         >
-          <Info className="h-4 w-4" />
+          <Info className="h-3.5 w-3.5" />
         </button>
       </aside>
 
