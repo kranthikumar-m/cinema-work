@@ -38,7 +38,7 @@ function SidebarDesktopNav() {
             key={item.label}
             href={item.href}
             className={cn(
-              "group flex min-h-[78px] flex-col items-center justify-center gap-1.5 rounded-[24px] px-1.5 text-center transition-all",
+              "group flex min-h-[60px] flex-col items-center justify-center gap-1.5 rounded-[22px] px-1.5 text-center transition-all",
               isActive
                 ? "bg-[#19ecff] text-black shadow-[0_0_24px_rgba(25,236,255,0.25)]"
                 : "text-white/78 hover:bg-white/8 hover:text-white"
