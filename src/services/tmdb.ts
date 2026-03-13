@@ -1,4 +1,4 @@
-import { env } from "@/lib/env";
+import { env, getRequiredEnvVar } from "@/lib/env";
 import type {
   Movie,
   MovieDetails,
@@ -13,7 +13,7 @@ import type {
 } from "@/types/tmdb";
 
 const BASE_URL = env.TMDB_BASE_URL;
-const API_KEY = env.TMDB_API_KEY;
+const API_KEY = getRequiredEnvVar("TMDB_API_KEY");
 
 async function tmdbFetch<T>(
   endpoint: string,
