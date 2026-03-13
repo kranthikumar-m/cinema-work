@@ -2,7 +2,7 @@ import { getNowPlaying } from "@/services/tmdb";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 
-export const metadata = { title: "Now Playing - Cinemax" };
+export const metadata = { title: "Now Playing - TCU" };
 export const dynamic = "force-dynamic";
 
 export default async function NowPlayingPage() {

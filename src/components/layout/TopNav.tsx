@@ -31,7 +31,7 @@ export function TopNav() {
             <div className="w-8 h-8 rounded-full bg-cyan-500 flex items-center justify-center">
               <Film className="w-4 h-4 text-black" />
             </div>
-            <span className="text-sm font-bold text-cyan-400">CINEMAX</span>
+            <span className="text-sm font-bold text-cyan-400">TCU</span>
           </Link>
 
           {/* Desktop tabs */}

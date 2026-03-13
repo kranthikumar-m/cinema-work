@@ -2,7 +2,7 @@ import { getUpcoming } from "@/services/tmdb";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 
-export const metadata = { title: "Upcoming Movies - Cinemax" };
+export const metadata = { title: "Upcoming Movies - TCU" };
 export const dynamic = "force-dynamic";
 
 export default async function UpcomingPage() {

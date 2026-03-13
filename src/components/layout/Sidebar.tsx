@@ -37,7 +37,7 @@ export function Sidebar() {
           <Film className="w-5 h-5 text-black" />
         </div>
         <span className="text-[10px] font-bold text-cyan-400 tracking-wider">
-          CINEMAX
+          TCU
         </span>
       </Link>
 
