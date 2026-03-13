@@ -16,9 +16,9 @@ function SidebarBrand() {
   return (
     <Link
       href="/"
-      className="mb-7 flex min-h-[104px] w-full items-center justify-center px-2 pt-4 text-center"
+      className="mb-6 flex min-h-[92px] w-full items-center justify-center px-1 pt-4 text-center"
     >
-      <span className="font-serif text-[2.35rem] leading-none tracking-[0.06em] text-white">
+      <span className="font-serif text-[1.95rem] leading-none tracking-[0.04em] text-white">
         TCU
       </span>
     </Link>
@@ -29,7 +29,7 @@ function SidebarDesktopNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex w-full flex-1 flex-col gap-3 px-2.5">
+    <nav className="flex w-full flex-1 flex-col gap-2.5 px-2">
       {APP_SIDEBAR_ITEMS.map((item) => {
         const isActive = isSidebarItemActive(item.href, pathname);
 
@@ -38,14 +38,14 @@ function SidebarDesktopNav() {
             key={item.label}
             href={item.href}
             className={cn(
-              "group flex min-h-[92px] flex-col items-center justify-center gap-3 rounded-[26px] px-2 text-center transition-all",
+              "group flex min-h-[82px] flex-col items-center justify-center gap-2.5 rounded-[24px] px-1.5 text-center transition-all",
               isActive
                 ? "bg-[#19ecff] text-black shadow-[0_0_24px_rgba(25,236,255,0.25)]"
                 : "text-white/78 hover:bg-white/8 hover:text-white"
             )}
           >
-            <item.icon className="h-7 w-7 shrink-0" strokeWidth={1.8} />
-            <span className="max-w-[72px] text-[0.72rem] font-medium uppercase leading-[1.3] tracking-[0.2em]">
+            <item.icon className="h-6 w-6 shrink-0" strokeWidth={1.8} />
+            <span className="max-w-[62px] text-[0.64rem] font-medium uppercase leading-[1.25] tracking-[0.16em]">
               {item.label}
             </span>
           </Link>
@@ -71,10 +71,10 @@ export function Sidebar() {
         <SidebarDesktopNav />
         <button
           type="button"
-          className="mt-5 flex h-11 w-11 items-center justify-center rounded-full border border-white/16 text-white/80 transition hover:border-white/32 hover:text-white"
+          className="mt-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/16 text-white/80 transition hover:border-white/32 hover:text-white"
           aria-label="Help and info"
         >
-          <Info className="h-4.5 w-4.5" />
+          <Info className="h-4 w-4" />
         </button>
       </aside>
 

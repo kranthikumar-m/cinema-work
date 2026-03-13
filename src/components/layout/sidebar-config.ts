@@ -15,8 +15,8 @@ export interface AppSidebarItem {
   href: string;
 }
 
-export const APP_SIDEBAR_DESKTOP_WIDTH_CLASS = "lg:w-[96px]";
-export const APP_SIDEBAR_CONTENT_OFFSET_CLASS = "lg:pl-[96px]";
+export const APP_SIDEBAR_DESKTOP_WIDTH_CLASS = "lg:w-[82px]";
+export const APP_SIDEBAR_CONTENT_OFFSET_CLASS = "lg:pl-[82px]";
 export const APP_SIDEBAR_DRAWER_WIDTH_CLASS = "w-[280px]";
 
 export const APP_SIDEBAR_ITEMS: AppSidebarItem[] = [
