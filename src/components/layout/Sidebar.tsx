@@ -17,9 +17,9 @@ function SidebarBrand() {
   return (
     <Link
       href="/"
-      className="mb-2 flex min-h-[94px] w-full items-center justify-center px-1 pt-2 text-center"
+      className="mb-2 flex min-h-[102px] w-full items-center justify-center px-1 pt-2 text-center"
     >
-      <SiteLogo className="max-w-[68px]" priority />
+      <SiteLogo className="max-w-[76px]" priority />
     </Link>
   );
 }
