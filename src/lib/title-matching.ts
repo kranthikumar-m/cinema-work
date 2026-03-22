@@ -62,7 +62,7 @@ export function getTitleSimilarityScore(a: string, b: string) {
   const tokensB = normalizedB.split(" ").filter(Boolean);
   const setA = new Set(tokensA);
   const setB = new Set(tokensB);
-  const overlap = [...setA].filter((token) => setB.has(token)).length;
+  const overlap = Array.from(setA).filter((token) => setB.has(token)).length;
   const tokenScore = overlap / Math.max(setA.size, setB.size, 1);
 
   const distance = levenshteinDistance(compactA, compactB);

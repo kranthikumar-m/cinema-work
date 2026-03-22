@@ -41,7 +41,7 @@ function dedupeMovies(movies: Movie[]) {
     deduped.set(movie.id, movie);
   });
 
-  return [...deduped.values()];
+  return Array.from(deduped.values());
 }
 
 function sortByReleaseDateDescAndPopularity(movies: Movie[]) {

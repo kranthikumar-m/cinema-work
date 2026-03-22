@@ -139,8 +139,10 @@ function parseMoviePageUrl(cellHtml: string) {
 function parseReleaseTables(html: string, pageTitle: string, year: number) {
   const today = getIndianTodayIsoDate();
   const releases: WikipediaReleaseEntry[] = [];
+  const tableMatches = Array.from(html.matchAll(RELEASE_TABLE_REGEX));
 
-  for (const tableMatch of html.matchAll(RELEASE_TABLE_REGEX)) {
+  for (let tableIndex = 0; tableIndex < tableMatches.length; tableIndex += 1) {
+    const tableMatch = tableMatches[tableIndex];
     const tableHtml = tableMatch[1];
 
     if (!/Opening/i.test(tableHtml) || !/Title/i.test(tableHtml)) {
@@ -149,8 +151,10 @@ function parseReleaseTables(html: string, pageTitle: string, year: number) {
 
     let currentMonth: string | null = null;
     let currentDay: string | null = null;
+    const rowMatches = Array.from(tableHtml.matchAll(ROW_REGEX));
 
-    for (const rowMatch of tableHtml.matchAll(ROW_REGEX)) {
+    for (let rowIndex = 0; rowIndex < rowMatches.length; rowIndex += 1) {
+      const rowMatch = rowMatches[rowIndex];
       const cells = extractCells(rowMatch[1]);
 
       if (!cells.length) continue;
@@ -248,7 +252,7 @@ async function searchWikipediaPageTitles(year: number) {
     ...discoveredTitles,
   ]);
 
-  return [...titleSet];
+  return Array.from(titleSet);
 }
 
 async function fetchWikipediaPageHtml(title: string) {
@@ -316,7 +320,7 @@ export const getWikipediaTeluguReleases = cache(
     return {
       year,
       sourcePages,
-      releases: [...deduped.values()].sort((a, b) =>
+      releases: Array.from(deduped.values()).sort((a, b) =>
         a.releaseDate.localeCompare(b.releaseDate)
       ),
     };
