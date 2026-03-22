@@ -11,11 +11,10 @@ export function HomeTopOverlayControls() {
           <button
             type="button"
             onClick={openSearch}
-            className="flex h-12 items-center gap-2 rounded-full border border-white/12 bg-black/10 px-4 text-sm font-medium text-white/92 backdrop-blur-[10px] transition hover:border-white/20 hover:bg-black/20 md:h-14 md:px-5 md:text-base"
+            className="flex items-center gap-2 text-sm font-medium text-white/92 transition hover:text-white md:text-base"
             aria-label="Open search"
           >
             <span className="hidden sm:inline">Start Typing</span>
-            <span className="hidden h-6 w-px bg-[#19ecff]/75 sm:block" />
             <Search className="h-4 w-4 md:h-5 md:w-5" />
           </button>
         )}
@@ -31,4 +30,3 @@ export function HomeTopOverlayControls() {
     </div>
   );
 }
-

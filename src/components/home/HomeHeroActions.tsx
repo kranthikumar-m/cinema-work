@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Play, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import type { HomepageHeroItem } from "@/types/homepage";
 
 interface HomeHeroActionsProps {
@@ -11,32 +11,22 @@ function isExternalLink(href: string) {
 }
 
 export function HomeHeroActions({ item }: HomeHeroActionsProps) {
-  const trailerExternal = isExternalLink(item.trailerHref);
+  const primaryHref = item.trailerHref || item.watchHref;
+  const primaryExternal = isExternalLink(primaryHref);
 
   return (
-    <div className="flex flex-wrap items-center gap-4 md:gap-6">
+    <div className="flex flex-wrap items-center">
       <Link
-        href={item.watchHref}
-        className="group inline-flex h-14 items-center gap-5 rounded-full bg-white px-7 text-lg font-medium text-black shadow-[0_14px_42px_rgba(0,0,0,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_48px_rgba(0,0,0,0.32)] md:h-16 md:px-8"
+        href={primaryHref}
+        target={primaryExternal ? "_blank" : undefined}
+        rel={primaryExternal ? "noreferrer" : undefined}
+        className="group inline-flex h-12 w-[214px] items-center justify-between rounded-full bg-white px-6 text-base font-medium text-black shadow-[0_14px_42px_rgba(0,0,0,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_48px_rgba(0,0,0,0.32)] md:h-14 md:w-[228px] md:px-7 md:text-lg"
       >
-        <span>Watch Now</span>
-        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black text-white transition group-hover:bg-[#111]">
-          <ChevronRight className="h-5 w-5" />
+        <span>Watch Trailer</span>
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black text-white transition group-hover:bg-[#111] md:h-9 md:w-9">
+          <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
         </span>
-      </Link>
-
-      <Link
-        href={item.trailerHref}
-        className="inline-flex items-center gap-3 text-lg font-semibold text-white transition hover:text-[#19ecff]"
-        target={trailerExternal ? "_blank" : undefined}
-        rel={trailerExternal ? "noreferrer" : undefined}
-      >
-        <span className="flex h-9 w-12 items-center justify-center rounded-xl bg-[#ff1212] text-white shadow-[0_8px_22px_rgba(255,18,18,0.35)]">
-          <Play className="h-5 w-5 fill-current" />
-        </span>
-        <span>YouTube</span>
       </Link>
     </div>
   );
 }
-

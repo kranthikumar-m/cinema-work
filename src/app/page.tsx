@@ -3,6 +3,7 @@ import {
   getMovieDetails,
   getMovieVideos,
 } from "@/services/tmdb";
+import { resolveHomepageHeroBackdrop } from "@/services/hero-backdrops";
 import {
   getLatestTeluguReleases,
   getPopularTeluguMovies,
@@ -21,10 +22,6 @@ import type { HomepageHeroItem } from "@/types/homepage";
 import type { Credits, Movie, Video } from "@/types/tmdb";
 
 export const dynamic = "force-dynamic";
-
-function formatViewsLabel(voteCount: number) {
-  return `${new Intl.NumberFormat("en-US").format(voteCount || 0)} Votes`;
-}
 
 function formatReleaseLabel(dateString: string) {
   if (!dateString) return "Coming Soon";
@@ -125,14 +122,18 @@ async function buildFallbackHeroItem() {
 async function buildDynamicHeroItem(movie: Movie) {
   const enhancements = await getMovieEnhancements(movie);
   const details = enhancements.details;
+  const heroBackdrop = await resolveHomepageHeroBackdrop(
+    movie,
+    details?.backdrop_path ?? movie.backdrop_path
+  );
 
   return {
     id: movie.id,
     title: movie.title,
-    backdropPath: details?.backdrop_path ?? movie.backdrop_path,
-    imageUrl: movie.backdrop_url ?? null,
+    backdropPath: heroBackdrop.backdropPath,
+    imageUrl: heroBackdrop.imageUrl ?? movie.backdrop_url ?? null,
     runtimeLabel: details?.runtime ? formatRuntime(details.runtime) : "Telugu Feature",
-    viewsLabel: formatViewsLabel(movie.vote_count),
+    viewsLabel: "",
     director: getDirector(enhancements.credits),
     actors: getActors(enhancements.credits),
     releaseLabel: formatReleaseLabel(movie.release_date),

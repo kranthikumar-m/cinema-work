@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { Play } from "lucide-react";
 import { getBackdropUrl } from "@/lib/utils";
 import type { HomepageHeroItem } from "@/types/homepage";
 import { HomeTopOverlayControls } from "@/components/home/HomeTopOverlayControls";
@@ -64,12 +63,13 @@ export function HomeHeroBanner({ items }: HomeHeroBannerProps) {
             fill
             priority={current === 0}
             sizes="100vw"
+            quality={95}
             className="object-cover object-[62%_center]"
             unoptimized={!item.backdropPath && !item.imageUrl}
           />
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.96)_0%,rgba(0,0,0,0.82)_18%,rgba(0,0,0,0.48)_44%,rgba(0,0,0,0.18)_72%,rgba(0,0,0,0.36)_100%)]" />
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.14)_0%,rgba(0,0,0,0)_22%,rgba(0,0,0,0.24)_56%,rgba(0,0,0,0.92)_100%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_56%_10%,rgba(255,214,128,0.56)_0%,rgba(173,92,42,0.25)_28%,rgba(0,0,0,0)_58%),linear-gradient(90deg,rgba(66,31,12,0.46)_0%,rgba(0,0,0,0)_48%,rgba(87,42,16,0.46)_100%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.88)_0%,rgba(0,0,0,0.72)_18%,rgba(0,0,0,0.34)_44%,rgba(0,0,0,0.12)_72%,rgba(0,0,0,0.24)_100%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.08)_0%,rgba(0,0,0,0)_22%,rgba(0,0,0,0.12)_54%,rgba(0,0,0,0.84)_100%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_28%,rgba(255,255,255,0.09)_0%,rgba(255,255,255,0.03)_18%,rgba(0,0,0,0)_44%),radial-gradient(circle_at_center,rgba(0,0,0,0)_52%,rgba(0,0,0,0.18)_100%)]" />
         </motion.div>
       </AnimatePresence>
 
@@ -89,26 +89,15 @@ export function HomeHeroBanner({ items }: HomeHeroBannerProps) {
           transition={{ duration: 0.45, ease: "easeOut" }}
           className="w-full max-w-[760px]"
         >
-          <div className="mb-4 flex items-center gap-3 text-white">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/65 bg-black/12">
-              <Play className="h-4 w-4 fill-current" />
-            </span>
-            <span className="text-lg tracking-[0.06em] text-white/96 md:text-[1.7rem] md:leading-none">
-              {item.trailerLabel}
-            </span>
-          </div>
-
           <h1 className="max-w-[11ch] text-[2.7rem] font-light leading-[0.96] tracking-[-0.04em] text-white md:max-w-[12ch] md:text-[3.5rem] xl:text-[4.35rem]">
             {item.title}
           </h1>
 
-          <p className="mt-4 text-base text-white/92 md:text-[1.15rem]">
+          <p className="mt-5 text-base text-white/92 md:text-[1.15rem]">
             {item.runtimeLabel}
-            <span className="mx-2 text-white/50">|</span>
-            {item.viewsLabel}
           </p>
 
-          <div className="mt-8">
+          <div className="mt-7">
             <HomeHeroActions item={item} />
           </div>
 
@@ -132,4 +121,3 @@ export function HomeHeroBanner({ items }: HomeHeroBannerProps) {
     </section>
   );
 }
-

@@ -32,6 +32,18 @@ function buildSearchUrl(query: string) {
   return url.toString();
 }
 
+async function lookupGoogleImageAcrossQueries(queries: string[]) {
+  for (let index = 0; index < queries.length; index += 1) {
+    const match = await lookupGoogleImage(queries[index]);
+
+    if (match) {
+      return match;
+    }
+  }
+
+  return null;
+}
+
 function isUsableImageUrl(url: string) {
   try {
     const parsed = new URL(url);
@@ -83,6 +95,20 @@ function buildFallbackQuery(movie: Pick<Movie, "title" | "release_date">, type: 
   return [movie.title, year, suffix].filter(Boolean).join(" ");
 }
 
+function buildHighQualityBackdropQueries(
+  movie: Pick<Movie, "title" | "release_date">
+) {
+  const year = movie.release_date ? movie.release_date.slice(0, 4) : "";
+  const baseParts = [movie.title, year].filter(Boolean).join(" ");
+
+  return [
+    `${baseParts} Telugu movie backdrop 4k`,
+    `${baseParts} Telugu movie background 4k`,
+    `${baseParts} Telugu movie backdrop 1080p`,
+    `${baseParts} Telugu movie background hd`,
+  ];
+}
+
 async function resolveMovieFallbackAssets(
   movie: Pick<Movie, "id" | "title" | "release_date" | "poster_path" | "backdrop_path">
 ): Promise<MovieFallbackAssets> {
@@ -113,4 +139,14 @@ export async function getMovieFallbackAssets(
   }
 
   return fallbackAssetCache.get(cacheKey)!;
+}
+
+export async function getHighQualityBackdropFallback(
+  movie: Pick<Movie, "title" | "release_date">
+) {
+  const match = await lookupGoogleImageAcrossQueries(
+    buildHighQualityBackdropQueries(movie)
+  );
+
+  return match?.proxiedUrl ?? null;
 }
