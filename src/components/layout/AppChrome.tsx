@@ -27,6 +27,10 @@ export function AppChrome({ children }: AppChromeProps) {
           )}
         >
           <main className="flex-1">{children}</main>
+          <Footer
+            className="border-white/10 bg-[#050505]"
+            contentClassName="px-5 py-10 md:px-8 xl:px-12"
+          />
         </div>
       </>
     );
