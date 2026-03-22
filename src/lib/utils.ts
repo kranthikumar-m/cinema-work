@@ -6,12 +6,20 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+function isAppHostedAssetPath(path: string) {
+  return (
+    path.startsWith("/api/") ||
+    path.startsWith("/placeholder-") ||
+    path.startsWith("/favicon")
+  );
+}
+
 export function getImageUrl(
   path: string | null,
   size: "w200" | "w300" | "w500" | "w780" | "w1280" | "original" = "w500"
 ): string {
   if (!path) return "/placeholder-movie.svg";
-  if (/^https?:\/\//i.test(path) || path.startsWith("/")) return path;
+  if (/^https?:\/\//i.test(path) || isAppHostedAssetPath(path)) return path;
   return `https://image.tmdb.org/t/p/${size}${path}`;
 }
 
@@ -20,7 +28,7 @@ export function getBackdropUrl(
   size: "w780" | "w1280" | "original" = "w1280"
 ): string {
   if (!path) return "/placeholder-backdrop.svg";
-  if (/^https?:\/\//i.test(path) || path.startsWith("/")) return path;
+  if (/^https?:\/\//i.test(path) || isAppHostedAssetPath(path)) return path;
   return `https://image.tmdb.org/t/p/${size}${path}`;
 }
 
