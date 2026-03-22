@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Film } from "lucide-react";
+import { Logo } from "@/components/shared/Logo";
 
 export function Footer() {
   return (
@@ -7,23 +7,21 @@ export function Footer() {
       <div className="max-w-7xl mx-auto px-4 py-10 lg:pl-24">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-full bg-cyan-500 flex items-center justify-center">
-                <Film className="w-4 h-4 text-black" />
-              </div>
-              <span className="font-bold text-cyan-400">TCU</span>
+            <div className="mb-4">
+              <Logo size={32} showLabel={true} linkTo="" />
             </div>
             <p className="text-sm text-gray-500">
               Your destination for Telugu, Hindi, Tamil, Kannada &amp; Malayalam cinema updates.
             </p>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-white mb-3">Explore</h3>
+            <h3 className="text-sm font-semibold text-white mb-3">Languages</h3>
             <ul className="space-y-2 text-sm text-gray-400">
-              <li><Link href="/movies/trending" className="hover:text-cyan-400 transition-colors">Trending</Link></li>
-              <li><Link href="/movies/popular" className="hover:text-cyan-400 transition-colors">Popular</Link></li>
-              <li><Link href="/movies/upcoming" className="hover:text-cyan-400 transition-colors">Upcoming</Link></li>
-              <li><Link href="/movies/top-rated" className="hover:text-cyan-400 transition-colors">Top Rated</Link></li>
+              <li><Link href="/movies/telugu" className="hover:text-cyan-400 transition-colors">Telugu</Link></li>
+              <li><Link href="/movies/hindi" className="hover:text-cyan-400 transition-colors">Hindi</Link></li>
+              <li><Link href="/movies/tamil" className="hover:text-cyan-400 transition-colors">Tamil</Link></li>
+              <li><Link href="/movies/kannada" className="hover:text-cyan-400 transition-colors">Kannada</Link></li>
+              <li><Link href="/movies/malayalam" className="hover:text-cyan-400 transition-colors">Malayalam</Link></li>
             </ul>
           </div>
           <div>
