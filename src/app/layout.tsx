@@ -1,6 +1,17 @@
 import type { Metadata } from "next";
+import { Inter, Manrope } from "next/font/google";
 import "./globals.css";
 import { AppChrome } from "@/components/layout/AppChrome";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
+
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-manrope",
+});
 
 export const metadata: Metadata = {
   title: "Telugu Cinema Updates",
@@ -23,7 +34,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className="font-sans antialiased bg-gray-950 text-white">
+      <body
+        className={`${inter.variable} ${manrope.variable} bg-gray-950 font-[family-name:var(--font-inter)] text-white antialiased`}
+      >
         <AppChrome>{children}</AppChrome>
       </body>
     </html>
