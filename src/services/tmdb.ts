@@ -1,4 +1,4 @@
-import { env } from "@/lib/env";
+import { env, requireEnvVar } from "@/lib/env";
 import type {
   Movie,
   MovieDetails,
@@ -12,15 +12,12 @@ import type {
   Person,
 } from "@/types/tmdb";
 
-const BASE_URL = env.TMDB_BASE_URL;
-const API_KEY = env.TMDB_API_KEY;
-
 async function tmdbFetch<T>(
   endpoint: string,
   params: Record<string, string> = {}
 ): Promise<T> {
-  const url = new URL(`${BASE_URL}${endpoint}`);
-  url.searchParams.set("api_key", API_KEY);
+  const url = new URL(`${env.TMDB_BASE_URL}${endpoint}`);
+  url.searchParams.set("api_key", requireEnvVar("TMDB_API_KEY"));
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
 
   const res = await fetch(url.toString(), {

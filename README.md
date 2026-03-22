@@ -1,6 +1,6 @@
-# Cinemax - Movie Discovery Portal
+# TCU - Telugu Cinema Updates
 
-A modern, dark-themed movie news and discovery website built with Next.js 14, TypeScript, and Tailwind CSS. Powered by the TMDB API.
+A modern, dark-themed movie news and discovery website focused on Indian cinema, especially Telugu films, with coverage across Hindi, Tamil, Kannada, and Malayalam industries. Built with Next.js 14, TypeScript, and Tailwind CSS and powered by the TMDB API.
 
 ## Features
 
@@ -92,10 +92,10 @@ Build and run with Docker:
 
 ```bash
 # Build the image
-docker build -t cinemax --build-arg TMDB_API_KEY=your_key .
+docker build -t tcu --build-arg TMDB_API_KEY=your_key .
 
 # Run the container
-docker run -p 3000:3000 -e TMDB_API_KEY=your_key cinemax
+docker run -p 3000:3000 -e TMDB_API_KEY=your_key tcu
 ```
 
 Or use Docker Compose:
@@ -124,8 +124,8 @@ sudo npm install -g pm2
 
 ```bash
 cd /var/www
-git clone <repo-url> cinemax
-cd cinemax
+git clone <repo-url> tcu
+cd tcu
 npm ci
 cp .env.example .env.local
 # Edit .env.local with your TMDB_API_KEY
@@ -135,7 +135,7 @@ npm run build
 #### 3. Start with PM2
 
 ```bash
-pm2 start npm --name "cinemax" -- start
+pm2 start npm --name "tcu" -- start
 pm2 save
 pm2 startup
 ```
@@ -162,7 +162,7 @@ server {
 ```
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/cinemax /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/tcu /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 ```

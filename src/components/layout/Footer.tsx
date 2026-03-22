@@ -1,10 +1,23 @@
 import Link from "next/link";
 import { Logo } from "@/components/shared/Logo";
 
-export function Footer() {
+interface FooterProps {
+  className?: string;
+  contentClassName?: string;
+}
+
+export function Footer({
+  className,
+  contentClassName = "",
+}: FooterProps) {
   return (
-    <footer className="border-t border-gray-800/50 bg-gray-950">
-      <div className="max-w-7xl mx-auto px-4 py-10 lg:pl-24">
+    <footer className={cn("border-t border-gray-800/50 bg-gray-950", className)}>
+      <div
+        className={cn(
+          "mx-auto max-w-7xl px-4 py-10 md:px-6 xl:px-8",
+          contentClassName
+        )}
+      >
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           <div>
             <div className="mb-4">
