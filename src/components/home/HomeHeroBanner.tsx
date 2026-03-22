@@ -89,7 +89,7 @@ export function HomeHeroBanner({ items }: HomeHeroBannerProps) {
           transition={{ duration: 0.45, ease: "easeOut" }}
           className="w-full max-w-[760px]"
         >
-          <h1 className="max-w-[11ch] text-[2.7rem] font-light leading-[0.96] tracking-[-0.04em] text-white md:max-w-[12ch] md:text-[3.5rem] xl:text-[4.35rem]">
+          <h1 className="max-w-[11ch] text-[1.45rem] font-light leading-[0.98] tracking-[-0.04em] text-white md:max-w-[12ch] md:text-[2.25rem] xl:text-[3.1rem]">
             {item.title}
           </h1>
 

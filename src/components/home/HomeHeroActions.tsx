@@ -23,8 +23,8 @@ export function HomeHeroActions({ item }: HomeHeroActionsProps) {
         className="group inline-flex h-12 w-[214px] items-center justify-between rounded-full bg-white px-6 text-base font-medium text-black shadow-[0_14px_42px_rgba(0,0,0,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_48px_rgba(0,0,0,0.32)] md:h-14 md:w-[228px] md:px-7 md:text-lg"
       >
         <span>Watch Trailer</span>
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black text-white transition group-hover:bg-[#111] md:h-9 md:w-9">
-          <ChevronRight className="h-4 w-4 md:h-5 md:w-5" />
+        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-black text-white transition group-hover:bg-[#111]">
+          <ChevronRight className="h-3 w-3" />
         </span>
       </Link>
     </div>
