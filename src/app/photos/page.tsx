@@ -2,7 +2,7 @@ import { getPopular } from "@/services/tmdb";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 
-export const metadata = { title: "Photos - Cinemax" };
+export const metadata = { title: "Photos - TCU" };
 export const dynamic = "force-dynamic";
 
 export default async function PhotosPage() {

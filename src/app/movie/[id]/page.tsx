@@ -33,11 +33,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const movie = await getMovieDetails(Number(params.id));
     return {
-      title: `${movie.title} - Cinemax`,
+      title: `${movie.title} - TCU`,
       description: movie.overview,
     };
   } catch {
-    return { title: "Movie - Cinemax" };
+    return { title: "Movie - TCU" };
   }
 }
 
@@ -65,7 +65,7 @@ export default async function MovieDetailPage({ params }: Props) {
     (v) => v.type === "Trailer" && v.site === "YouTube"
   );
   const director = credits.crew.find((c) => c.job === "Director");
-  const usProviders = providers.results?.US;
+  const inProviders = providers.results?.IN;
 
   return (
     <div>
@@ -165,14 +165,14 @@ export default async function MovieDetailPage({ params }: Props) {
         )}
 
         {/* Watch Providers */}
-        {usProviders && (usProviders.flatrate || usProviders.rent || usProviders.buy) && (
+        {inProviders && (inProviders.flatrate || inProviders.rent || inProviders.buy) && (
           <div className="mt-12">
             <SectionHeader title="Where to Watch" />
             <div className="flex flex-wrap gap-4">
               {[
-                ...(usProviders.flatrate || []),
-                ...(usProviders.rent || []),
-                ...(usProviders.buy || []),
+                ...(inProviders.flatrate || []),
+                ...(inProviders.rent || []),
+                ...(inProviders.buy || []),
               ]
                 .filter(
                   (p, i, arr) =>

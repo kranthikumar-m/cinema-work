@@ -7,24 +7,20 @@ import {
   Film,
   Play,
   Star,
-  Users,
-  Image as ImageIcon,
-  Video,
-  Music,
   Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { icon: LayoutGrid, label: "Feed", href: "/" },
-  { icon: Film, label: "Movies", href: "/movies/trending" },
+  { icon: Film, label: "Telugu", href: "/movies/telugu" },
+  { icon: Film, label: "Hindi", href: "/movies/hindi" },
+  { icon: Film, label: "Tamil", href: "/movies/tamil" },
+  { icon: Film, label: "Kannada", href: "/movies/kannada" },
+  { icon: Film, label: "Malayalam", href: "/movies/malayalam" },
   { icon: Play, label: "Trailers", href: "/videos" },
   { icon: Star, label: "Reviews", href: "/reviews" },
-  { icon: Users, label: "Cast & Crew", href: "/movies/popular" },
-  { icon: ImageIcon, label: "Photos", href: "/photos" },
-  { icon: Video, label: "Videos", href: "/videos" },
-  { icon: Music, label: "Music", href: "/features" },
-  { icon: Info, label: "About", href: "/news" },
+  { icon: Info, label: "News", href: "/news" },
 ];
 
 export function Sidebar() {
@@ -37,7 +33,7 @@ export function Sidebar() {
           <Film className="w-5 h-5 text-black" />
         </div>
         <span className="text-[10px] font-bold text-cyan-400 tracking-wider">
-          CINEMAX
+          TCU
         </span>
       </Link>
 

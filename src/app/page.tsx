@@ -1,4 +1,4 @@
-import { getTrending, getPopular, getUpcoming, getTopRated, getNowPlaying, getGenres } from "@/services/tmdb";
+import { getTrending, getPopular, getUpcoming, getTopRated, getNowPlaying, getTeluguMovies, getHindiMovies, getTamilMovies, getGenres } from "@/services/tmdb";
 import { HeroCarousel } from "@/components/movie/HeroCarousel";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { MovieListWidget } from "@/components/movie/SidebarWidgets";
@@ -10,16 +10,19 @@ export const dynamic = "force-dynamic";
 
 async function getData() {
   try {
-    const [trending, popular, upcoming, topRated, nowPlaying, genreData] =
+    const [trending, popular, upcoming, topRated, nowPlaying, telugu, hindi, tamil, genreData] =
       await Promise.all([
         getTrending("week"),
         getPopular(),
         getUpcoming(),
         getTopRated(),
         getNowPlaying(),
+        getTeluguMovies(),
+        getHindiMovies(),
+        getTamilMovies(),
         getGenres(),
       ]);
-    return { trending, popular, upcoming, topRated, nowPlaying, genres: genreData.genres };
+    return { trending, popular, upcoming, topRated, nowPlaying, telugu, hindi, tamil, genres: genreData.genres };
   } catch (error) {
     console.error("Failed to load homepage data:", error);
     return null;
@@ -42,7 +45,7 @@ export default async function HomePage() {
     );
   }
 
-  const { trending, popular, upcoming, topRated, nowPlaying, genres } = data;
+  const { trending, popular, upcoming, topRated, nowPlaying, telugu, hindi, tamil, genres } = data;
 
   return (
     <div>
@@ -51,12 +54,32 @@ export default async function HomePage() {
       <div className="max-w-[1600px] mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="flex-1 min-w-0">
-            <SectionHeader title="Trending This Week" href="/movies/trending" />
+            {/* Telugu Movies */}
+            <SectionHeader title="Latest Telugu Movies" href="/movies/telugu" />
             <MovieGrid
-              movies={trending.results.slice(0, 12)}
+              movies={telugu.results.slice(0, 10)}
               columns="grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
             />
 
+            {/* Hindi Movies */}
+            <div className="mt-12">
+              <SectionHeader title="Hindi / Bollywood" href="/movies/hindi" />
+              <MovieGrid
+                movies={hindi.results.slice(0, 10)}
+                columns="grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+              />
+            </div>
+
+            {/* Tamil Movies */}
+            <div className="mt-12">
+              <SectionHeader title="Tamil / Kollywood" href="/movies/tamil" />
+              <MovieGrid
+                movies={tamil.results.slice(0, 10)}
+                columns="grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+              />
+            </div>
+
+            {/* Latest Stories */}
             <div className="mt-12">
               <SectionHeader title="Latest Stories" href="/news" />
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -66,23 +89,26 @@ export default async function HomePage() {
               </div>
             </div>
 
+            {/* Trending in India */}
             <div className="mt-12">
-              <SectionHeader title="Now Playing" href="/movies/now-playing" />
+              <SectionHeader title="Trending in India" href="/movies/trending" />
+              <MovieGrid
+                movies={trending.results.slice(0, 10)}
+                columns="grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+              />
+            </div>
+
+            {/* Now Playing */}
+            <div className="mt-12">
+              <SectionHeader title="Now Playing in Theaters" href="/movies/now-playing" />
               <MovieGrid
                 movies={nowPlaying.results.slice(0, 10)}
                 columns="grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
               />
             </div>
-
-            <div className="mt-12">
-              <SectionHeader title="Popular Movies" href="/movies/popular" />
-              <MovieGrid
-                movies={popular.results.slice(0, 10)}
-                columns="grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
-              />
-            </div>
           </div>
 
+          {/* Right Sidebar */}
           <div className="w-full lg:w-80 flex-shrink-0 space-y-6">
             <MovieListWidget
               title="Upcoming Releases"

@@ -2,7 +2,7 @@ import { getTrending } from "@/services/tmdb";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 
-export const metadata = { title: "Trending Movies - Cinemax" };
+export const metadata = { title: "Trending Movies - TCU" };
 export const dynamic = "force-dynamic";
 
 export default async function TrendingPage() {

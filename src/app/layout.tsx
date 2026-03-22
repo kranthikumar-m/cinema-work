@@ -5,10 +5,10 @@ import { TopNav } from "@/components/layout/TopNav";
 import { Footer } from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
-  title: "Cinemax - Movie Discovery Portal",
+  title: "TCU - Telugu Cinema Updates",
   description:
-    "Discover trending movies, read reviews, watch trailers, and explore the world of cinema.",
-  keywords: ["movies", "cinema", "reviews", "trailers", "entertainment"],
+    "Your source for the latest Telugu, Hindi, Tamil, Kannada and Malayalam movie updates, reviews, trailers, and entertainment news.",
+  keywords: ["telugu movies", "indian cinema", "hindi movies", "tamil movies", "kannada movies", "malayalam movies", "reviews", "trailers"],
 };
 
 export default function RootLayout({
