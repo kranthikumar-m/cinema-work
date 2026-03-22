@@ -7,14 +7,17 @@ export function HomeTopOverlayControls() {
   return (
     <div className="absolute right-4 top-5 z-30 flex items-center gap-3 md:right-8 md:top-7 xl:right-10">
       <SearchOverlayLauncher>
-        <button
-          type="button"
-          className="flex items-center gap-2 text-sm font-medium text-white/92 transition hover:text-white md:text-base"
-          aria-label="Open search"
-        >
-          <span className="hidden sm:inline">Start Typing</span>
-          <Search className="h-4 w-4 md:h-5 md:w-5" />
-        </button>
+        {(openSearch) => (
+          <button
+            type="button"
+            onClick={openSearch}
+            className="flex items-center gap-2 text-sm font-medium text-white/92 transition hover:text-white md:text-base"
+            aria-label="Open search"
+          >
+            <span className="hidden sm:inline">Start Typing</span>
+            <Search className="h-4 w-4 md:h-5 md:w-5" />
+          </button>
+        )}
       </SearchOverlayLauncher>
 
       <button

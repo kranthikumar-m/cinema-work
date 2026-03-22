@@ -52,10 +52,15 @@ export function TopNav() {
           {/* Right actions */}
           <div className="flex items-center gap-2">
             <SearchOverlayLauncher>
-              <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-800 transition-colors text-sm">
-                <Search className="w-4 h-4" />
-                <span className="hidden sm:inline">Search</span>
-              </button>
+              {(openSearch) => (
+                <button
+                  onClick={openSearch}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-800 transition-colors text-sm"
+                >
+                  <Search className="w-4 h-4" />
+                  <span className="hidden sm:inline">Search</span>
+                </button>
+              )}
             </SearchOverlayLauncher>
             <button className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800/50 transition-colors">
               <User className="w-5 h-5" />
