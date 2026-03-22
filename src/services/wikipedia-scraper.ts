@@ -177,7 +177,7 @@ function extractCellTexts(rowHtml: string, isHeader: boolean): string[] {
 
   while ((match = cellRegex.exec(rowHtml)) !== null) {
     // Strip HTML tags, decode entities, clean up
-    let text = match[1]
+    const text = match[1]
       .replace(/<[^>]+>/g, "") // Remove HTML tags
       .replace(/\[\d+\]/g, "") // Remove reference numbers like [1]
       .replace(/&amp;/g, "&")
@@ -195,7 +195,7 @@ function extractCellTexts(rowHtml: string, isHeader: boolean): string[] {
   if (!isHeader && texts.length === 0) {
     const thRegex = /<th[^>]*>([\s\S]*?)<\/th>/gi;
     while ((match = thRegex.exec(rowHtml)) !== null) {
-      let text = match[1]
+      const text = match[1]
         .replace(/<[^>]+>/g, "")
         .replace(/\[\d+\]/g, "")
         .replace(/&amp;/g, "&")
