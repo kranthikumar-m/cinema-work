@@ -1,6 +1,7 @@
 import {
   getMovieCredits,
   getMovieDetails,
+  getMovieImages,
   getMovieVideos,
 } from "@/services/tmdb";
 import { resolveHomepageHeroBackdrop } from "@/services/hero-backdrops";
@@ -10,16 +11,11 @@ import {
   getTopRatedTeluguMovies,
   getUpcomingTeluguMovies,
 } from "@/services/telugu-movies";
-import { HomeHeroBanner } from "@/components/home/HomeHeroBanner";
-import { MovieGrid } from "@/components/movie/MovieGrid";
-import { MovieListWidget } from "@/components/movie/SidebarWidgets";
-import { FeaturedArticleCard } from "@/components/movie/FeaturedArticleCard";
-import { SectionHeader } from "@/components/shared/SectionHeader";
-import { articles } from "@/data/editorial";
+import { HomeFeatureLanding } from "@/components/home/HomeFeatureLanding";
 import { featuredHomepageHeroSeed } from "@/data/homepage";
 import { formatRuntime } from "@/lib/utils";
 import type { HomepageHeroItem } from "@/types/homepage";
-import type { Credits, Movie, Video } from "@/types/tmdb";
+import type { Credits, Movie, MovieDetails, Video } from "@/types/tmdb";
 
 export const dynamic = "force-dynamic";
 
@@ -85,68 +81,68 @@ function getTrailerHref(videos: { results: Video[] } | null, movieId?: number) {
   return "/videos";
 }
 
-async function getMovieEnhancements(movie: Movie | null) {
+async function getFeaturedMovieBundle(movie: Movie | null) {
   if (!movie) {
     return {
+      heroItem: {
+        id: "featured-fallback",
+        ...featuredHomepageHeroSeed,
+        backdropPath: null,
+        imageUrl: "/placeholder-backdrop.svg",
+        watchHref: "/movies/trending",
+        trailerHref: "/videos",
+        sourceMovieId: undefined,
+      } satisfies HomepageHeroItem,
+      movie: null,
       details: null,
       credits: null,
-      videos: null,
+      images: null,
     };
   }
 
-  const [detailsResult, creditsResult, videosResult] = await Promise.allSettled([
-    getMovieDetails(movie.id),
-    getMovieCredits(movie.id),
-    getMovieVideos(movie.id),
-  ]);
+  const [detailsResult, creditsResult, videosResult, imagesResult] =
+    await Promise.allSettled([
+      getMovieDetails(movie.id),
+      getMovieCredits(movie.id),
+      getMovieVideos(movie.id),
+      getMovieImages(movie.id),
+    ]);
 
-  return {
-    details: detailsResult.status === "fulfilled" ? detailsResult.value : null,
-    credits: creditsResult.status === "fulfilled" ? creditsResult.value : null,
-    videos: videosResult.status === "fulfilled" ? videosResult.value : null,
-  };
-}
-
-async function buildFallbackHeroItem() {
-  return {
-    id: "featured-fallback",
-    ...featuredHomepageHeroSeed,
-    backdropPath: null,
-    imageUrl: "/placeholder-backdrop.svg",
-    watchHref: "/movies/trending",
-    trailerHref: "/videos",
-    sourceMovieId: undefined,
-  } satisfies HomepageHeroItem;
-}
-
-async function buildDynamicHeroItem(movie: Movie) {
-  const enhancements = await getMovieEnhancements(movie);
-  const details = enhancements.details;
+  const details = detailsResult.status === "fulfilled" ? detailsResult.value : null;
+  const credits = creditsResult.status === "fulfilled" ? creditsResult.value : null;
+  const videos = videosResult.status === "fulfilled" ? videosResult.value : null;
+  const images = imagesResult.status === "fulfilled" ? imagesResult.value : null;
   const heroBackdrop = await resolveHomepageHeroBackdrop(
     movie,
     details?.backdrop_path ?? movie.backdrop_path
   );
 
   return {
-    id: movie.id,
-    title: movie.title,
-    backdropPath: heroBackdrop.backdropPath,
-    imageUrl: heroBackdrop.imageUrl ?? movie.backdrop_url ?? null,
-    runtimeLabel: details?.runtime ? formatRuntime(details.runtime) : "Telugu Feature",
-    viewsLabel: "",
-    director: getDirector(enhancements.credits),
-    actors: getActors(enhancements.credits),
-    releaseLabel: formatReleaseLabel(movie.release_date),
-    watchHref: `/movie/${movie.id}`,
-    trailerHref: getTrailerHref(enhancements.videos, movie.id),
-    trailerLabel: "TRAILER",
-    accentLinks: {
-      director: `/movie/${movie.id}`,
-      cast: `/movie/${movie.id}`,
-      release: `/movie/${movie.id}`,
-    },
-    sourceMovieId: movie.id,
-  } satisfies HomepageHeroItem;
+    heroItem: {
+      id: movie.id,
+      title: movie.title,
+      backdropPath: heroBackdrop.backdropPath,
+      imageUrl: heroBackdrop.imageUrl ?? movie.backdrop_url ?? null,
+      runtimeLabel: details?.runtime ? formatRuntime(details.runtime) : "Telugu Feature",
+      viewsLabel: "",
+      director: getDirector(credits),
+      actors: getActors(credits),
+      releaseLabel: formatReleaseLabel(movie.release_date),
+      watchHref: `/movie/${movie.id}`,
+      trailerHref: getTrailerHref(videos, movie.id),
+      trailerLabel: "TRAILER",
+      accentLinks: {
+        director: `/movie/${movie.id}`,
+        cast: `/movie/${movie.id}`,
+        release: `/movie/${movie.id}`,
+      },
+      sourceMovieId: movie.id,
+    } satisfies HomepageHeroItem,
+    movie,
+    details,
+    credits,
+    images,
+  };
 }
 
 async function getData() {
@@ -158,13 +154,11 @@ async function getData() {
       getTopRatedTeluguMovies(10),
     ]);
 
-    const heroCandidates = dedupeMovies([latestReleases, popular, upcoming])
-      .slice(0, 3);
-    const heroItems = heroCandidates.length
-      ? await Promise.all(heroCandidates.map((movie) => buildDynamicHeroItem(movie)))
-      : [await buildFallbackHeroItem()];
+    const featuredMovie =
+      dedupeMovies([latestReleases, popular, upcoming, topRated])[0] ?? null;
+    const featured = await getFeaturedMovieBundle(featuredMovie);
 
-    return { heroItems, latestReleases, popular, upcoming, topRated };
+    return { featured, latestReleases, popular, upcoming, topRated };
   } catch (error) {
     console.error("Failed to load homepage data:", error);
     return null;
@@ -190,85 +184,19 @@ export default async function HomePage() {
     );
   }
 
-  const { heroItems, latestReleases, popular, upcoming, topRated } = data;
+  const { featured, latestReleases, popular, upcoming, topRated } = data;
 
   return (
-    <div className="overflow-x-clip bg-[#050505]">
-      <HomeHeroBanner items={heroItems} />
-
-      <section
-        id="home-content"
-        className="relative -mt-10 rounded-t-[34px] border-t border-white/10 bg-[radial-gradient(circle_at_top,rgba(108,52,19,0.34)_0%,rgba(18,10,8,0.9)_16%,#050505_42%)] px-4 pb-16 pt-16 md:px-8 xl:px-12"
-      >
-        <div className="mx-auto max-w-[1660px]">
-          <div className="flex flex-col gap-10 xl:flex-row xl:items-start xl:gap-12">
-            <div className="min-w-0 flex-1 space-y-12">
-              <div className="rounded-[30px] border border-white/8 bg-black/18 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.28)] backdrop-blur-sm md:p-8">
-                <SectionHeader
-                  title="Validated Telugu Releases"
-                  href="/movies/trending"
-                />
-                <MovieGrid
-                  movies={latestReleases}
-                  columns="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5"
-                />
-              </div>
-
-              <div className="rounded-[30px] border border-white/8 bg-black/18 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.28)] backdrop-blur-sm md:p-8">
-                <SectionHeader
-                  title="Telugu Cinema Stories"
-                  href="/news"
-                />
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                  {articles.slice(0, 3).map((article) => (
-                    <FeaturedArticleCard key={article.id} article={article} />
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-[30px] border border-white/8 bg-black/18 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.28)] backdrop-blur-sm md:p-8">
-                <SectionHeader
-                  title="Popular Telugu Picks"
-                  href="/movies/popular"
-                />
-                <MovieGrid
-                  movies={popular}
-                  columns="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5"
-                />
-              </div>
-
-              <div className="rounded-[30px] border border-white/8 bg-black/18 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.28)] backdrop-blur-sm md:p-8">
-                <SectionHeader
-                  title="Upcoming Telugu Releases"
-                  href="/movies/upcoming"
-                />
-                <MovieGrid
-                  movies={upcoming}
-                  columns="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5"
-                />
-              </div>
-            </div>
-
-            <div className="w-full flex-shrink-0 space-y-6 xl:w-80">
-              <MovieListWidget
-                title="Upcoming Telugu Releases"
-                movies={upcoming}
-                href="/movies/upcoming"
-              />
-              <MovieListWidget
-                title="Top Rated Telugu Movies"
-                movies={topRated}
-                href="/movies/top-rated"
-              />
-              <MovieListWidget
-                title="Recently Validated"
-                movies={latestReleases.slice(0, 5)}
-                href="/movies/trending"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
+    <HomeFeatureLanding
+      heroItem={featured.heroItem}
+      featuredMovie={featured.movie}
+      featuredDetails={featured.details as MovieDetails | null}
+      featuredCredits={featured.credits}
+      featuredImages={featured.images}
+      latestReleases={latestReleases}
+      popular={popular}
+      upcoming={upcoming}
+      topRated={topRated}
+    />
   );
 }
