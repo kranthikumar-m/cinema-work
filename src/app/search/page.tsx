@@ -3,7 +3,7 @@ import { MovieGrid } from "@/components/movie/MovieGrid";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 import { Search } from "lucide-react";
 
-export const metadata = { title: "Search - Telugu Cinema Updates" };
+export const metadata = { title: "Search - TCU" };
 export const dynamic = "force-dynamic";
 
 interface Props {

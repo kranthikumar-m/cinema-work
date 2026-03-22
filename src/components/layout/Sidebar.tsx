@@ -2,89 +2,42 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { Info, Menu, X } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { SiteLogo } from "@/components/layout/SiteLogo";
 import {
-  APP_SIDEBAR_DESKTOP_WIDTH_CLASS,
-  APP_SIDEBAR_DRAWER_WIDTH_CLASS,
-  APP_SIDEBAR_ITEMS,
-  isSidebarItemActive,
-} from "@/components/layout/sidebar-config";
+  LayoutGrid,
+  Film,
+  Play,
+  Star,
+  Info,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Logo } from "@/components/shared/Logo";
 
-function SidebarBrand() {
-  return (
-    <Link
-      href="/"
-      className="mb-1 flex h-[106px] w-full items-start justify-center px-[2px] pt-2 text-center"
-    >
-      <SiteLogo className="max-w-[100px]" priority />
-    </Link>
-  );
-}
-
-function SidebarDesktopNav() {
-  const pathname = usePathname();
-
-  return (
-    <nav className="flex w-full flex-col gap-[2px] px-[3px]">
-      {APP_SIDEBAR_ITEMS.map((item) => {
-        const isActive = isSidebarItemActive(item.href, pathname);
-
-        return (
-          <Link
-            key={item.label}
-            href={item.href}
-            className={cn(
-              "group flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-[18px] px-0.5 text-center transition-all",
-              isActive
-                ? "bg-[#19ecff] text-black shadow-[0_0_24px_rgba(25,236,255,0.25)]"
-                : "text-white/78 hover:bg-white/8 hover:text-white"
-            )}
-          >
-            <item.icon className="h-5 w-5 shrink-0" strokeWidth={1.8} />
-            <span className="max-w-[62px] text-[0.64rem] font-medium uppercase leading-[1.25] tracking-[0.16em]">
-              {item.label}
-            </span>
-          </Link>
-        );
-      })}
-    </nav>
-  );
-}
+const navItems = [
+  { icon: LayoutGrid, label: "Feed", href: "/" },
+  { icon: Film, label: "Telugu", href: "/movies/telugu" },
+  { icon: Film, label: "Hindi", href: "/movies/hindi" },
+  { icon: Film, label: "Tamil", href: "/movies/tamil" },
+  { icon: Film, label: "Kannada", href: "/movies/kannada" },
+  { icon: Film, label: "Malayalam", href: "/movies/malayalam" },
+  { icon: Play, label: "Trailers", href: "/videos" },
+  { icon: Star, label: "Reviews", href: "/reviews" },
+  { icon: Info, label: "News", href: "/news" },
+];
 
 export function Sidebar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
   return (
-    <>
-      <aside
-        className={cn(
-          "fixed inset-y-0 left-0 z-40 hidden flex-col items-center bg-[#050505] pb-3 pt-3 shadow-[12px_0_35px_rgba(0,0,0,0.32)] lg:flex",
-          APP_SIDEBAR_DESKTOP_WIDTH_CLASS
-        )}
-      >
-        <SidebarBrand />
-        <SidebarDesktopNav />
-        <button
-          type="button"
-          className="mt-auto flex h-10 w-10 items-center justify-center rounded-full border border-white/16 text-white/80 transition hover:border-white/32 hover:text-white"
-          aria-label="Help and info"
-        >
-          <Info className="h-3.5 w-3.5" />
-        </button>
-      </aside>
-
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="fixed left-4 top-4 z-50 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/15 bg-black/55 text-white backdrop-blur-md lg:hidden"
-        aria-label="Open navigation"
-      >
-        <Menu className="h-5 w-5" />
-      </button>
+    <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 z-40 w-20 flex-col items-center bg-gray-950/95 border-r border-gray-800/50 backdrop-blur-sm pt-4 pb-6">
+      <div className="mb-8 flex flex-col items-center gap-1">
+        <Logo
+          size={40}
+          showLabel={true}
+          className="flex-col"
+          labelClass="text-[10px] font-bold text-cyan-400 tracking-wider"
+        />
+      </div>
 
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">

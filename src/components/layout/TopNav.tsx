@@ -5,8 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Search, User, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SearchOverlayLauncher } from "@/components/layout/SearchOverlayLauncher";
-import { SiteLogo } from "@/components/layout/SiteLogo";
+import { SearchOverlay } from "@/components/layout/SearchOverlay";
+import { Logo } from "@/components/shared/Logo";
 
 const tabs = [
   { label: "All", href: "/" },
@@ -27,9 +27,9 @@ export function TopNav() {
       <header className="sticky top-0 z-30 bg-gray-950/80 backdrop-blur-md border-b border-gray-800/50">
         <div className="flex h-14 items-center justify-between px-4 md:px-6 xl:px-8">
           {/* Mobile logo */}
-          <Link href="/" className="ml-14 flex w-[86px] items-center lg:hidden">
-            <SiteLogo priority />
-          </Link>
+          <div className="lg:hidden">
+            <Logo size={32} showLabel={true} />
+          </div>
 
           {/* Desktop tabs */}
           <nav className="hidden md:flex items-center gap-1 lg:ml-4">

@@ -31,28 +31,87 @@ async function tmdbFetch<T>(
   return res.json();
 }
 
-// Movies
+// Indian cinema focus: region=IN for all listing endpoints
+const INDIA_REGION = "IN";
+
+// Movies - focused on Indian cinema
 export async function getTrending(
   timeWindow: "day" | "week" = "week",
   page = 1
 ): Promise<PaginatedResponse<Movie>> {
-  return tmdbFetch(`/trending/movie/${timeWindow}`, { page: String(page) });
+  return tmdbFetch(`/trending/movie/${timeWindow}`, {
+    page: String(page),
+    region: INDIA_REGION,
+  });
 }
 
 export async function getPopular(page = 1): Promise<PaginatedResponse<Movie>> {
-  return tmdbFetch("/movie/popular", { page: String(page) });
+  return tmdbFetch("/movie/popular", {
+    page: String(page),
+    region: INDIA_REGION,
+  });
 }
 
 export async function getTopRated(page = 1): Promise<PaginatedResponse<Movie>> {
-  return tmdbFetch("/movie/top_rated", { page: String(page) });
+  return tmdbFetch("/movie/top_rated", {
+    page: String(page),
+    region: INDIA_REGION,
+  });
 }
 
 export async function getUpcoming(page = 1): Promise<PaginatedResponse<Movie>> {
-  return tmdbFetch("/movie/upcoming", { page: String(page) });
+  return tmdbFetch("/movie/upcoming", {
+    page: String(page),
+    region: INDIA_REGION,
+  });
 }
 
 export async function getNowPlaying(page = 1): Promise<PaginatedResponse<Movie>> {
-  return tmdbFetch("/movie/now_playing", { page: String(page) });
+  return tmdbFetch("/movie/now_playing", {
+    page: String(page),
+    region: INDIA_REGION,
+  });
+}
+
+// Discover by Indian language
+export async function getTeluguMovies(page = 1): Promise<PaginatedResponse<Movie>> {
+  return tmdbFetch("/discover/movie", {
+    with_original_language: "te",
+    sort_by: "popularity.desc",
+    page: String(page),
+  });
+}
+
+export async function getHindiMovies(page = 1): Promise<PaginatedResponse<Movie>> {
+  return tmdbFetch("/discover/movie", {
+    with_original_language: "hi",
+    sort_by: "popularity.desc",
+    page: String(page),
+  });
+}
+
+export async function getTamilMovies(page = 1): Promise<PaginatedResponse<Movie>> {
+  return tmdbFetch("/discover/movie", {
+    with_original_language: "ta",
+    sort_by: "popularity.desc",
+    page: String(page),
+  });
+}
+
+export async function getKannadaMovies(page = 1): Promise<PaginatedResponse<Movie>> {
+  return tmdbFetch("/discover/movie", {
+    with_original_language: "kn",
+    sort_by: "popularity.desc",
+    page: String(page),
+  });
+}
+
+export async function getMalayalamMovies(page = 1): Promise<PaginatedResponse<Movie>> {
+  return tmdbFetch("/discover/movie", {
+    with_original_language: "ml",
+    sort_by: "popularity.desc",
+    page: String(page),
+  });
 }
 
 export async function getMovieDetails(id: number): Promise<MovieDetails> {

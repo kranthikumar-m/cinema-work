@@ -8,8 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "docker:build": "docker build -t cinemax --build-arg TMDB_API_KEY=$TMDB_API_KEY .",
-    "docker:run": "docker run -p 3000:3000 --env-file .env.local cinemax"
+    "docker:build": "docker build -t tcu --build-arg TMDB_API_KEY=$TMDB_API_KEY .",
+    "docker:run": "docker run -p 3000:3000 --env-file .env.local tcu"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",

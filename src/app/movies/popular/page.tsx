@@ -2,7 +2,7 @@ import { getPopular } from "@/services/tmdb";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 
-export const metadata = { title: "Popular Movies - Telugu Cinema Updates" };
+export const metadata = { title: "Popular Movies - TCU" };
 export const dynamic = "force-dynamic";
 
 export default async function PopularPage() {
