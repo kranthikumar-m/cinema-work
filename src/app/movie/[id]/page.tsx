@@ -11,7 +11,8 @@ import {
 } from "@/services/tmdb";
 import {
   getImageUrl,
-  getBackdropUrl,
+  getMovieBackdropUrl,
+  getMoviePosterUrl,
   formatDate,
   formatRuntime,
   formatCurrency,
@@ -23,6 +24,7 @@ import { PhotoGallery } from "@/components/movie/PhotoGallery";
 import { ReviewCard } from "@/components/movie/ReviewCard";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { MovieDetailClient } from "./client";
+import { enrichMovieAssets } from "@/services/telugu-movies";
 import type { Metadata } from "next";
 
 interface Props {
@@ -57,6 +59,8 @@ export default async function MovieDetailPage({ params }: Props) {
         getSimilarMovies(id),
         getWatchProviders(id),
       ]);
+
+    movie = await enrichMovieAssets(movie);
   } catch {
     notFound();
   }
@@ -66,18 +70,21 @@ export default async function MovieDetailPage({ params }: Props) {
   );
   const director = credits.crew.find((c) => c.job === "Director");
   const usProviders = providers.results?.US;
+  const similarTeluguMovies = similar.results
+    .filter((item) => item.original_language === "te")
+    .slice(0, 6);
 
   return (
     <div>
       {/* Hero Banner */}
       <div className="relative h-[50vh] min-h-[400px]">
         <Image
-          src={getBackdropUrl(movie.backdrop_path, "original")}
+          src={getMovieBackdropUrl(movie, "original")}
           alt={movie.title}
           fill
           className="object-cover"
           priority
-          unoptimized={!movie.backdrop_path}
+          unoptimized={!movie.backdrop_path && !movie.backdrop_url}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/60 to-transparent" />
       </div>
@@ -88,13 +95,13 @@ export default async function MovieDetailPage({ params }: Props) {
           <div className="flex-shrink-0">
             <div className="w-56 md:w-64 rounded-xl overflow-hidden shadow-2xl mx-auto md:mx-0">
               <Image
-                src={getImageUrl(movie.poster_path, "w500")}
+                src={getMoviePosterUrl(movie, "w500")}
                 alt={movie.title}
                 width={256}
                 height={384}
                 className="w-full h-auto"
                 priority
-                unoptimized={!movie.poster_path}
+                unoptimized={!movie.poster_path && !movie.poster_url}
               />
             </div>
           </div>
@@ -247,11 +254,11 @@ export default async function MovieDetailPage({ params }: Props) {
         </div>
 
         {/* Similar Movies */}
-        {similar.results.length > 0 && (
+        {similarTeluguMovies.length > 0 && (
           <div className="mt-12 pb-12">
             <SectionHeader title="Similar Movies" />
             <MovieGrid
-              movies={similar.results.slice(0, 6)}
+              movies={similarTeluguMovies}
               columns="grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6"
             />
           </div>

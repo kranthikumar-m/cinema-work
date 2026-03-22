@@ -21,20 +21,20 @@ export function Footer({
       >
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           <div>
-            <div className="mb-4 w-[158px]">
-              <SiteLogo />
+            <div className="mb-4 w-[172px]">
+              <SiteLogo variant="footer" />
             </div>
             <p className="text-sm text-gray-500">
-              Your destination for Telugu cinema updates and Indian movie coverage in Hindi, Tamil, Kannada, and Malayalam.
+              Telugu-first movie coverage with validated releases, trailers, stories, and release tracking powered by TMDB and Wikipedia cross-checks.
             </p>
           </div>
           <div>
             <h3 className="text-sm font-semibold text-white mb-3">Explore</h3>
             <ul className="space-y-2 text-sm text-gray-400">
-              <li><Link href="/movies/trending" className="hover:text-cyan-400 transition-colors">Trending</Link></li>
-              <li><Link href="/movies/popular" className="hover:text-cyan-400 transition-colors">Popular</Link></li>
-              <li><Link href="/movies/upcoming" className="hover:text-cyan-400 transition-colors">Upcoming</Link></li>
-              <li><Link href="/movies/top-rated" className="hover:text-cyan-400 transition-colors">Top Rated</Link></li>
+              <li><Link href="/movies/trending" className="hover:text-cyan-400 transition-colors">Validated Releases</Link></li>
+              <li><Link href="/movies/popular" className="hover:text-cyan-400 transition-colors">Popular Telugu</Link></li>
+              <li><Link href="/movies/upcoming" className="hover:text-cyan-400 transition-colors">Upcoming Telugu</Link></li>
+              <li><Link href="/movies/top-rated" className="hover:text-cyan-400 transition-colors">Top Rated Telugu</Link></li>
             </ul>
           </div>
           <div>

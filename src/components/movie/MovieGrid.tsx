@@ -13,7 +13,7 @@ export function MovieGrid({
   if (!movies.length) {
     return (
       <div className="text-center py-16 text-gray-500">
-        <p>No movies found.</p>
+        <p>No Telugu movies found.</p>
       </div>
     );
   }

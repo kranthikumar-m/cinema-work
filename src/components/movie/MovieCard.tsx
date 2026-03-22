@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { getImageUrl, formatDate, truncate } from "@/lib/utils";
+import { getMoviePosterUrl, formatDate, truncate } from "@/lib/utils";
 import { RatingRing } from "@/components/shared/RatingRing";
 import type { Movie } from "@/types/tmdb";
 
@@ -15,13 +15,13 @@ export function MovieCard({ movie, priority = false }: MovieCardProps) {
       <div className="relative overflow-hidden rounded-xl bg-gray-900 transition-transform duration-300 group-hover:scale-[1.02] group-hover:shadow-lg group-hover:shadow-cyan-500/10">
         <div className="aspect-[2/3] relative">
           <Image
-            src={getImageUrl(movie.poster_path, "w500")}
+            src={getMoviePosterUrl(movie, "w500")}
             alt={movie.title}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
             className="object-cover"
             priority={priority}
-            unoptimized={!movie.poster_path}
+            unoptimized={!movie.poster_path && !movie.poster_url}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">

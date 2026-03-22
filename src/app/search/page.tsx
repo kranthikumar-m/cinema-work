@@ -1,4 +1,4 @@
-import { searchMovies } from "@/services/tmdb";
+import { searchTeluguMovies } from "@/services/telugu-movies";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 import { Search } from "lucide-react";
@@ -17,9 +17,9 @@ export default async function SearchPage({ searchParams }: Props) {
     return (
       <div className="max-w-[1600px] mx-auto px-4 py-16 text-center">
         <Search className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-        <h2 className="text-xl font-bold text-white mb-2">Search Movies</h2>
+        <h2 className="text-xl font-bold text-white mb-2">Search Telugu Movies</h2>
         <p className="text-gray-400">
-          Use the search bar above to find movies.
+          Use the search bar above to find Telugu movie releases and titles.
         </p>
       </div>
     );
@@ -27,7 +27,7 @@ export default async function SearchPage({ searchParams }: Props) {
 
   let data;
   try {
-    data = await searchMovies(query);
+    data = await searchTeluguMovies(query);
   } catch {
     return (
       <div className="max-w-[1600px] mx-auto px-4 py-8">
@@ -47,7 +47,7 @@ export default async function SearchPage({ searchParams }: Props) {
       ) : (
         <div className="text-center py-16">
           <p className="text-gray-400">
-            No movies found for &quot;{query}&quot;.
+            No Telugu movies found for &quot;{query}&quot;.
           </p>
         </div>
       )}

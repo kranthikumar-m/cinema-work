@@ -1,24 +1,24 @@
-import { getUpcoming } from "@/services/tmdb";
+import { getUpcomingTeluguMovies } from "@/services/telugu-movies";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 
-export const metadata = { title: "Upcoming Movies - Telugu Cinema Updates" };
+export const metadata = { title: "Upcoming Telugu Movies - Telugu Cinema Updates" };
 export const dynamic = "force-dynamic";
 
 export default async function UpcomingPage() {
   try {
-    const data = await getUpcoming();
+    const movies = await getUpcomingTeluguMovies(30);
     return (
       <div className="max-w-[1600px] mx-auto px-4 py-8">
-        <SectionHeader title="Upcoming Movies" />
-        <MovieGrid movies={data.results} />
+        <SectionHeader title="Upcoming Telugu Movies" />
+        <MovieGrid movies={movies} />
       </div>
     );
   } catch {
     return (
       <div className="max-w-[1600px] mx-auto px-4 py-8">
-        <SectionHeader title="Upcoming Movies" />
-        <p className="text-gray-400">Unable to load movies. Please try again later.</p>
+        <SectionHeader title="Upcoming Telugu Movies" />
+        <p className="text-gray-400">Unable to load upcoming Telugu movies. Please try again later.</p>
       </div>
     );
   }

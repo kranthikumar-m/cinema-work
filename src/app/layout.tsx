@@ -5,14 +5,14 @@ import { AppChrome } from "@/components/layout/AppChrome";
 export const metadata: Metadata = {
   title: "Telugu Cinema Updates",
   description:
-    "Discover updates across Indian cinema with a focus on Telugu films, plus Hindi, Tamil, Kannada, and Malayalam movie coverage.",
+    "Telugu-first movie discovery with TMDB data, Wikipedia-validated yearly releases, and fallback artwork retrieval for missing posters and backdrops.",
   keywords: [
     "telugu cinema",
-    "indian cinema",
-    "hindi movies",
-    "tamil movies",
-    "kannada movies",
-    "malayalam movies",
+    "telugu movies",
+    "telugu movie releases",
+    "tmdb telugu",
+    "wikipedia telugu films",
+    "telugu movie updates",
   ],
 };
 

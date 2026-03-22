@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import type { Movie } from "@/types/tmdb";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -10,6 +11,7 @@ export function getImageUrl(
   size: "w200" | "w300" | "w500" | "w780" | "w1280" | "original" = "w500"
 ): string {
   if (!path) return "/placeholder-movie.svg";
+  if (/^https?:\/\//i.test(path) || path.startsWith("/")) return path;
   return `https://image.tmdb.org/t/p/${size}${path}`;
 }
 
@@ -18,7 +20,22 @@ export function getBackdropUrl(
   size: "w780" | "w1280" | "original" = "w1280"
 ): string {
   if (!path) return "/placeholder-backdrop.svg";
+  if (/^https?:\/\//i.test(path) || path.startsWith("/")) return path;
   return `https://image.tmdb.org/t/p/${size}${path}`;
+}
+
+export function getMoviePosterUrl(
+  movie: Pick<Movie, "poster_path" | "poster_url">,
+  size: "w200" | "w300" | "w500" | "w780" | "w1280" | "original" = "w500"
+) {
+  return getImageUrl(movie.poster_url ?? movie.poster_path, size);
+}
+
+export function getMovieBackdropUrl(
+  movie: Pick<Movie, "backdrop_path" | "backdrop_url">,
+  size: "w780" | "w1280" | "original" = "w1280"
+) {
+  return getBackdropUrl(movie.backdrop_url ?? movie.backdrop_path, size);
 }
 
 export function formatDate(dateString: string): string {

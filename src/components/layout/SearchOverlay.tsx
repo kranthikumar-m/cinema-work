@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Search, X, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getImageUrl, formatDate } from "@/lib/utils";
+import { formatDate, getMoviePosterUrl } from "@/lib/utils";
 import { RatingRing } from "@/components/shared/RatingRing";
 import type { Movie } from "@/types/tmdb";
 
@@ -95,7 +95,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                 type="text"
                 value={query}
                 onChange={(e) => handleInput(e.target.value)}
-                placeholder="Search movies..."
+                placeholder="Search Telugu movies..."
                 className="w-full h-14 pl-12 pr-12 bg-gray-900 border border-gray-700 rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-cyan-500 text-lg"
               />
               {query && (
@@ -127,12 +127,12 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                     className="w-full flex items-center gap-4 p-3 hover:bg-gray-800 transition-colors text-left"
                   >
                     <div className="w-12 h-16 relative rounded-lg overflow-hidden flex-shrink-0 bg-gray-800">
-                      <Image
-                        src={getImageUrl(movie.poster_path, "w200")}
+                        <Image
+                        src={getMoviePosterUrl(movie, "w200")}
                         alt={movie.title}
                         fill
                         className="object-cover"
-                        unoptimized={!movie.poster_path}
+                        unoptimized={!movie.poster_path && !movie.poster_url}
                       />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -151,7 +151,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
 
             {!loading && query.length >= 2 && results.length === 0 && (
               <div className="mt-8 text-center text-gray-500">
-                <p>No movies found for &quot;{query}&quot;</p>
+                <p>No Telugu movie matches found for &quot;{query}&quot;</p>
               </div>
             )}
           </motion.div>

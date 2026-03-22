@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { getImageUrl, formatDate } from "@/lib/utils";
+import { formatDate, getMoviePosterUrl } from "@/lib/utils";
 import { RatingRing } from "@/components/shared/RatingRing";
 import type { Movie } from "@/types/tmdb";
 
@@ -28,11 +28,11 @@ export function MovieListWidget({ title, movies, href }: MovieListWidgetProps) {
           >
             <div className="w-12 h-16 relative rounded-lg overflow-hidden flex-shrink-0 bg-gray-800">
               <Image
-                src={getImageUrl(movie.poster_path, "w200")}
+                src={getMoviePosterUrl(movie, "w200")}
                 alt={movie.title}
                 fill
                 className="object-cover"
-                unoptimized={!movie.poster_path}
+                unoptimized={!movie.poster_path && !movie.poster_url}
               />
             </div>
             <div className="flex-1 min-w-0">

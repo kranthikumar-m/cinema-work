@@ -1,14 +1,14 @@
 import {
-  getTrending,
-  getPopular,
-  getUpcoming,
-  getTopRated,
-  getNowPlaying,
   getMovieCredits,
   getMovieDetails,
   getMovieVideos,
-  searchMovies,
 } from "@/services/tmdb";
+import {
+  getLatestTeluguReleases,
+  getPopularTeluguMovies,
+  getTopRatedTeluguMovies,
+  getUpcomingTeluguMovies,
+} from "@/services/telugu-movies";
 import { HomeHeroBanner } from "@/components/home/HomeHeroBanner";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { MovieListWidget } from "@/components/movie/SidebarWidgets";
@@ -36,27 +36,20 @@ function formatReleaseLabel(dateString: string) {
   });
 }
 
-function getHeroCandidates(collections: Movie[][]) {
+function dedupeMovies(collections: Movie[][]) {
   const seen = new Set<number>();
-  const withBackdrop: Movie[] = [];
-  const withoutBackdrop: Movie[] = [];
+  const deduped: Movie[] = [];
 
   collections.forEach((movies) => {
     movies.forEach((movie) => {
       if (seen.has(movie.id)) return;
 
       seen.add(movie.id);
-
-      if (movie.backdrop_path) {
-        withBackdrop.push(movie);
-        return;
-      }
-
-      withoutBackdrop.push(movie);
+      deduped.push(movie);
     });
   });
 
-  return [...withBackdrop, ...withoutBackdrop];
+  return deduped;
 }
 
 function getDirector(credits: Credits | null) {
@@ -117,19 +110,15 @@ async function getMovieEnhancements(movie: Movie | null) {
   };
 }
 
-async function buildFeaturedHeroItem(featuredMovie: Movie | null) {
-  const enhancements = await getMovieEnhancements(featuredMovie);
-  const sourceMovieId = featuredMovie?.id;
-
+async function buildFallbackHeroItem() {
   return {
-    id: `featured-${sourceMovieId ?? "sankranthiki"}`,
+    id: "featured-fallback",
     ...featuredHomepageHeroSeed,
-    backdropPath:
-      enhancements.details?.backdrop_path ?? featuredMovie?.backdrop_path ?? null,
-    imageUrl: null,
-    watchHref: sourceMovieId ? `/movie/${sourceMovieId}` : "/movies/trending",
-    trailerHref: getTrailerHref(enhancements.videos, sourceMovieId),
-    sourceMovieId,
+    backdropPath: null,
+    imageUrl: "/placeholder-backdrop.svg",
+    watchHref: "/movies/trending",
+    trailerHref: "/videos",
+    sourceMovieId: undefined,
   } satisfies HomepageHeroItem;
 }
 
@@ -141,8 +130,8 @@ async function buildDynamicHeroItem(movie: Movie) {
     id: movie.id,
     title: movie.title,
     backdropPath: details?.backdrop_path ?? movie.backdrop_path,
-    imageUrl: null,
-    runtimeLabel: details?.runtime ? formatRuntime(details.runtime) : "Feature Film",
+    imageUrl: movie.backdrop_url ?? null,
+    runtimeLabel: details?.runtime ? formatRuntime(details.runtime) : "Telugu Feature",
     viewsLabel: formatViewsLabel(movie.vote_count),
     director: getDirector(enhancements.credits),
     actors: getActors(enhancements.credits),
@@ -159,64 +148,22 @@ async function buildDynamicHeroItem(movie: Movie) {
   } satisfies HomepageHeroItem;
 }
 
-async function buildHomepageHeroItems(data: {
-  featuredMovie: Movie | null;
-  trending: Movie[];
-  popular: Movie[];
-  nowPlaying: Movie[];
-  upcoming: Movie[];
-}) {
-  const heroCandidates = getHeroCandidates([
-    data.trending,
-    data.popular,
-    data.nowPlaying,
-    data.upcoming,
-  ]);
-
-  const pinnedMovie = data.featuredMovie ?? heroCandidates[0] ?? null;
-  const liveMovies = heroCandidates
-    .filter((movie) => movie.id !== pinnedMovie?.id)
-    .slice(0, 2);
-
-  const [featuredHero, ...secondaryHeroes] = await Promise.all([
-    buildFeaturedHeroItem(pinnedMovie),
-    ...liveMovies.map((movie) => buildDynamicHeroItem(movie)),
-  ]);
-
-  return [featuredHero, ...secondaryHeroes];
-}
-
 async function getData() {
   try {
-    const [
-      trending,
-      popular,
-      upcoming,
-      topRated,
-      nowPlaying,
-      featuredMatch,
-      featuredFallbackMatch,
-    ] = await Promise.all([
-      getTrending("week"),
-      getPopular(),
-      getUpcoming(),
-      getTopRated(),
-      getNowPlaying(),
-      searchMovies("Sankranthiki Vasthunnam"),
-      searchMovies("Sankrantiki Vasthunnam"),
+    const [latestReleases, popular, upcoming, topRated] = await Promise.all([
+      getLatestTeluguReleases(10),
+      getPopularTeluguMovies(10),
+      getUpcomingTeluguMovies(10),
+      getTopRatedTeluguMovies(10),
     ]);
 
-    const featuredMovie =
-      featuredMatch.results[0] ?? featuredFallbackMatch.results[0] ?? null;
-    const heroItems = await buildHomepageHeroItems({
-      featuredMovie,
-      trending: trending.results,
-      popular: popular.results,
-      nowPlaying: nowPlaying.results,
-      upcoming: upcoming.results,
-    });
+    const heroCandidates = dedupeMovies([latestReleases, popular, upcoming])
+      .slice(0, 3);
+    const heroItems = heroCandidates.length
+      ? await Promise.all(heroCandidates.map((movie) => buildDynamicHeroItem(movie)))
+      : [await buildFallbackHeroItem()];
 
-    return { heroItems, trending, popular, upcoming, topRated, nowPlaying };
+    return { heroItems, latestReleases, popular, upcoming, topRated };
   } catch (error) {
     console.error("Failed to load homepage data:", error);
     return null;
@@ -242,7 +189,7 @@ export default async function HomePage() {
     );
   }
 
-  const { heroItems, trending, popular, upcoming, topRated, nowPlaying } = data;
+  const { heroItems, latestReleases, popular, upcoming, topRated } = data;
 
   return (
     <div className="overflow-x-clip bg-[#050505]">
@@ -257,18 +204,18 @@ export default async function HomePage() {
             <div className="min-w-0 flex-1 space-y-12">
               <div className="rounded-[30px] border border-white/8 bg-black/18 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.28)] backdrop-blur-sm md:p-8">
                 <SectionHeader
-                  title="Trending in Indian Cinema"
+                  title="Validated Telugu Releases"
                   href="/movies/trending"
                 />
                 <MovieGrid
-                  movies={trending.results.slice(0, 10)}
+                  movies={latestReleases}
                   columns="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5"
                 />
               </div>
 
               <div className="rounded-[30px] border border-white/8 bg-black/18 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.28)] backdrop-blur-sm md:p-8">
                 <SectionHeader
-                  title="South & Indian Cinema Stories"
+                  title="Telugu Cinema Stories"
                   href="/news"
                 />
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -280,22 +227,22 @@ export default async function HomePage() {
 
               <div className="rounded-[30px] border border-white/8 bg-black/18 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.28)] backdrop-blur-sm md:p-8">
                 <SectionHeader
-                  title="Now Playing in Theatres"
-                  href="/movies/now-playing"
+                  title="Popular Telugu Picks"
+                  href="/movies/popular"
                 />
                 <MovieGrid
-                  movies={nowPlaying.results.slice(0, 10)}
+                  movies={popular}
                   columns="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5"
                 />
               </div>
 
               <div className="rounded-[30px] border border-white/8 bg-black/18 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.28)] backdrop-blur-sm md:p-8">
                 <SectionHeader
-                  title="Popular Across Languages"
-                  href="/movies/popular"
+                  title="Upcoming Telugu Releases"
+                  href="/movies/upcoming"
                 />
                 <MovieGrid
-                  movies={popular.results.slice(0, 10)}
+                  movies={upcoming}
                   columns="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5"
                 />
               </div>
@@ -303,19 +250,19 @@ export default async function HomePage() {
 
             <div className="w-full flex-shrink-0 space-y-6 xl:w-80">
               <MovieListWidget
-                title="Upcoming Indian Releases"
-                movies={upcoming.results}
+                title="Upcoming Telugu Releases"
+                movies={upcoming}
                 href="/movies/upcoming"
               />
               <MovieListWidget
-                title="Top Rated Indian Picks"
-                movies={topRated.results}
+                title="Top Rated Telugu Movies"
+                movies={topRated}
                 href="/movies/top-rated"
               />
               <MovieListWidget
-                title="Popular Telugu & Indian"
-                movies={popular.results.slice(5)}
-                href="/movies/popular"
+                title="Recently Validated"
+                movies={latestReleases.slice(0, 5)}
+                href="/movies/trending"
               />
             </div>
           </div>

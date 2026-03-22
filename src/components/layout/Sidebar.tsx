@@ -19,7 +19,7 @@ function SidebarBrand() {
       href="/"
       className="mb-1 flex h-[106px] w-full items-start justify-center px-[2px] pt-2 text-center"
     >
-      <SiteLogo className="max-w-[100px]" priority />
+      <SiteLogo variant="sidebar" className="max-w-[100px]" priority />
     </Link>
   );
 }
@@ -101,8 +101,8 @@ export function Sidebar() {
             )}
           >
             <div className="mb-8 flex items-center justify-between">
-              <Link href="/" onClick={() => setOpen(false)} className="flex w-[150px]">
-                <SiteLogo priority />
+              <Link href="/" onClick={() => setOpen(false)} className="flex w-[156px]">
+                <SiteLogo variant="drawer" priority />
               </Link>
               <button
                 type="button"

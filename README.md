@@ -1,18 +1,20 @@
-# TCU - Telugu Cinema Updates
+# Telugu Cinema Updates
 
-A modern, dark-themed movie news and discovery website focused on Indian cinema, especially Telugu films, with coverage across Hindi, Tamil, Kannada, and Malayalam industries. Built with Next.js 14, TypeScript, and Tailwind CSS and powered by the TMDB API.
+A modern movie discovery site focused primarily on Telugu cinema. The app now uses TMDB as the primary movie source, validates current-year Telugu releases against Wikipedia before surfacing them, and only attempts external fallback artwork lookup when TMDB does not provide a poster or backdrop.
 
 ## Features
 
-- Full-screen hero carousel with trending movies
-- Movie listing pages: Trending, Popular, Upcoming, Top Rated, Now Playing
+- Full-screen homepage hero with Telugu-first featured titles
+- Movie listing pages for validated Telugu releases, popular Telugu titles, upcoming Telugu releases, top-rated Telugu movies, and latest confirmed releases
 - Detailed movie pages with trailers, cast, photos, reviews, and watch providers
-- Instant search with debounced input
+- Instant Telugu-first movie search with debounced input
 - Editorial content sections (News, Reviews, Interviews, Features)
 - Left sidebar + top navigation layout
 - Right sidebar widgets for quick discovery
 - Fully responsive (desktop, tablet, mobile)
 - Dark cinematic theme with cyan accent
+- Wikipedia cross-validation for current-year Telugu releases
+- Fallback poster/backdrop lookup through Google Images only when TMDB assets are missing
 
 ## Tech Stack
 
@@ -22,7 +24,7 @@ A modern, dark-themed movie news and discovery website focused on Indian cinema,
 - **Animations**: Framer Motion
 - **Icons**: Lucide React
 - **UI Primitives**: Radix UI
-- **API**: TMDB (The Movie Database)
+- **API**: TMDB (primary), Wikipedia (validation), Google Images (fallback artwork lookup)
 
 ## Prerequisites
 
@@ -52,6 +54,12 @@ Edit `.env.local` and add your TMDB API key:
 TMDB_API_KEY=your_actual_tmdb_api_key
 ```
 
+Optional: if your hosting provider aggressively blocks Google Images requests, you can override the fallback lookup user agent:
+
+```
+GOOGLE_IMAGES_USER_AGENT=Mozilla/5.0 (...)
+```
+
 ### 3. Run development server
 
 ```bash
@@ -74,6 +82,27 @@ npm run start
 | `TMDB_API_KEY` | Yes | Your TMDB API key |
 | `TMDB_BASE_URL` | No | TMDB API base URL (default: `https://api.themoviedb.org/3`) |
 | `NEXT_PUBLIC_SITE_URL` | No | Public URL for SEO metadata |
+| `GOOGLE_IMAGES_USER_AGENT` | No | Custom user agent string for Google Images fallback lookup |
+
+## Telugu Release Pipeline
+
+The app treats Telugu releases as a data pipeline instead of a UI label:
+
+1. TMDB is queried with Telugu-first discover filters such as `with_original_language=te`, India region, release-date windows, and sort order by category.
+2. Current-year Telugu releases up to today are fetched from Wikipedia release tables.
+3. Titles are normalized and fuzzy-matched so minor transliteration differences can still match when the release date is exact.
+4. A movie is only treated as a validated release when:
+   - it exists in TMDB
+   - the release date matches Wikipedia exactly
+   - TMDB still shows strong Telugu signals such as original language plus spoken language and/or India production context
+5. Movies that fail validation are excluded from the validated release feed.
+6. If a validated movie is missing a poster or backdrop in TMDB, the app tries a Google Images lookup for that missing asset only and stores the result as a distinct fallback URL.
+
+## Limitations
+
+- Wikipedia validation is only applied to current-year released Telugu films up to today. Upcoming titles still come from TMDB Telugu discover feeds.
+- Google Images fallback lookup is best-effort. Google may return challenge pages or block requests in some environments, in which case the site falls back to placeholders and stays functional.
+- The build/runtime still requires a valid `TMDB_API_KEY` anywhere TMDB requests are made.
 
 ## Deployment
 
