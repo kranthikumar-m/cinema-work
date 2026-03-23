@@ -3,7 +3,7 @@ import {
   getMovieDetails,
   getMovieVideos,
 } from "@/services/tmdb";
-import { resolveHomepageHeroBackdrop } from "@/services/hero-backdrops";
+import { resolvePreferredBackdrop } from "@/services/movie-backdrops";
 import {
   getLatestTeluguReleases,
   getPopularTeluguMovies,
@@ -132,7 +132,7 @@ async function buildFeaturedBundle(movie: Movie | null): Promise<HomepageHeroSli
 
   const enhancements = await getMovieEnhancements(movie);
   const details = enhancements.details;
-  const heroBackdrop = await resolveHomepageHeroBackdrop(
+  const heroBackdrop = await resolvePreferredBackdrop(
     movie,
     details?.backdrop_path ?? movie.backdrop_path
   );

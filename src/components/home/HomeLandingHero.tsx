@@ -137,7 +137,7 @@ export function HomeLandingHero({ slides }: HomeLandingHeroProps) {
   const activeStars = Math.max(0, Math.min(5, Math.round(ratingOutOfFive)));
 
   return (
-    <section className="relative min-h-[calc(100svh-84px)] overflow-hidden">
+    <section className="relative min-h-[100svh] overflow-hidden">
       <AnimatePresence mode="wait">
         <motion.div
           key={String(slide.item.id)}
@@ -190,7 +190,7 @@ export function HomeLandingHero({ slides }: HomeLandingHeroProps) {
         </div>
       ) : null}
 
-      <div className="relative flex min-h-[calc(100svh-84px)] items-center px-5 py-16 md:px-8 xl:px-14">
+      <div className="relative flex min-h-[100svh] items-center px-5 py-16 md:px-8 xl:px-14">
         <motion.div
           key={`${slide.item.id}-content`}
           initial={{ opacity: 0, y: 18 }}

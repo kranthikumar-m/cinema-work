@@ -1,7 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { HomeHeader } from "@/components/layout/HomeHeader";
 import { TopNav } from "@/components/layout/TopNav";
 import { Footer } from "@/components/layout/Footer";
 import { APP_SIDEBAR_CONTENT_OFFSET_CLASS } from "@/components/layout/sidebar-config";
@@ -12,17 +14,29 @@ interface AppChromeProps {
 }
 
 export function AppChrome({ children }: AppChromeProps) {
+  const pathname = usePathname();
+  const isHome = pathname === "/";
+  const isAdminRoute = pathname.startsWith("/admin");
+
+  if (isAdminRoute) {
+    return (
+      <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
+        {children}
+      </div>
+    );
+  }
+
   return (
     <>
       <Sidebar />
       <div
         className={cn(
-          "flex min-h-screen flex-col bg-[var(--color-bg)] text-[var(--color-text)]",
+          "relative flex min-h-screen flex-col bg-[var(--color-bg)] text-[var(--color-text)]",
           APP_SIDEBAR_CONTENT_OFFSET_CLASS
         )}
       >
-        <TopNav />
-        <main className="flex-1">{children}</main>
+        {isHome ? <HomeHeader /> : <TopNav />}
+        <main className={cn("flex-1", isHome && "relative")}>{children}</main>
         <Footer className="bg-[var(--color-bg-deep)]" />
       </div>
     </>

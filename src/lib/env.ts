@@ -5,6 +5,10 @@ function getOptionalEnvVar(key: string, fallback?: string): string | undefined {
 export const env = {
   TMDB_API_KEY: getOptionalEnvVar("TMDB_API_KEY"),
   GOOGLE_IMAGES_USER_AGENT: getOptionalEnvVar("GOOGLE_IMAGES_USER_AGENT"),
+  DATABASE_URL: getOptionalEnvVar("DATABASE_URL"),
+  AUTH_SECRET: getOptionalEnvVar("AUTH_SECRET"),
+  ADMIN_BOOTSTRAP_EMAIL: getOptionalEnvVar("ADMIN_BOOTSTRAP_EMAIL"),
+  ADMIN_BOOTSTRAP_PASSWORD: getOptionalEnvVar("ADMIN_BOOTSTRAP_PASSWORD"),
   TMDB_BASE_URL:
     getOptionalEnvVar("TMDB_BASE_URL", "https://api.themoviedb.org/3") ||
     "https://api.themoviedb.org/3",

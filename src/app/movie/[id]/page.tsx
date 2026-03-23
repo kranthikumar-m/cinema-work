@@ -11,7 +11,7 @@ import {
 } from "@/services/tmdb";
 import {
   getImageUrl,
-  getMovieBackdropUrl,
+  getBackdropUrl,
   getMoviePosterUrl,
   formatDate,
   formatRuntime,
@@ -25,10 +25,15 @@ import { ReviewCard } from "@/components/movie/ReviewCard";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { MovieDetailClient } from "./client";
 import { enrichMovieAssets } from "@/services/telugu-movies";
+import { resolvePreferredBackdrop } from "@/services/movie-backdrops";
 import type { Metadata } from "next";
 
 interface Props {
   params: { id: string };
+}
+
+function shouldUseUnoptimizedImage(src: string) {
+  return /^https?:\/\//i.test(src) && !src.includes("image.tmdb.org");
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -73,35 +78,43 @@ export default async function MovieDetailPage({ params }: Props) {
   const similarTeluguMovies = similar.results
     .filter((item) => item.original_language === "te")
     .slice(0, 6);
+  const backdropSelection = await resolvePreferredBackdrop(movie, movie.backdrop_path);
+  const heroImage =
+    backdropSelection.imageUrl ||
+    getBackdropUrl(backdropSelection.backdropPath, "original");
+  const posterImage = getMoviePosterUrl(movie, "w500");
 
   return (
     <div>
       {/* Hero Banner */}
       <div className="relative h-[50vh] min-h-[400px]">
         <Image
-          src={getMovieBackdropUrl(movie, "original")}
+          src={heroImage}
           alt={movie.title}
           fill
           className="object-cover"
           priority
-          unoptimized={!movie.backdrop_path && !movie.backdrop_url}
+          unoptimized={shouldUseUnoptimizedImage(heroImage)}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/60 to-transparent" />
       </div>
 
-      <div className="max-w-[1400px] mx-auto px-4 -mt-48 relative z-10">
+      <div
+        id="overview"
+        className="relative z-10 mx-auto -mt-48 max-w-[1400px] scroll-mt-[170px] px-4"
+      >
         <div className="flex flex-col md:flex-row gap-8">
           {/* Poster */}
           <div className="flex-shrink-0">
             <div className="w-56 md:w-64 rounded-xl overflow-hidden shadow-2xl mx-auto md:mx-0">
               <Image
-                src={getMoviePosterUrl(movie, "w500")}
+                src={posterImage}
                 alt={movie.title}
                 width={256}
                 height={384}
                 className="w-full h-auto"
                 priority
-                unoptimized={!movie.poster_path && !movie.poster_url}
+                unoptimized={shouldUseUnoptimizedImage(posterImage)}
               />
             </div>
           </div>
@@ -209,19 +222,23 @@ export default async function MovieDetailPage({ params }: Props) {
         )}
 
         {/* Reviews */}
-        {reviews.results.length > 0 && (
-          <div className="mt-12">
-            <SectionHeader title="Reviews" />
+        <section id="reviews" className="mt-12 scroll-mt-[170px]">
+          <SectionHeader title="Reviews" />
+          {reviews.results.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2">
               {reviews.results.slice(0, 4).map((r) => (
                 <ReviewCard key={r.id} review={r} />
               ))}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="rounded-xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.48)] px-5 py-6 text-sm text-[var(--color-muted-strong)]">
+              Critic and audience reviews have not been published for this title yet.
+            </div>
+          )}
+        </section>
 
         {/* Facts Panel */}
-        <div className="mt-12">
+        <section id="box-office" className="mt-12 scroll-mt-[170px]">
           <SectionHeader title="Movie Facts" />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
@@ -251,7 +268,7 @@ export default async function MovieDetailPage({ params }: Props) {
               ))}
             </div>
           )}
-        </div>
+        </section>
 
         {/* Similar Movies */}
         {similarTeluguMovies.length > 0 && (
