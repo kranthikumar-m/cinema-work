@@ -12,7 +12,7 @@ export function MovieGrid({
 }: MovieGridProps) {
   if (!movies.length) {
     return (
-      <div className="text-center py-16 text-gray-500">
+      <div className="py-16 text-center text-[var(--color-muted)]">
         <p>No Telugu movies found.</p>
       </div>
     );

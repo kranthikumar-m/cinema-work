@@ -10,7 +10,7 @@ import {
   getTopRatedTeluguMovies,
   getUpcomingTeluguMovies,
 } from "@/services/telugu-movies";
-import { HomeHeroBanner } from "@/components/home/HomeHeroBanner";
+import { HomeLandingHero } from "@/components/home/HomeLandingHero";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { MovieListWidget } from "@/components/movie/SidebarWidgets";
 import { FeaturedArticleCard } from "@/components/movie/FeaturedArticleCard";
@@ -107,19 +107,29 @@ async function getMovieEnhancements(movie: Movie | null) {
   };
 }
 
-async function buildFallbackHeroItem() {
+async function buildFallbackFeatureBundle() {
   return {
-    id: "featured-fallback",
-    ...featuredHomepageHeroSeed,
-    backdropPath: null,
-    imageUrl: "/placeholder-backdrop.svg",
-    watchHref: "/movies/trending",
-    trailerHref: "/videos",
-    sourceMovieId: undefined,
-  } satisfies HomepageHeroItem;
+    heroItem: {
+      id: "featured-fallback",
+      ...featuredHomepageHeroSeed,
+      backdropPath: null,
+      imageUrl: "/placeholder-backdrop.svg",
+      watchHref: "/movies/trending",
+      trailerHref: "/videos",
+      sourceMovieId: undefined,
+    } satisfies HomepageHeroItem,
+    overview:
+      "A high-stakes Telugu feature navigating power, family, and spectacle on a massive canvas.",
+    genreLabel: "Drama, Political",
+    rating: 9.6,
+  };
 }
 
-async function buildDynamicHeroItem(movie: Movie) {
+async function buildFeaturedBundle(movie: Movie | null) {
+  if (!movie) {
+    return buildFallbackFeatureBundle();
+  }
+
   const enhancements = await getMovieEnhancements(movie);
   const details = enhancements.details;
   const heroBackdrop = await resolveHomepageHeroBackdrop(
@@ -128,25 +138,35 @@ async function buildDynamicHeroItem(movie: Movie) {
   );
 
   return {
-    id: movie.id,
-    title: movie.title,
-    backdropPath: heroBackdrop.backdropPath,
-    imageUrl: heroBackdrop.imageUrl ?? movie.backdrop_url ?? null,
-    runtimeLabel: details?.runtime ? formatRuntime(details.runtime) : "Telugu Feature",
-    viewsLabel: "",
-    director: getDirector(enhancements.credits),
-    actors: getActors(enhancements.credits),
-    releaseLabel: formatReleaseLabel(movie.release_date),
-    watchHref: `/movie/${movie.id}`,
-    trailerHref: getTrailerHref(enhancements.videos, movie.id),
-    trailerLabel: "TRAILER",
-    accentLinks: {
-      director: `/movie/${movie.id}`,
-      cast: `/movie/${movie.id}`,
-      release: `/movie/${movie.id}`,
-    },
-    sourceMovieId: movie.id,
-  } satisfies HomepageHeroItem;
+    heroItem: {
+      id: movie.id,
+      title: movie.title,
+      backdropPath: heroBackdrop.backdropPath,
+      imageUrl: heroBackdrop.imageUrl ?? movie.backdrop_url ?? null,
+      runtimeLabel: details?.runtime ? formatRuntime(details.runtime) : "Telugu Feature",
+      viewsLabel: "",
+      director: getDirector(enhancements.credits),
+      actors: getActors(enhancements.credits),
+      releaseLabel: formatReleaseLabel(movie.release_date),
+      watchHref: `/movie/${movie.id}`,
+      trailerHref: getTrailerHref(enhancements.videos, movie.id),
+      trailerLabel: "TRAILER",
+      accentLinks: {
+        director: `/movie/${movie.id}`,
+        cast: `/movie/${movie.id}`,
+        release: `/movie/${movie.id}`,
+      },
+      sourceMovieId: movie.id,
+    } satisfies HomepageHeroItem,
+    overview:
+      movie.overview ||
+      details?.tagline ||
+      "A high-stakes Telugu feature navigating power, family, and spectacle on a massive canvas.",
+    genreLabel:
+      details?.genres.slice(0, 2).map((genre) => genre.name).join(", ") ||
+      "Drama, Political",
+    rating: movie.vote_average || 9.6,
+  };
 }
 
 async function getData() {
@@ -158,13 +178,10 @@ async function getData() {
       getTopRatedTeluguMovies(10),
     ]);
 
-    const heroCandidates = dedupeMovies([latestReleases, popular, upcoming])
-      .slice(0, 3);
-    const heroItems = heroCandidates.length
-      ? await Promise.all(heroCandidates.map((movie) => buildDynamicHeroItem(movie)))
-      : [await buildFallbackHeroItem()];
+    const featuredMovie = dedupeMovies([latestReleases, popular, upcoming])[0] ?? null;
+    const featured = await buildFeaturedBundle(featuredMovie);
 
-    return { heroItems, latestReleases, popular, upcoming, topRated };
+    return { featured, latestReleases, popular, upcoming, topRated };
   } catch (error) {
     console.error("Failed to load homepage data:", error);
     return null;
@@ -181,7 +198,7 @@ export default async function HomePage() {
           <h2 className="mb-2 text-2xl font-bold text-white">
             Unable to load content
           </h2>
-          <p className="text-gray-400">
+          <p className="text-[var(--color-muted-strong)]">
             Please check that the TMDB_API_KEY environment variable is set
             correctly.
           </p>
@@ -190,20 +207,24 @@ export default async function HomePage() {
     );
   }
 
-  const { heroItems, latestReleases, popular, upcoming, topRated } = data;
+  const { featured, latestReleases, popular, upcoming, topRated } = data;
+  const panelClass =
+    "rounded-[28px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgba(39,44,64,0.92)_0%,rgba(29,34,51,0.9)_100%)] p-6 shadow-[0_24px_70px_rgba(7,10,18,0.22)] md:p-8";
 
   return (
-    <div className="overflow-x-clip bg-[#050505]">
-      <HomeHeroBanner items={heroItems} />
+    <div className="overflow-x-clip bg-[var(--color-bg)]">
+      <HomeLandingHero
+        item={featured.heroItem}
+        overview={featured.overview}
+        genreLabel={featured.genreLabel}
+        rating={featured.rating}
+      />
 
-      <section
-        id="home-content"
-        className="relative -mt-10 rounded-t-[34px] border-t border-white/10 bg-[radial-gradient(circle_at_top,rgba(108,52,19,0.34)_0%,rgba(18,10,8,0.9)_16%,#050505_42%)] px-4 pb-16 pt-16 md:px-8 xl:px-12"
-      >
-        <div className="mx-auto max-w-[1660px]">
-          <div className="flex flex-col gap-10 xl:flex-row xl:items-start xl:gap-12">
-            <div className="min-w-0 flex-1 space-y-12">
-              <div className="rounded-[30px] border border-white/8 bg-black/18 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.28)] backdrop-blur-sm md:p-8">
+      <section id="home-content" className="px-5 py-16 md:px-8 xl:px-14">
+        <div className="mx-auto max-w-[1600px]">
+          <div className="flex flex-col gap-10 xl:flex-row xl:items-start xl:gap-10">
+            <div className="min-w-0 flex-1 space-y-10">
+              <div className={panelClass}>
                 <SectionHeader
                   title="Validated Telugu Releases"
                   href="/movies/trending"
@@ -214,7 +235,7 @@ export default async function HomePage() {
                 />
               </div>
 
-              <div className="rounded-[30px] border border-white/8 bg-black/18 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.28)] backdrop-blur-sm md:p-8">
+              <div className={panelClass}>
                 <SectionHeader
                   title="Telugu Cinema Stories"
                   href="/news"
@@ -226,7 +247,7 @@ export default async function HomePage() {
                 </div>
               </div>
 
-              <div className="rounded-[30px] border border-white/8 bg-black/18 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.28)] backdrop-blur-sm md:p-8">
+              <div className={panelClass}>
                 <SectionHeader
                   title="Popular Telugu Picks"
                   href="/movies/popular"
@@ -237,7 +258,7 @@ export default async function HomePage() {
                 />
               </div>
 
-              <div className="rounded-[30px] border border-white/8 bg-black/18 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.28)] backdrop-blur-sm md:p-8">
+              <div className={panelClass}>
                 <SectionHeader
                   title="Upcoming Telugu Releases"
                   href="/movies/upcoming"
@@ -249,7 +270,7 @@ export default async function HomePage() {
               </div>
             </div>
 
-            <div className="w-full flex-shrink-0 space-y-6 xl:w-80">
+            <div className="w-full flex-shrink-0 space-y-6 xl:w-[320px]">
               <MovieListWidget
                 title="Upcoming Telugu Releases"
                 movies={upcoming}

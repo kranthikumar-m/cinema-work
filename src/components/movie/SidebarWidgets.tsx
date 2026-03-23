@@ -12,10 +12,12 @@ interface MovieListWidgetProps {
 
 export function MovieListWidget({ title, movies, href }: MovieListWidgetProps) {
   return (
-    <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-4 backdrop-blur-sm">
+    <div className="rounded-[24px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgba(39,44,64,0.92)_0%,rgba(29,34,51,0.9)_100%)] p-5 shadow-[0_20px_50px_rgba(7,10,18,0.18)]">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-bold text-white">{title}</h3>
-        <Link href={href} className="text-xs text-cyan-400 hover:text-cyan-300">
+        <h3 className="font-[family-name:var(--font-heading)] text-sm font-bold uppercase tracking-[0.08em] text-[var(--color-text)]">
+          {title}
+        </h3>
+        <Link href={href} className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-accent)] hover:text-[var(--color-accent-strong)]">
           See All
         </Link>
       </div>
@@ -26,7 +28,7 @@ export function MovieListWidget({ title, movies, href }: MovieListWidgetProps) {
             href={`/movie/${movie.id}`}
             className="flex items-center gap-3 group"
           >
-            <div className="w-12 h-16 relative rounded-lg overflow-hidden flex-shrink-0 bg-gray-800">
+            <div className="relative h-16 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-[var(--color-bg-deep)]">
               <Image
                 src={getMoviePosterUrl(movie, "w200")}
                 alt={movie.title}
@@ -36,10 +38,10 @@ export function MovieListWidget({ title, movies, href }: MovieListWidgetProps) {
               />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate group-hover:text-cyan-400 transition-colors">
+              <p className="truncate text-sm font-medium text-[var(--color-text)] transition-colors group-hover:text-[var(--color-accent)]">
                 {movie.title}
               </p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-[var(--color-muted-strong)]">
                 {formatDate(movie.release_date)}
               </p>
             </div>

@@ -1,104 +1,79 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, User, Menu, X } from "lucide-react";
+import { Search, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SearchOverlayLauncher } from "@/components/layout/SearchOverlayLauncher";
 import { SiteLogo } from "@/components/layout/SiteLogo";
 
 const tabs = [
-  { label: "All", href: "/" },
-  { label: "News", href: "/news" },
-  { label: "Features", href: "/features" },
-  { label: "Trailers", href: "/videos" },
-  { label: "Reviews", href: "/reviews" },
-  { label: "Interviews", href: "/interviews" },
-  { label: "Photos", href: "/photos" },
+  { label: "OVERVIEW", href: "/" },
+  { label: "CRITICS", href: "/reviews" },
+  { label: "BOX OFFICE", href: "/movies/trending" },
 ];
+
+function isTabActive(pathname: string, href: string) {
+  if (href === "/") {
+    return pathname === "/";
+  }
+
+  return pathname.startsWith(href);
+}
 
 export function TopNav() {
   const pathname = usePathname();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <>
-      <header className="sticky top-0 z-30 bg-gray-950/80 backdrop-blur-md border-b border-gray-800/50">
-        <div className="flex h-14 items-center justify-between px-4 md:px-6 xl:px-8">
-          {/* Mobile logo */}
-          <Link href="/" className="ml-14 flex w-[104px] items-center lg:hidden">
+    <header className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-[rgba(28,33,51,0.92)] backdrop-blur-xl">
+      <div className="flex h-[84px] items-center justify-between px-5 md:px-8 xl:px-14">
+        <div className="flex items-center gap-10">
+          <Link href="/" className="ml-14 block lg:hidden">
             <SiteLogo variant="nav" priority />
           </Link>
 
-          {/* Desktop tabs */}
-          <nav className="hidden md:flex items-center gap-1 lg:ml-4">
+          <nav className="hidden items-center gap-10 md:flex">
             {tabs.map((tab) => (
               <Link
                 key={tab.label}
                 href={tab.href}
                 className={cn(
-                  "px-3 py-1.5 text-sm font-medium rounded-lg transition-colors",
-                  pathname === tab.href
-                    ? "text-white bg-gray-800"
-                    : "text-gray-400 hover:text-white hover:bg-gray-800/50"
+                  "font-[family-name:var(--font-heading)] text-[1.05rem] font-semibold uppercase tracking-[0.02em] transition-colors",
+                  isTabActive(pathname, tab.href)
+                    ? "text-[var(--color-accent)]"
+                    : "text-[var(--color-muted-strong)] hover:text-[var(--color-text)]"
                 )}
               >
                 {tab.label}
               </Link>
             ))}
           </nav>
-
-          {/* Right actions */}
-          <div className="flex items-center gap-2">
-            <SearchOverlayLauncher>
-              {(openSearch) => (
-                <button
-                  onClick={openSearch}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-800 transition-colors text-sm"
-                >
-                  <Search className="w-4 h-4" />
-                  <span className="hidden sm:inline">Search</span>
-                </button>
-              )}
-            </SearchOverlayLauncher>
-            <button className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800/50 transition-colors">
-              <User className="w-5 h-5" />
-            </button>
-            <button
-              className="md:hidden p-2 rounded-lg text-gray-400 hover:text-white"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              {mobileMenuOpen ? (
-                <X className="w-5 h-5" />
-              ) : (
-                <Menu className="w-5 h-5" />
-              )}
-            </button>
-          </div>
         </div>
 
-        {/* Mobile menu */}
-        {mobileMenuOpen && (
-          <nav className="md:hidden border-t border-gray-800/50 px-4 py-3 flex flex-wrap gap-2">
-            {tabs.map((tab) => (
-              <Link
-                key={tab.label}
-                href={tab.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className={cn(
-                  "px-3 py-1.5 text-sm font-medium rounded-lg transition-colors",
-                  pathname === tab.href
-                    ? "text-white bg-gray-800"
-                    : "text-gray-400 hover:text-white"
-                )}
+        <div className="flex items-center gap-4 md:gap-6">
+          <SearchOverlayLauncher>
+            {(openSearch) => (
+              <button
+                type="button"
+                onClick={openSearch}
+                className="flex h-11 items-center gap-3 rounded-md border border-[var(--color-border)] bg-[rgba(20,24,39,0.82)] px-4 text-sm text-[var(--color-muted)] transition hover:border-[rgba(194,154,98,0.32)] hover:text-[var(--color-text)] md:w-[300px]"
+                aria-label="Search archives"
               >
-                {tab.label}
-              </Link>
-            ))}
-          </nav>
-        )}
-      </header>
-    </>
+                <span className="truncate">Search archives...</span>
+                <Search className="ml-auto h-4 w-4 shrink-0 text-[var(--color-accent)]" />
+              </button>
+            )}
+          </SearchOverlayLauncher>
+
+          <button
+            type="button"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-muted-strong)] transition hover:border-[rgba(194,154,98,0.32)] hover:text-[var(--color-text)]"
+            aria-label="Profile"
+          >
+            <UserRound className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+    </header>
   );
 }

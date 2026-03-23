@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Info, Menu, X } from "lucide-react";
+import { CircleHelp, Menu, UserRound, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SiteLogo } from "@/components/layout/SiteLogo";
 import {
@@ -17,9 +17,9 @@ function SidebarBrand() {
   return (
     <Link
       href="/"
-      className="mb-1 flex h-[106px] w-full items-start justify-center px-[2px] pt-2 text-center"
+      className="w-full px-8 pt-8"
     >
-      <SiteLogo variant="sidebar" className="max-w-[100px]" priority />
+      <SiteLogo variant="sidebar" priority />
     </Link>
   );
 }
@@ -28,7 +28,7 @@ function SidebarDesktopNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex w-full flex-col gap-[2px] px-[3px]">
+    <nav className="mt-10 flex w-full flex-col gap-1 px-0">
       {APP_SIDEBAR_ITEMS.map((item) => {
         const isActive = isSidebarItemActive(item.href, pathname);
 
@@ -37,14 +37,14 @@ function SidebarDesktopNav() {
             key={item.label}
             href={item.href}
             className={cn(
-              "group flex min-h-[56px] flex-col items-center justify-center gap-1 rounded-[18px] px-0.5 text-center transition-all",
+              "group relative flex min-h-[56px] items-center gap-5 px-10 py-4 text-left transition-all",
               isActive
-                ? "bg-[#19ecff] text-black shadow-[0_0_24px_rgba(25,236,255,0.25)]"
-                : "text-white/78 hover:bg-white/8 hover:text-white"
+                ? "bg-[rgba(255,255,255,0.03)] text-[var(--color-text)] before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-[var(--color-accent)]"
+                : "text-[var(--color-muted-strong)] hover:bg-white/4 hover:text-[var(--color-text)]"
             )}
           >
-            <item.icon className="h-5 w-5 shrink-0" strokeWidth={1.8} />
-            <span className="max-w-[62px] text-[0.64rem] font-medium uppercase leading-[1.25] tracking-[0.16em]">
+            <item.icon className="h-5 w-5 shrink-0" strokeWidth={2} />
+            <span className="font-[family-name:var(--font-heading)] text-[1.1rem] font-medium uppercase tracking-[0.14em]">
               {item.label}
             </span>
           </Link>
@@ -62,25 +62,42 @@ export function Sidebar() {
     <>
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 hidden flex-col items-center bg-[#050505] pb-3 pt-3 shadow-[12px_0_35px_rgba(0,0,0,0.32)] lg:flex",
+          "fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-[var(--color-border)] bg-[var(--color-sidebar)] shadow-[12px_0_35px_rgba(7,9,18,0.35)] lg:flex",
           APP_SIDEBAR_DESKTOP_WIDTH_CLASS
         )}
       >
         <SidebarBrand />
         <SidebarDesktopNav />
-        <button
-          type="button"
-          className="mt-auto flex h-10 w-10 items-center justify-center rounded-full border border-white/16 text-white/80 transition hover:border-white/32 hover:text-white"
-          aria-label="Help and info"
-        >
-          <Info className="h-3.5 w-3.5" />
-        </button>
+        <div className="mt-auto w-full px-8 pb-8">
+          <div className="rounded-2xl border border-[var(--color-border)] bg-[rgba(255,255,255,0.02)] px-5 py-4 shadow-[0_14px_30px_rgba(0,0,0,0.18)]">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
+                <UserRound className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-base font-semibold text-[var(--color-text)]">
+                  Curator Prime
+                </p>
+                <p className="truncate text-sm text-[var(--color-muted-strong)]">
+                  Premium Member
+                </p>
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="mt-5 flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-muted-strong)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-text)]"
+            aria-label="Help and info"
+          >
+            <CircleHelp className="h-[18px] w-[18px]" />
+          </button>
+        </div>
       </aside>
 
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed left-4 top-4 z-50 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/15 bg-black/55 text-white backdrop-blur-md lg:hidden"
+        className="fixed left-4 top-4 z-50 flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[rgba(26,30,46,0.9)] text-[var(--color-text)] backdrop-blur-md lg:hidden"
         aria-label="Open navigation"
       >
         <Menu className="h-5 w-5" />
@@ -96,25 +113,25 @@ export function Sidebar() {
           />
           <div
             className={cn(
-              "absolute inset-y-0 left-0 flex flex-col bg-[#050505] px-4 pb-6 pt-6 shadow-[16px_0_36px_rgba(0,0,0,0.35)]",
+              "absolute inset-y-0 left-0 flex flex-col border-r border-[var(--color-border)] bg-[var(--color-sidebar)] px-6 pb-6 pt-6 shadow-[16px_0_36px_rgba(0,0,0,0.35)]",
               APP_SIDEBAR_DRAWER_WIDTH_CLASS
             )}
           >
-            <div className="mb-8 flex items-center justify-between">
-              <Link href="/" onClick={() => setOpen(false)} className="flex w-[156px]">
+            <div className="mb-8 flex items-start justify-between gap-4">
+              <Link href="/" onClick={() => setOpen(false)} className="block">
                 <SiteLogo variant="drawer" priority />
               </Link>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/12 text-white/70"
+                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--color-border)] text-[var(--color-muted-strong)]"
                 aria-label="Close navigation"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="flex flex-1 flex-col gap-2">
+            <div className="flex flex-1 flex-col gap-1">
               {APP_SIDEBAR_ITEMS.map((item) => {
                 const isActive = isSidebarItemActive(item.href, pathname);
 
@@ -124,10 +141,10 @@ export function Sidebar() {
                     href={item.href}
                     onClick={() => setOpen(false)}
                     className={cn(
-                      "flex items-center gap-4 rounded-[20px] px-4 py-4 text-sm tracking-[0.18em] transition",
+                      "relative flex items-center gap-4 px-4 py-4 font-[family-name:var(--font-heading)] text-sm tracking-[0.18em] transition",
                       isActive
-                        ? "bg-[#19ecff] text-black"
-                        : "text-white/84 hover:bg-white/8 hover:text-white"
+                        ? "bg-[rgba(255,255,255,0.03)] text-[var(--color-text)] before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-[var(--color-accent)]"
+                        : "text-[var(--color-muted-strong)] hover:bg-white/4 hover:text-[var(--color-text)]"
                     )}
                   >
                     <item.icon className="h-5 w-5" />
@@ -137,13 +154,21 @@ export function Sidebar() {
               })}
             </div>
 
-            <button
-              type="button"
-              className="mt-4 flex h-12 w-12 items-center justify-center rounded-full border border-white/16 text-white/80"
-              aria-label="Help and info"
-            >
-              <Info className="h-5 w-5" />
-            </button>
+            <div className="mt-6 rounded-2xl border border-[var(--color-border)] bg-[rgba(255,255,255,0.02)] p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
+                  <UserRound className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-[var(--color-text)]">
+                    Curator Prime
+                  </p>
+                  <p className="text-xs text-[var(--color-muted-strong)]">
+                    Premium Member
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

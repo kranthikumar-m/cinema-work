@@ -3,12 +3,29 @@
 @tailwind utilities;
 
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --color-bg: #1a1e2e;
+  --color-bg-elevated: #202538;
+  --color-bg-deep: #141827;
+  --color-surface: #21263a;
+  --color-surface-strong: #272c40;
+  --color-surface-soft: rgba(33, 38, 58, 0.78);
+  --color-sidebar: #1c2133;
+  --color-text: #eef1fa;
+  --color-muted: #7b859e;
+  --color-muted-strong: #98a1b8;
+  --color-border: rgba(194, 154, 98, 0.16);
+  --color-accent: #c29a62;
+  --color-accent-soft: rgba(194, 154, 98, 0.16);
+  --color-accent-strong: #e2bb87;
+  --color-accent-contrast: #25190b;
+  --background: var(--color-bg);
+  --foreground: var(--color-text);
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(circle at top, rgba(194, 154, 98, 0.08) 0%, rgba(194, 154, 98, 0) 34%),
+    linear-gradient(180deg, #20253a 0%, #1a1e2e 44%, #171b2a 100%);
   color: var(--foreground);
 }
 
@@ -24,11 +41,11 @@ html {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #374151;
+  background: rgba(194, 154, 98, 0.42);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #4b5563;
+  background: rgba(194, 154, 98, 0.6);
 }
 
 .scrollbar-hide::-webkit-scrollbar {
@@ -41,6 +58,11 @@ html {
 
 .scroll-cue-dot {
   animation: scroll-cue 1.65s ease-in-out infinite;
+}
+
+::selection {
+  background: rgba(194, 154, 98, 0.28);
+  color: #fff8ee;
 }
 
 @keyframes scroll-cue {

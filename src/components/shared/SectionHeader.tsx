@@ -14,11 +14,13 @@ export function SectionHeader({
 }: SectionHeaderProps) {
   return (
     <div className="flex items-center justify-between mb-6">
-      <h2 className="text-xl font-bold text-white">{title}</h2>
+      <h2 className="font-[family-name:var(--font-heading)] text-xl font-bold text-[var(--color-text)] md:text-2xl">
+        {title}
+      </h2>
       {href && (
         <Link
           href={href}
-          className="flex items-center gap-1 text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
+          className="flex items-center gap-1 text-sm font-semibold uppercase tracking-[0.12em] text-[var(--color-accent)] transition-colors hover:text-[var(--color-accent-strong)]"
         >
           {linkText}
           <ChevronRight className="w-4 h-4" />

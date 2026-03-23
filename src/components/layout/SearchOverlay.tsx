@@ -78,25 +78,25 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md"
+          className="fixed inset-0 z-50 bg-[rgba(10,13,24,0.92)] backdrop-blur-md"
           onClick={onClose}
         >
           <motion.div
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -20, opacity: 0 }}
-            className="max-w-2xl mx-auto mt-20 px-4"
+            className="mx-auto mt-20 max-w-2xl px-4"
             onClick={(e) => e.stopPropagation()}
           >
             <form onSubmit={handleSubmit} className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--color-accent)]" />
               <input
                 ref={inputRef}
                 type="text"
                 value={query}
                 onChange={(e) => handleInput(e.target.value)}
                 placeholder="Search Telugu movies..."
-                className="w-full h-14 pl-12 pr-12 bg-gray-900 border border-gray-700 rounded-xl text-white placeholder:text-gray-500 focus:outline-none focus:border-cyan-500 text-lg"
+                className="h-14 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] pl-12 pr-12 text-lg text-[var(--color-text)] placeholder:text-[var(--color-muted)] focus:border-[rgba(194,154,98,0.48)] focus:outline-none"
               />
               {query && (
                 <button
@@ -105,7 +105,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                     setQuery("");
                     setResults([]);
                   }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--color-muted)] hover:text-[var(--color-text)]"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -114,20 +114,20 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
 
             {loading && (
               <div className="flex justify-center py-8">
-                <Loader2 className="w-6 h-6 text-cyan-400 animate-spin" />
+                <Loader2 className="h-6 w-6 animate-spin text-[var(--color-accent)]" />
               </div>
             )}
 
             {!loading && results.length > 0 && (
-              <div className="mt-4 bg-gray-900 border border-gray-800 rounded-xl overflow-hidden divide-y divide-gray-800">
+              <div className="mt-4 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] divide-y divide-[rgba(194,154,98,0.08)]">
                 {results.map((movie) => (
                   <button
                     key={movie.id}
                     onClick={() => handleSelect(movie.id)}
-                    className="w-full flex items-center gap-4 p-3 hover:bg-gray-800 transition-colors text-left"
+                    className="flex w-full items-center gap-4 p-3 text-left transition-colors hover:bg-[rgba(255,255,255,0.03)]"
                   >
-                    <div className="w-12 h-16 relative rounded-lg overflow-hidden flex-shrink-0 bg-gray-800">
-                        <Image
+                    <div className="relative h-16 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-[var(--color-bg-deep)]">
+                      <Image
                         src={getMoviePosterUrl(movie, "w200")}
                         alt={movie.title}
                         fill
@@ -136,10 +136,10 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white truncate">
+                      <p className="truncate text-sm font-medium text-[var(--color-text)]">
                         {movie.title}
                       </p>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-[var(--color-muted-strong)]">
                         {formatDate(movie.release_date)}
                       </p>
                     </div>
@@ -150,7 +150,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
             )}
 
             {!loading && query.length >= 2 && results.length === 0 && (
-              <div className="mt-8 text-center text-gray-500">
+              <div className="mt-8 text-center text-[var(--color-muted)]">
                 <p>No Telugu movie matches found for &quot;{query}&quot;</p>
               </div>
             )}
