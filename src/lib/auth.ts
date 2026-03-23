@@ -59,10 +59,6 @@ function toStoredRole(role: ManageableUserRole): StoredUserRole {
   return role === "admin" ? "admin" : "viewer";
 }
 
-function isStoredRole(value: string): value is StoredUserRole {
-  return value === "admin" || value === "editor" || value === "viewer";
-}
-
 function displayNameFromEmail(email: string) {
   const localPart = email.split("@")[0]?.trim() || "User";
   return localPart
