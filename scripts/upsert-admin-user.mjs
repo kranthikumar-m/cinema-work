@@ -10,6 +10,12 @@ const requestedRole = 'admin';
 const databaseUrl = process.env.DATABASE_URL || 'file:./data/cinema.sqlite';
 
 function resolveDatabasePath(url) {
+  if (url.startsWith('https://')) {
+    throw new Error(
+      'This script only supports local SQLite DATABASE_URL values. For Supabase, run supabase/schema.sql in the SQL editor and use ADMIN_BOOTSTRAP_EMAIL / ADMIN_BOOTSTRAP_PASSWORD or the app admin UI.'
+    );
+  }
+
   if (!url.startsWith('file:')) {
     throw new Error(`Unsupported DATABASE_URL: ${url}`);
   }

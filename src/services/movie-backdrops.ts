@@ -1,5 +1,10 @@
 import { getBackdropUrl } from "@/lib/utils";
-import { getOptionalDatabase, requireDatabase } from "@/lib/database";
+import {
+  deleteMovieBackdropOverrideRecord,
+  getMovieBackdropOverrideRecord,
+  hasDatabaseConfiguration,
+  upsertMovieBackdropOverrideRecord,
+} from "@/lib/database";
 import { getMovieDetails, getMovieImages } from "@/services/tmdb";
 import { getHighQualityBackdropFallback } from "@/services/google-images";
 import type { Movie, MovieImage } from "@/types/tmdb";
@@ -28,7 +33,7 @@ export interface ResolvedBackdropSelection {
   overrideIsValid: boolean;
 }
 
-function mapOverride(row: OverrideRow | undefined): MovieBackdropOverrideRecord | null {
+function mapOverride(row: OverrideRow | null | undefined): MovieBackdropOverrideRecord | null {
   if (!row) {
     return null;
   }
@@ -71,21 +76,11 @@ function getBestTmdbBackdrop(backdrops: MovieImage[]) {
 }
 
 export async function getMovieBackdropOverride(movieId: number) {
-  const database = getOptionalDatabase();
-
-  if (!database) {
+  if (!hasDatabaseConfiguration()) {
     return null;
   }
 
-  const row = database
-    .prepare(
-      `
-        SELECT movie_id, selected_backdrop_path, source, selected_by_user_id, created_at, updated_at
-        FROM movie_backdrop_overrides
-        WHERE movie_id = ?
-      `
-    )
-    .get<OverrideRow>(movieId);
+  const row = await getMovieBackdropOverrideRecord(movieId);
 
   return mapOverride(row);
 }
@@ -95,38 +90,21 @@ export async function setMovieBackdropOverride(
   selectedBackdropPath: string,
   userId: number
 ) {
-  const database = requireDatabase();
   const timestamp = new Date().toISOString();
-
-  database
-    .prepare(
-      `
-        INSERT INTO movie_backdrop_overrides (
-          movie_id,
-          selected_backdrop_path,
-          source,
-          selected_by_user_id,
-          created_at,
-          updated_at
-        )
-        VALUES (?, ?, 'tmdb', ?, ?, ?)
-        ON CONFLICT(movie_id) DO UPDATE SET
-          selected_backdrop_path = excluded.selected_backdrop_path,
-          source = excluded.source,
-          selected_by_user_id = excluded.selected_by_user_id,
-          updated_at = excluded.updated_at
-      `
-    )
-    .run(movieId, selectedBackdropPath, userId, timestamp, timestamp);
+  await upsertMovieBackdropOverrideRecord({
+    movieId,
+    selectedBackdropPath,
+    source: "tmdb",
+    selectedByUserId: userId,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  });
 
   return getMovieBackdropOverride(movieId);
 }
 
 export async function clearMovieBackdropOverride(movieId: number) {
-  const database = requireDatabase();
-  database
-    .prepare("DELETE FROM movie_backdrop_overrides WHERE movie_id = ?")
-    .run(movieId);
+  await deleteMovieBackdropOverrideRecord(movieId);
 }
 
 export async function resolvePreferredBackdrop(

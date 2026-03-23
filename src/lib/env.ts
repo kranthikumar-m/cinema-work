@@ -8,8 +8,9 @@ function getOptionalEnvVar(key: string, fallback?: string): string | undefined {
 }
 
 function getConfiguredEnvVar(key: string): string | undefined {
+  const allowFallbacks = (process.env.NODE_ENV || "development") !== "production";
   const fallback =
-    key in optionalEnvFallbacks
+    allowFallbacks && key in optionalEnvFallbacks
       ? optionalEnvFallbacks[key as keyof typeof optionalEnvFallbacks]
       : undefined;
 
@@ -20,6 +21,7 @@ export const env = {
   TMDB_API_KEY: getOptionalEnvVar("TMDB_API_KEY"),
   GOOGLE_IMAGES_USER_AGENT: getOptionalEnvVar("GOOGLE_IMAGES_USER_AGENT"),
   DATABASE_URL: getConfiguredEnvVar("DATABASE_URL"),
+  SUPABASE_SERVICE_ROLE_KEY: getOptionalEnvVar("SUPABASE_SERVICE_ROLE_KEY"),
   AUTH_SECRET: getConfiguredEnvVar("AUTH_SECRET"),
   ADMIN_BOOTSTRAP_EMAIL: getOptionalEnvVar("ADMIN_BOOTSTRAP_EMAIL"),
   ADMIN_BOOTSTRAP_PASSWORD: getOptionalEnvVar("ADMIN_BOOTSTRAP_PASSWORD"),

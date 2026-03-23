@@ -34,7 +34,7 @@ Telugu Cinema Updates is a Telugu-first movie discovery platform built with Next
 - Tailwind CSS
 - Lucide React
 - Radix UI
-- Better SQLite3 for durable auth/admin persistence
+- SQLite for local development and Supabase-backed auth/admin persistence in deployment
 - TMDB API
 - Wikipedia scraping for Telugu release validation
 
@@ -60,13 +60,21 @@ Copy the example env file:
 cp .env.example .env.local
 ```
 
-Set the core values (the app can fall back to local defaults for `DATABASE_URL` and `AUTH_SECRET` during local development):
+Set the core values:
 
 ```env
 TMDB_API_KEY=your_tmdb_key
 DATABASE_URL=file:./data/cinema.sqlite
 AUTH_SECRET=replace_with_a_long_random_secret
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+For Supabase-backed deployments, set:
+
+```env
+DATABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your_server_side_service_role_key
+AUTH_SECRET=replace_with_a_long_random_secret
 ```
 
 Optional bootstrap admin setup:
@@ -88,7 +96,7 @@ Open `http://localhost:3000`.
 
 ## Authentication Setup
 
-The app uses a custom production-oriented auth flow backed by the same SQLite database used for admin persistence.
+The app uses a custom production-oriented auth flow backed by SQLite in local development and by Supabase when `DATABASE_URL` is set to your Supabase project URL.
 
 ### What is stored
 
@@ -153,8 +161,9 @@ Admin-only APIs are under:
 | Variable | Required | Description |
 |---|---|---|
 | `TMDB_API_KEY` | Yes | TMDB API key |
-| `DATABASE_URL` | No (defaults locally) | SQLite connection string. Defaults to `file:./data/cinema.sqlite` when omitted. |
-| `AUTH_SECRET` | No (defaults locally) | Secret used to sign/hash session and reset tokens. Set this explicitly outside local development. |
+| `DATABASE_URL` | Yes in production | Local SQLite `file:` URL or your Supabase project URL. Local development falls back to `file:./data/cinema.sqlite`. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Required for Supabase | Server-side key used for auth/admin storage when `DATABASE_URL` points to Supabase |
+| `AUTH_SECRET` | Yes in production | Secret used to sign/hash session and reset tokens. Local development has a fallback secret only outside production. |
 | `NEXT_PUBLIC_SITE_URL` | Recommended | Public base URL used in reset links |
 | `TMDB_BASE_URL` | No | Override TMDB API base URL |
 | `GOOGLE_IMAGES_USER_AGENT` | No | User agent for fallback image retrieval |
@@ -187,8 +196,9 @@ The Telugu movie pipeline still works like this:
 
 ## Deployment Notes
 
-- Configure `DATABASE_URL` in production if you do not want the default SQLite path `file:./data/cinema.sqlite`, explicitly set `AUTH_SECRET` outside local development, and make sure `TMDB_API_KEY` is set.
-- Use a persistent filesystem path or mounted volume for SQLite.
+- Set `DATABASE_URL`, `AUTH_SECRET`, and `TMDB_API_KEY` explicitly in production.
+- For Supabase deployments, set `DATABASE_URL` to `https://your-project-ref.supabase.co`, set `SUPABASE_SERVICE_ROLE_KEY`, and run `supabase/schema.sql` once in the Supabase SQL editor before deploying.
+- If you stay on SQLite in production, use a persistent filesystem path or mounted volume instead of relying on the default local dev path.
 - Replace the password-reset email stub before enabling user-facing password recovery in production.
 
 ## Scripts
@@ -219,7 +229,7 @@ src/
     layout/                   # Sidebar, top nav, footer, search overlay
   lib/
     auth.ts                   # Auth/session/user management
-    database.ts               # SQLite setup and migrations
+    database.ts               # SQLite/Supabase persistence provider
   services/
     tmdb.ts                   # TMDB integration
     wikipedia.ts              # Wikipedia validation
