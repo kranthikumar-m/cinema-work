@@ -8,24 +8,24 @@ import {
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as {
-      email?: string;
+      identifier?: string;
       password?: string;
     };
-    const email = body.email?.trim() ?? "";
+    const identifier = body.identifier?.trim() ?? "";
     const password = body.password ?? "";
 
-    if (!email || !password) {
+    if (!identifier || !password) {
       return NextResponse.json(
-        { error: "Email and password are required." },
+        { error: "Username/email and password are required." },
         { status: 400 }
       );
     }
 
-    const user = await authenticateAdminUser(email, password);
+    const user = await authenticateAdminUser(identifier, password);
 
     if (!user) {
       return NextResponse.json(
-        { error: "Invalid email or password." },
+        { error: "Invalid username, email, or password." },
         { status: 401 }
       );
     }
