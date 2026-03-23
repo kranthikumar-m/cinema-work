@@ -19,6 +19,7 @@ const TELUGU_LANGUAGE = "te";
 const INDIA_REGION = "IN";
 const MAX_DISCOVER_PAGES = 5;
 const DEFAULT_COLLECTION_LIMIT = 24;
+const VALIDATED_RELEASE_LOOKBACK_YEARS = 8;
 
 export interface ExcludedMovieRecord {
   title: string;
@@ -397,8 +398,19 @@ export async function getUpcomingTeluguMovies(limit = DEFAULT_COLLECTION_LIMIT) 
 }
 
 export async function getLatestTeluguReleases(limit = DEFAULT_COLLECTION_LIMIT) {
-  const validated = await getValidatedTeluguReleasesThisYear();
-  return validated.confirmedMovies.slice(0, limit);
+  const currentYear = getIndianCurrentYear();
+  const releases: Movie[] = [];
+
+  for (
+    let year = currentYear;
+    year >= currentYear - VALIDATED_RELEASE_LOOKBACK_YEARS && releases.length < limit;
+    year -= 1
+  ) {
+    const validated = await getValidatedTeluguReleasesThisYear(year);
+    releases.push(...validated.confirmedMovies);
+  }
+
+  return sortByReleaseDateDescAndPopularity(dedupeMovies(releases)).slice(0, limit);
 }
 
 function prioritizeTeluguSearchResults(movies: Movie[]) {

@@ -1,15 +1,26 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Image as ImageIcon, type LucideIcon, Music4, Play, Star } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Image as ImageIcon,
+  type LucideIcon,
+  Music4,
+  Play,
+  Star,
+} from "lucide-react";
 import { getBackdropUrl } from "@/lib/utils";
-import type { HomepageHeroItem } from "@/types/homepage";
+import type { HomepageHeroSlide } from "@/types/homepage";
 
 interface HomeLandingHeroProps {
-  item: HomepageHeroItem;
-  overview: string;
-  genreLabel: string;
-  rating: number;
+  slides: HomepageHeroSlide[];
 }
+
+const AUTOPLAY_DELAY_MS = 10_000;
 
 function isExternalLink(href: string) {
   return href.startsWith("http://") || href.startsWith("https://");
@@ -79,46 +90,128 @@ function MetaItem({
   );
 }
 
-export function HomeLandingHero({
-  item,
-  overview,
-  genreLabel,
-  rating,
-}: HomeLandingHeroProps) {
-  const heroImage = item.imageUrl || getBackdropUrl(item.backdropPath ?? null, "original");
-  const { leading, accent } = splitTitle(item.title);
-  const ratingOutOfFive = Math.max(0, Math.min(5, rating / 2));
+function resolveHeroImage(slide: HomepageHeroSlide) {
+  return slide.item.imageUrl || getBackdropUrl(slide.item.backdropPath ?? null, "original");
+}
+
+export function HomeLandingHero({ slides }: HomeLandingHeroProps) {
+  const heroSlides = useMemo(
+    () => slides.filter((slide) => slide.item.title),
+    [slides]
+  );
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    if (!heroSlides.length) return;
+    if (current >= heroSlides.length) {
+      setCurrent(0);
+    }
+  }, [current, heroSlides.length]);
+
+  const next = useCallback(() => {
+    setCurrent((value) => (value + 1) % heroSlides.length);
+  }, [heroSlides.length]);
+
+  const previous = useCallback(() => {
+    setCurrent((value) => (value - 1 + heroSlides.length) % heroSlides.length);
+  }, [heroSlides.length]);
+
+  useEffect(() => {
+    if (heroSlides.length < 2) return;
+
+    const timer = setInterval(() => {
+      setCurrent((value) => (value + 1) % heroSlides.length);
+    }, AUTOPLAY_DELAY_MS);
+
+    return () => clearInterval(timer);
+  }, [heroSlides.length, current]);
+
+  if (!heroSlides.length) {
+    return null;
+  }
+
+  const slide = heroSlides[current];
+  const heroImage = resolveHeroImage(slide);
+  const { leading, accent } = splitTitle(slide.item.title);
+  const ratingOutOfFive = Math.max(0, Math.min(5, slide.rating / 2));
   const activeStars = Math.max(0, Math.min(5, Math.round(ratingOutOfFive)));
 
   return (
     <section className="relative min-h-[calc(100svh-84px)] overflow-hidden">
-      <div className="absolute inset-0">
-        <Image
-          src={heroImage}
-          alt={item.title}
-          fill
-          priority
-          sizes="(min-width: 1280px) calc(100vw - 304px), 100vw"
-          quality={95}
-          className="object-cover object-center"
-          unoptimized={shouldUseUnoptimizedImage(heroImage)}
-        />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(22,26,39,0.96)_0%,rgba(22,26,39,0.88)_28%,rgba(22,26,39,0.42)_56%,rgba(22,26,39,0.18)_100%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(26,30,46,0.18)_0%,rgba(26,30,46,0.1)_36%,rgba(26,30,46,0.94)_100%)]" />
-      </div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={String(slide.item.id)}
+          className="absolute inset-0"
+          initial={{ opacity: 0.45, scale: 1.02 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0.18, scale: 0.99 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <Image
+            src={heroImage}
+            alt={slide.item.title}
+            fill
+            priority={current === 0}
+            sizes="(min-width: 1280px) calc(100vw - 304px), 100vw"
+            quality={95}
+            className="object-cover object-center"
+            unoptimized={shouldUseUnoptimizedImage(heroImage)}
+          />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(22,26,39,0.96)_0%,rgba(22,26,39,0.88)_28%,rgba(22,26,39,0.42)_56%,rgba(22,26,39,0.18)_100%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(26,30,46,0.18)_0%,rgba(26,30,46,0.1)_36%,rgba(26,30,46,0.94)_100%)]" />
+        </motion.div>
+      </AnimatePresence>
+
+      {heroSlides.length > 1 ? (
+        <div className="absolute right-5 top-1/2 z-20 flex -translate-y-1/2 items-center gap-4 md:right-8 xl:right-14">
+          <button
+            type="button"
+            onClick={previous}
+            className="flex h-12 w-12 items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgba(20,24,39,0.5)] text-[var(--color-text)] backdrop-blur-sm transition hover:border-[rgba(194,154,98,0.32)] hover:text-[var(--color-accent)]"
+            aria-label="Previous featured release"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+
+          <div className="min-w-[74px] text-center font-[family-name:var(--font-heading)] text-sm uppercase tracking-[0.14em] text-[var(--color-text)]">
+            <span className="text-[var(--color-accent)]">{String(current + 1).padStart(2, "0")}</span>
+            <span className="mx-2 text-[var(--color-muted)]">/</span>
+            <span className="text-[var(--color-muted-strong)]">{String(heroSlides.length).padStart(2, "0")}</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={next}
+            className="flex h-12 w-12 items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgba(20,24,39,0.5)] text-[var(--color-text)] backdrop-blur-sm transition hover:border-[rgba(194,154,98,0.32)] hover:text-[var(--color-accent)]"
+            aria-label="Next featured release"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </div>
+      ) : null}
 
       <div className="relative flex min-h-[calc(100svh-84px)] items-center px-5 py-16 md:px-8 xl:px-14">
-        <div className="w-full max-w-[930px]">
+        <motion.div
+          key={`${slide.item.id}-content`}
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: "easeOut" }}
+          className="w-full max-w-[930px]"
+        >
           <div className="flex flex-wrap items-center gap-5">
             <span className="rounded-full border border-[rgba(194,154,98,0.3)] bg-[rgba(194,154,98,0.12)] px-4 py-2 font-[family-name:var(--font-heading)] text-[0.82rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)]">
-              Feature Selection
+              Latest Telugu Release
             </span>
 
             <div className="flex items-center gap-1 text-[var(--color-accent)]">
               {Array.from({ length: 5 }, (_, index) => (
                 <Star
                   key={index}
-                  className={index < activeStars ? "h-4 w-4 fill-current" : "h-4 w-4 text-[rgba(194,154,98,0.32)]"}
+                  className={
+                    index < activeStars
+                      ? "h-4 w-4 fill-current"
+                      : "h-4 w-4 text-[rgba(194,154,98,0.32)]"
+                  }
                 />
               ))}
               <span className="ml-3 text-[1.05rem] font-semibold text-[var(--color-text)]">
@@ -138,21 +231,21 @@ export function HomeLandingHero({
           </h1>
 
           <div className="mt-10 flex flex-wrap items-start gap-10">
-            <MetaItem label="Release Date" value={item.releaseLabel} />
-            <MetaItem label="Genres" value={genreLabel} />
-            <MetaItem label="Director" value={item.director} />
+            <MetaItem label="Release Date" value={slide.item.releaseLabel} />
+            <MetaItem label="Genres" value={slide.genreLabel} />
+            <MetaItem label="Director" value={slide.item.director} />
           </div>
 
           <p className="mt-10 max-w-[880px] text-[1.08rem] leading-10 text-[#d8ddee] md:text-[1.12rem]">
-            {overview}
+            {slide.overview}
           </p>
 
           <div className="mt-12 flex flex-wrap gap-4">
-            <HeroButton href={item.trailerHref} label="Trailers" icon={Play} primary />
+            <HeroButton href={slide.item.trailerHref} label="Trailers" icon={Play} primary />
             <HeroButton href="/features" label="Audio" icon={Music4} />
             <HeroButton href="/photos" label="Images" icon={ImageIcon} />
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

@@ -19,3 +19,9 @@ export interface HomepageHeroItem {
   sourceMovieId?: number;
 }
 
+export interface HomepageHeroSlide {
+  item: HomepageHeroItem;
+  overview: string;
+  genreLabel: string;
+  rating: number;
+}

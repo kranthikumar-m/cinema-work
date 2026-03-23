@@ -18,7 +18,7 @@ import { SectionHeader } from "@/components/shared/SectionHeader";
 import { articles } from "@/data/editorial";
 import { featuredHomepageHeroSeed } from "@/data/homepage";
 import { formatRuntime } from "@/lib/utils";
-import type { HomepageHeroItem } from "@/types/homepage";
+import type { HomepageHeroItem, HomepageHeroSlide } from "@/types/homepage";
 import type { Credits, Movie, Video } from "@/types/tmdb";
 
 export const dynamic = "force-dynamic";
@@ -109,7 +109,7 @@ async function getMovieEnhancements(movie: Movie | null) {
 
 async function buildFallbackFeatureBundle() {
   return {
-    heroItem: {
+    item: {
       id: "featured-fallback",
       ...featuredHomepageHeroSeed,
       backdropPath: null,
@@ -122,7 +122,7 @@ async function buildFallbackFeatureBundle() {
       "A high-stakes Telugu feature navigating power, family, and spectacle on a massive canvas.",
     genreLabel: "Drama, Political",
     rating: 9.6,
-  };
+  } satisfies HomepageHeroSlide;
 }
 
 async function buildFeaturedBundle(movie: Movie | null) {
@@ -138,7 +138,7 @@ async function buildFeaturedBundle(movie: Movie | null) {
   );
 
   return {
-    heroItem: {
+    item: {
       id: movie.id,
       title: movie.title,
       backdropPath: heroBackdrop.backdropPath,
@@ -166,7 +166,7 @@ async function buildFeaturedBundle(movie: Movie | null) {
       details?.genres.slice(0, 2).map((genre) => genre.name).join(", ") ||
       "Drama, Political",
     rating: movie.vote_average || 9.6,
-  };
+  } satisfies HomepageHeroSlide;
 }
 
 async function getData() {
@@ -178,10 +178,25 @@ async function getData() {
       getTopRatedTeluguMovies(10),
     ]);
 
-    const featuredMovie = dedupeMovies([latestReleases, popular, upcoming])[0] ?? null;
-    const featured = await buildFeaturedBundle(featuredMovie);
+    const heroCandidates = dedupeMovies([latestReleases]).slice(0, 8);
+    const heroSlideResults = await Promise.allSettled(
+      heroCandidates.map((movie) => buildFeaturedBundle(movie))
+    );
+    const heroSlides = heroSlideResults
+      .filter(
+        (
+          result
+        ): result is PromiseFulfilledResult<HomepageHeroSlide> =>
+          result.status === "fulfilled"
+      )
+      .map((result) => result.value)
+      .slice(0, 5);
 
-    return { featured, latestReleases, popular, upcoming, topRated };
+    if (!heroSlides.length) {
+      heroSlides.push(await buildFallbackFeatureBundle());
+    }
+
+    return { heroSlides, latestReleases, popular, upcoming, topRated };
   } catch (error) {
     console.error("Failed to load homepage data:", error);
     return null;
@@ -207,18 +222,13 @@ export default async function HomePage() {
     );
   }
 
-  const { featured, latestReleases, popular, upcoming, topRated } = data;
+  const { heroSlides, latestReleases, popular, upcoming, topRated } = data;
   const panelClass =
     "rounded-[28px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgba(39,44,64,0.92)_0%,rgba(29,34,51,0.9)_100%)] p-6 shadow-[0_24px_70px_rgba(7,10,18,0.22)] md:p-8";
 
   return (
     <div className="overflow-x-clip bg-[var(--color-bg)]">
-      <HomeLandingHero
-        item={featured.heroItem}
-        overview={featured.overview}
-        genreLabel={featured.genreLabel}
-        rating={featured.rating}
-      />
+      <HomeLandingHero slides={heroSlides} />
 
       <section id="home-content" className="px-5 py-16 md:px-8 xl:px-14">
         <div className="mx-auto max-w-[1600px]">
