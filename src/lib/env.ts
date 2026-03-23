@@ -2,12 +2,14 @@ const optionalEnvFallbacks = {
   DATABASE_URL: "file:./data/cinema.sqlite",
   AUTH_SECRET: "local-dev-auth-secret-change-in-production",
 } as const;
+const productionSupabaseProjectUrl = "https://jnevaakkhhndokvnickz.supabase.co";
 
 function getOptionalEnvVar(key: string, fallback?: string): string | undefined {
   return process.env[key] ?? fallback;
 }
 
 function getConfiguredDatabaseUrl(): string | undefined {
+  const isProduction = (process.env.NODE_ENV || "development") === "production";
   const configuredUrl =
     process.env.DATABASE_URL ??
     process.env.SUPABASE_URL ??
@@ -17,8 +19,11 @@ function getConfiguredDatabaseUrl(): string | undefined {
     return configuredUrl;
   }
 
-  const allowFallbacks = (process.env.NODE_ENV || "development") !== "production";
-  return allowFallbacks ? optionalEnvFallbacks.DATABASE_URL : undefined;
+  if (isProduction) {
+    return productionSupabaseProjectUrl;
+  }
+
+  return optionalEnvFallbacks.DATABASE_URL;
 }
 
 function getConfiguredEnvVar(key: string): string | undefined {

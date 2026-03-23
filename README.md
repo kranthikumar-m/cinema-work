@@ -77,6 +77,8 @@ SUPABASE_SERVICE_ROLE_KEY=your_server_side_service_role_key
 AUTH_SECRET=replace_with_a_long_random_secret
 ```
 
+This repo also defaults production auth/admin storage to `https://jnevaakkhhndokvnickz.supabase.co` when no database URL env is set, so the only required deployment secret for Supabase storage is usually `SUPABASE_SERVICE_ROLE_KEY`.
+
 Optional bootstrap admin setup:
 
 ```env
@@ -161,7 +163,7 @@ Admin-only APIs are under:
 | Variable | Required | Description |
 |---|---|---|
 | `TMDB_API_KEY` | Yes | TMDB API key |
-| `DATABASE_URL` | Yes in production | Local SQLite `file:` URL or your Supabase project URL. Local development falls back to `file:./data/cinema.sqlite`. |
+| `DATABASE_URL` | Optional in this repo | Local SQLite `file:` URL or your Supabase project URL. Local development falls back to `file:./data/cinema.sqlite`; production falls back to this repo's configured Supabase project URL. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Required for Supabase | Server-side key used for auth/admin storage when `DATABASE_URL` points to Supabase |
 | `AUTH_SECRET` | Yes in production | Secret used to sign/hash session and reset tokens. Local development has a fallback secret only outside production. |
 | `NEXT_PUBLIC_SITE_URL` | Recommended | Public base URL used in reset links |
