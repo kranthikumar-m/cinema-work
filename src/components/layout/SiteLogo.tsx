@@ -38,11 +38,8 @@ const variantStyles = {
   },
 } as const;
 
-export function SiteLogo({
-  className,
-  priority: _priority = false,
-  variant = "nav",
-}: SiteLogoProps) {
+export function SiteLogo(props: SiteLogoProps) {
+  const { className, variant = "nav" } = props;
   const styles = variantStyles[variant];
 
   return (
