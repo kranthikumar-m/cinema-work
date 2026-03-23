@@ -7,6 +7,20 @@ function getOptionalEnvVar(key: string, fallback?: string): string | undefined {
   return process.env[key] ?? fallback;
 }
 
+function getConfiguredDatabaseUrl(): string | undefined {
+  const configuredUrl =
+    process.env.DATABASE_URL ??
+    process.env.SUPABASE_URL ??
+    process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  if (configuredUrl) {
+    return configuredUrl;
+  }
+
+  const allowFallbacks = (process.env.NODE_ENV || "development") !== "production";
+  return allowFallbacks ? optionalEnvFallbacks.DATABASE_URL : undefined;
+}
+
 function getConfiguredEnvVar(key: string): string | undefined {
   const allowFallbacks = (process.env.NODE_ENV || "development") !== "production";
   const fallback =
@@ -20,7 +34,7 @@ function getConfiguredEnvVar(key: string): string | undefined {
 export const env = {
   TMDB_API_KEY: getOptionalEnvVar("TMDB_API_KEY"),
   GOOGLE_IMAGES_USER_AGENT: getOptionalEnvVar("GOOGLE_IMAGES_USER_AGENT"),
-  DATABASE_URL: getConfiguredEnvVar("DATABASE_URL"),
+  DATABASE_URL: getConfiguredDatabaseUrl(),
   SUPABASE_SERVICE_ROLE_KEY: getOptionalEnvVar("SUPABASE_SERVICE_ROLE_KEY"),
   AUTH_SECRET: getConfiguredEnvVar("AUTH_SECRET"),
   ADMIN_BOOTSTRAP_EMAIL: getOptionalEnvVar("ADMIN_BOOTSTRAP_EMAIL"),

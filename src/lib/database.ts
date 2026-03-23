@@ -1048,7 +1048,7 @@ function requireStorageProvider() {
 
   if (!provider) {
     throw new Error(
-      "DATABASE_URL is required for admin authentication and backdrop override storage."
+      "Database storage is not configured. Set DATABASE_URL to a SQLite file: URL or Supabase project URL. Supabase deployments can also use NEXT_PUBLIC_SUPABASE_URL or SUPABASE_URL, and they must also set SUPABASE_SERVICE_ROLE_KEY."
     );
   }
 
