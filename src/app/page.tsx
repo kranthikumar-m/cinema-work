@@ -107,7 +107,7 @@ async function getMovieEnhancements(movie: Movie | null) {
   };
 }
 
-async function buildFallbackFeatureBundle() {
+async function buildFallbackFeatureBundle(): Promise<HomepageHeroSlide> {
   return {
     item: {
       id: "featured-fallback",
@@ -125,7 +125,7 @@ async function buildFallbackFeatureBundle() {
   } satisfies HomepageHeroSlide;
 }
 
-async function buildFeaturedBundle(movie: Movie | null) {
+async function buildFeaturedBundle(movie: Movie | null): Promise<HomepageHeroSlide> {
   if (!movie) {
     return buildFallbackFeatureBundle();
   }
@@ -183,13 +183,13 @@ async function getData() {
       heroCandidates.map((movie) => buildFeaturedBundle(movie))
     );
     const heroSlides = heroSlideResults
-      .filter(
-        (
-          result
-        ): result is PromiseFulfilledResult<HomepageHeroSlide> =>
-          result.status === "fulfilled"
-      )
-      .map((result) => result.value)
+      .reduce<HomepageHeroSlide[]>((slides, result) => {
+        if (result.status === "fulfilled") {
+          slides.push(result.value);
+        }
+
+        return slides;
+      }, [])
       .slice(0, 5);
 
     if (!heroSlides.length) {
