@@ -14,12 +14,12 @@ import {
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as {
-      email?: string;
+      identifier?: string;
       password?: string;
       next?: string;
     };
-    const normalizedEmail = body.email?.trim().toLowerCase() ?? "";
-    const rateLimitKey = `${getRequestClientId(request)}:${normalizedEmail}`;
+    const normalizedIdentifier = body.identifier?.trim().toLowerCase() ?? "";
+    const rateLimitKey = `${getRequestClientId(request)}:${normalizedIdentifier}`;
     const rateLimit = consumeRateLimit("auth-login", rateLimitKey, {
       limit: 5,
       windowMs: 1000 * 60 * 10,
@@ -39,11 +39,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const user = await authenticateUser(normalizedEmail, body.password ?? "");
+    const user = await authenticateUser(normalizedIdentifier, body.password ?? "");
 
     if (!user) {
       return NextResponse.json(
-        { error: "Invalid email or password." },
+        { error: "Invalid username, email, or password." },
         { status: 401 }
       );
     }
