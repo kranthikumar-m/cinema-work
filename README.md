@@ -60,7 +60,7 @@ Copy the example env file:
 cp .env.example .env.local
 ```
 
-Set the required values:
+Set the core values (the app can fall back to local defaults for `DATABASE_URL` and `AUTH_SECRET` during local development):
 
 ```env
 TMDB_API_KEY=your_tmdb_key
@@ -153,8 +153,8 @@ Admin-only APIs are under:
 | Variable | Required | Description |
 |---|---|---|
 | `TMDB_API_KEY` | Yes | TMDB API key |
-| `DATABASE_URL` | Yes for auth/admin | SQLite connection string, for example `file:./data/cinema.sqlite` |
-| `AUTH_SECRET` | Yes for auth/admin | Secret used to sign/hash session and reset tokens |
+| `DATABASE_URL` | No (defaults locally) | SQLite connection string. Defaults to `file:./data/cinema.sqlite` when omitted. |
+| `AUTH_SECRET` | No (defaults locally) | Secret used to sign/hash session and reset tokens. Set this explicitly outside local development. |
 | `NEXT_PUBLIC_SITE_URL` | Recommended | Public base URL used in reset links |
 | `TMDB_BASE_URL` | No | Override TMDB API base URL |
 | `GOOGLE_IMAGES_USER_AGENT` | No | User agent for fallback image retrieval |
@@ -187,7 +187,7 @@ The Telugu movie pipeline still works like this:
 
 ## Deployment Notes
 
-- Make sure `DATABASE_URL`, `AUTH_SECRET`, and `TMDB_API_KEY` are configured in production.
+- Configure `DATABASE_URL` in production if you do not want the default SQLite path `file:./data/cinema.sqlite`, explicitly set `AUTH_SECRET` outside local development, and make sure `TMDB_API_KEY` is set.
 - Use a persistent filesystem path or mounted volume for SQLite.
 - Replace the password-reset email stub before enabling user-facing password recovery in production.
 
