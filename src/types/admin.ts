@@ -10,7 +10,7 @@ export interface AdminUser {
   updatedAt: string;
 }
 
-export interface AdminSessionUser extends AdminUser {}
+export type AdminSessionUser = AdminUser;
 
 export interface MovieBackdropOverrideRecord {
   movieId: number;
