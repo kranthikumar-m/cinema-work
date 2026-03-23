@@ -1,8 +1,8 @@
 import { getBackdropUrl } from "@/lib/utils";
 import { getOptionalDatabase, requireDatabase } from "@/lib/database";
-import { getMovieDetails, getMovieImages, type MovieImage } from "@/services/tmdb";
+import { getMovieDetails, getMovieImages } from "@/services/tmdb";
 import { getHighQualityBackdropFallback } from "@/services/google-images";
-import type { Movie } from "@/types/tmdb";
+import type { Movie, MovieImage } from "@/types/tmdb";
 import type {
   MovieBackdropChoicesPayload,
   MovieBackdropOverrideRecord,
