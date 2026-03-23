@@ -1,6 +1,20 @@
 import { NextResponse } from "next/server";
-import { getCurrentAdminUser } from "@/lib/auth";
-import type { AdminRole, AdminSessionUser } from "@/types/admin";
+import { getCurrentUser } from "@/lib/auth";
+import type {
+  AdminSessionUser,
+  AdminStoredUserRole,
+} from "@/types/admin";
+import type { AuthUser } from "@/types/auth";
+
+type AuthenticatedApiAuthResult =
+  | {
+      user: AuthUser;
+      response: null;
+    }
+  | {
+      user: null;
+      response: NextResponse;
+    };
 
 type AdminApiAuthResult =
   | {
@@ -12,10 +26,8 @@ type AdminApiAuthResult =
       response: NextResponse;
     };
 
-export async function requireAdminApiUser(
-  allowedRoles: AdminRole[] = ["admin", "editor"]
-): Promise<AdminApiAuthResult> {
-  const user = await getCurrentAdminUser();
+export async function requireAuthenticatedApiUser(): Promise<AuthenticatedApiAuthResult> {
+  const user = await getCurrentUser();
 
   if (!user) {
     return {
@@ -27,7 +39,31 @@ export async function requireAdminApiUser(
     };
   }
 
-  if (!allowedRoles.includes(user.role)) {
+  if (!user.isActive) {
+    return {
+      user: null,
+      response: NextResponse.json(
+        { error: "This account has been disabled." },
+        { status: 403 }
+      ),
+    };
+  }
+
+  return { user, response: null };
+}
+
+export async function requireAdminApiUser(
+  allowedRoles: AdminStoredUserRole[] = ["admin", "editor"]
+): Promise<AdminApiAuthResult> {
+  const auth = await requireAuthenticatedApiUser();
+
+  if (auth.response) {
+    return { user: null, response: auth.response };
+  }
+
+  const user = auth.user;
+
+  if (!allowedRoles.includes(user.storedRole)) {
     return {
       user: null,
       response: NextResponse.json({ error: "Forbidden." }, { status: 403 }),

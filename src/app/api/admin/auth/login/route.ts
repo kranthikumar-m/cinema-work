@@ -30,13 +30,6 @@ export async function POST(request: Request) {
       );
     }
 
-    if (user.role === "viewer") {
-      return NextResponse.json(
-        { error: "Viewer accounts do not have admin access." },
-        { status: 403 }
-      );
-    }
-
     const session = await createSessionForUser(user.id);
     const response = NextResponse.json({
       ok: true,

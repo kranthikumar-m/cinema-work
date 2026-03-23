@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import { AuthUserProvider } from "@/components/auth/AuthUserProvider";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { HomeHeader } from "@/components/layout/HomeHeader";
 import { TopNav } from "@/components/layout/TopNav";
@@ -27,7 +28,7 @@ export function AppChrome({ children }: AppChromeProps) {
   }
 
   return (
-    <>
+    <AuthUserProvider>
       <Sidebar />
       <div
         className={cn(
@@ -39,6 +40,6 @@ export function AppChrome({ children }: AppChromeProps) {
         <main className={cn("flex-1", isHome && "relative")}>{children}</main>
         <Footer className="bg-[var(--color-bg-deep)]" />
       </div>
-    </>
+    </AuthUserProvider>
   );
 }

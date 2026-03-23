@@ -1,16 +1,27 @@
 import { NextResponse } from "next/server";
-import { createAdminUser, listAdminUsers } from "@/lib/auth";
+import { createUserByAdmin, listUsers } from "@/lib/auth";
 import { requireAdminApiUser } from "@/lib/admin-api";
-import type { AdminRole } from "@/types/admin";
+import type { ManageableUserRole } from "@/types/admin";
 
-export async function GET() {
+export async function GET(request: Request) {
   const auth = await requireAdminApiUser(["admin"]);
 
   if (auth.response) {
     return auth.response;
   }
 
-  const users = await listAdminUsers();
+  const { searchParams } = new URL(request.url);
+  const query = searchParams.get("query")?.trim() ?? "";
+  const roleValue = searchParams.get("role") ?? "all";
+  const statusValue = searchParams.get("status") ?? "all";
+  const role =
+    roleValue === "admin" || roleValue === "user" ? roleValue : "all";
+  const status =
+    statusValue === "active" || statusValue === "disabled"
+      ? statusValue
+      : "all";
+
+  const users = await listUsers({ query, role, status });
   return NextResponse.json({ users });
 }
 
@@ -23,17 +34,21 @@ export async function POST(request: Request) {
 
   try {
     const body = (await request.json()) as {
+      name?: string;
       email?: string;
       password?: string;
-      role?: AdminRole;
+      role?: ManageableUserRole;
+      isActive?: boolean;
     };
-    const users = await createAdminUser({
+    const user = await createUserByAdmin({
+      name: body.name,
       email: body.email ?? "",
       password: body.password ?? "",
-      role: body.role ?? "viewer",
+      role: body.role ?? "user",
+      isActive: body.isActive,
     });
 
-    return NextResponse.json({ ok: true, users });
+    return NextResponse.json({ ok: true, user });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unable to create user.";

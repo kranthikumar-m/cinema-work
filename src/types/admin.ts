@@ -1,16 +1,14 @@
-export const ADMIN_ROLES = ["admin", "editor", "viewer"] as const;
+import type { AuthUser, StoredUserRole } from "@/types/auth";
+
+export const ADMIN_ROLES = ["admin", "editor"] as const;
+export const MANAGEABLE_USER_ROLES = ["admin", "user"] as const;
 
 export type AdminRole = (typeof ADMIN_ROLES)[number];
+export type ManageableUserRole = (typeof MANAGEABLE_USER_ROLES)[number];
 
-export interface AdminUser {
-  id: number;
-  email: string;
-  role: AdminRole;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export type AdminSessionUser = AdminUser;
+export type AdminUser = AuthUser;
+export type AdminSessionUser = AuthUser;
+export type AdminStoredUserRole = StoredUserRole;
 
 export interface MovieBackdropOverrideRecord {
   movieId: number;

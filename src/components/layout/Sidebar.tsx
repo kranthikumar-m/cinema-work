@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { CircleHelp, Menu, UserRound, X } from "lucide-react";
+import { CircleHelp, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SiteLogo } from "@/components/layout/SiteLogo";
+import { SidebarAccountPanel } from "@/components/layout/SidebarAccountPanel";
 import {
   APP_SIDEBAR_DESKTOP_WIDTH_CLASS,
   APP_SIDEBAR_DRAWER_WIDTH_CLASS,
@@ -69,21 +70,7 @@ export function Sidebar() {
         <SidebarBrand />
         <SidebarDesktopNav />
         <div className="mt-auto w-full px-8 pb-8">
-          <div className="rounded-2xl border border-[var(--color-border)] bg-[rgba(255,255,255,0.02)] px-5 py-4 shadow-[0_14px_30px_rgba(0,0,0,0.18)]">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
-                <UserRound className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-base font-semibold text-[var(--color-text)]">
-                  Curator Prime
-                </p>
-                <p className="truncate text-sm text-[var(--color-muted-strong)]">
-                  Premium Member
-                </p>
-              </div>
-            </div>
-          </div>
+          <SidebarAccountPanel />
           <button
             type="button"
             className="mt-5 flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-muted-strong)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-text)]"
@@ -154,20 +141,8 @@ export function Sidebar() {
               })}
             </div>
 
-            <div className="mt-6 rounded-2xl border border-[var(--color-border)] bg-[rgba(255,255,255,0.02)] p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
-                  <UserRound className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-[var(--color-text)]">
-                    Curator Prime
-                  </p>
-                  <p className="text-xs text-[var(--color-muted-strong)]">
-                    Premium Member
-                  </p>
-                </div>
-              </div>
+            <div className="mt-6">
+              <SidebarAccountPanel />
             </div>
           </div>
         </div>

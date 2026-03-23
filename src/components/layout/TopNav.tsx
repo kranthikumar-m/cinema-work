@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Search, UserRound } from "lucide-react";
+import { Search } from "lucide-react";
 import { SearchOverlayLauncher } from "@/components/layout/SearchOverlayLauncher";
 import { SiteLogo } from "@/components/layout/SiteLogo";
+import { TopNavAccountControls } from "@/components/layout/TopNavAccountControls";
 
 export function TopNav() {
   return (
@@ -29,14 +30,7 @@ export function TopNav() {
               </button>
             )}
           </SearchOverlayLauncher>
-
-          <button
-            type="button"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-muted-strong)] transition hover:border-[rgba(194,154,98,0.32)] hover:text-[var(--color-text)]"
-            aria-label="Profile"
-          >
-            <UserRound className="h-5 w-5" />
-          </button>
+          <TopNavAccountControls />
         </div>
       </div>
     </header>
