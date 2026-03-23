@@ -23,6 +23,9 @@ import type { Credits, Movie, Video } from "@/types/tmdb";
 
 export const dynamic = "force-dynamic";
 
+const HERO_SLIDE_TARGET = 5;
+const HERO_CANDIDATE_LIMIT = 12;
+
 function formatReleaseLabel(dateString: string) {
   if (!dateString) return "Coming Soon";
 
@@ -85,6 +88,35 @@ function getTrailerHref(videos: { results: Video[] } | null, movieId?: number) {
   return "/videos";
 }
 
+function isUsableHeroMovie(movie: Movie | null) {
+  return Boolean(movie?.id && movie.title?.trim());
+}
+
+function isUsableHeroSlide(slide: HomepageHeroSlide | null) {
+  return Boolean(
+    slide?.item.id &&
+      slide.item.title?.trim() &&
+      slide.item.watchHref &&
+      slide.item.trailerHref
+  );
+}
+
+function selectHeroCandidates(collections: {
+  latestReleases: Movie[];
+  popular: Movie[];
+  topRated: Movie[];
+  upcoming: Movie[];
+}) {
+  return dedupeMovies([
+    collections.latestReleases,
+    collections.popular,
+    collections.topRated,
+    collections.upcoming,
+  ])
+    .filter(isUsableHeroMovie)
+    .slice(0, HERO_CANDIDATE_LIMIT);
+}
+
 async function getMovieEnhancements(movie: Movie | null) {
   if (!movie) {
     return {
@@ -135,7 +167,10 @@ async function buildFeaturedBundle(movie: Movie | null): Promise<HomepageHeroSli
   const heroBackdrop = await resolvePreferredBackdrop(
     movie,
     details?.backdrop_path ?? movie.backdrop_path
-  );
+  ).catch(() => ({
+    backdropPath: details?.backdrop_path ?? movie.backdrop_path ?? null,
+    imageUrl: movie.backdrop_url ?? null,
+  }));
 
   return {
     item: {
@@ -171,26 +206,49 @@ async function buildFeaturedBundle(movie: Movie | null): Promise<HomepageHeroSli
 
 async function getData() {
   try {
-    const [latestReleases, popular, upcoming, topRated] = await Promise.all([
-      getLatestTeluguReleases(10),
-      getPopularTeluguMovies(10),
-      getUpcomingTeluguMovies(10),
-      getTopRatedTeluguMovies(10),
-    ]);
+    const [latestReleasesResult, popularResult, upcomingResult, topRatedResult] =
+      await Promise.allSettled([
+        getLatestTeluguReleases(10),
+        getPopularTeluguMovies(10),
+        getUpcomingTeluguMovies(10),
+        getTopRatedTeluguMovies(10),
+      ]);
 
-    const heroCandidates = dedupeMovies([latestReleases]).slice(0, 8);
+    const latestReleases =
+      latestReleasesResult.status === "fulfilled" ? latestReleasesResult.value : [];
+    const popular = popularResult.status === "fulfilled" ? popularResult.value : [];
+    const upcoming = upcomingResult.status === "fulfilled" ? upcomingResult.value : [];
+    const topRated = topRatedResult.status === "fulfilled" ? topRatedResult.value : [];
+
+    [
+      { label: "latest releases", result: latestReleasesResult },
+      { label: "popular titles", result: popularResult },
+      { label: "upcoming titles", result: upcomingResult },
+      { label: "top rated titles", result: topRatedResult },
+    ].forEach(({ label, result }) => {
+      if (result.status === "rejected") {
+        console.error(`Failed to load homepage ${label}:`, result.reason);
+      }
+    });
+
+    const heroCandidates = selectHeroCandidates({
+      latestReleases,
+      popular,
+      topRated,
+      upcoming,
+    });
     const heroSlideResults = await Promise.allSettled(
       heroCandidates.map((movie) => buildFeaturedBundle(movie))
     );
     const heroSlides = heroSlideResults
       .reduce<HomepageHeroSlide[]>((slides, result) => {
-        if (result.status === "fulfilled") {
+        if (result.status === "fulfilled" && isUsableHeroSlide(result.value)) {
           slides.push(result.value);
         }
 
         return slides;
       }, [])
-      .slice(0, 5);
+      .slice(0, HERO_SLIDE_TARGET);
 
     if (!heroSlides.length) {
       heroSlides.push(await buildFallbackFeatureBundle());
@@ -199,28 +257,18 @@ async function getData() {
     return { heroSlides, latestReleases, popular, upcoming, topRated };
   } catch (error) {
     console.error("Failed to load homepage data:", error);
-    return null;
+    return {
+      heroSlides: [await buildFallbackFeatureBundle()],
+      latestReleases: [],
+      popular: [],
+      upcoming: [],
+      topRated: [],
+    };
   }
 }
 
 export default async function HomePage() {
   const data = await getData();
-
-  if (!data) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-center">
-          <h2 className="mb-2 text-2xl font-bold text-white">
-            Unable to load content
-          </h2>
-          <p className="text-[var(--color-muted-strong)]">
-            Please check that the TMDB_API_KEY environment variable is set
-            correctly.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   const { heroSlides, latestReleases, popular, upcoming, topRated } = data;
   const panelClass =

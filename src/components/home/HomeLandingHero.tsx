@@ -109,10 +109,12 @@ export function HomeLandingHero({ slides }: HomeLandingHeroProps) {
   }, [current, heroSlides.length]);
 
   const next = useCallback(() => {
+    if (heroSlides.length < 2) return;
     setCurrent((value) => (value + 1) % heroSlides.length);
   }, [heroSlides.length]);
 
   const previous = useCallback(() => {
+    if (heroSlides.length < 2) return;
     setCurrent((value) => (value - 1 + heroSlides.length) % heroSlides.length);
   }, [heroSlides.length]);
 
@@ -120,11 +122,11 @@ export function HomeLandingHero({ slides }: HomeLandingHeroProps) {
     if (heroSlides.length < 2) return;
 
     const timer = setInterval(() => {
-      setCurrent((value) => (value + 1) % heroSlides.length);
+      next();
     }, AUTOPLAY_DELAY_MS);
 
     return () => clearInterval(timer);
-  }, [heroSlides.length, current]);
+  }, [current, heroSlides.length, next]);
 
   if (!heroSlides.length) {
     return null;
