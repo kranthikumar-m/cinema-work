@@ -20,7 +20,7 @@ export function LoginForm({
   showResetNotice = false,
 }: LoginFormProps) {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -35,7 +35,7 @@ export function LoginForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: email.trim(),
+          identifier: identifier.trim(),
           password,
           next: nextPath,
         }),
@@ -84,17 +84,17 @@ export function LoginForm({
       ) : null}
 
       <div className="space-y-2">
-        <label htmlFor="login-email" className="text-sm font-medium text-[var(--color-muted-strong)]">
-          Email
+        <label htmlFor="login-identifier" className="text-sm font-medium text-[var(--color-muted-strong)]">
+          Username or email
         </label>
         <input
-          id="login-email"
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
+          id="login-identifier"
+          type="text"
+          autoComplete="username"
+          value={identifier}
+          onChange={(event) => setIdentifier(event.target.value)}
           className={fieldClassName}
-          placeholder="name@example.com"
+          placeholder="admin123 or name@example.com"
           required
         />
       </div>

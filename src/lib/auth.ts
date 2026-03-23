@@ -144,6 +144,25 @@ async function findUserRowByEmail(email: string) {
   );
 }
 
+async function findUserRowByIdentifier(identifier: string) {
+  const database = requireDatabase();
+  const normalizedIdentifier = identifier.trim().toLowerCase();
+
+  return (
+    database
+      .prepare(
+        `
+          SELECT id, name, email, password_hash, role, image, is_active, last_login_at, created_at, updated_at
+          FROM users
+          WHERE LOWER(email) = ? OR LOWER(COALESCE(name, '')) = ?
+          ORDER BY CASE WHEN LOWER(email) = ? THEN 0 ELSE 1 END
+          LIMIT 1
+        `
+      )
+      .get<UserRow>(normalizedIdentifier, normalizedIdentifier, normalizedIdentifier) ?? null
+  );
+}
+
 async function findUserRowById(userId: number) {
   const database = requireDatabase();
   return (
@@ -285,9 +304,9 @@ export async function registerUser(input: {
   return mapUser(user);
 }
 
-export async function authenticateUser(email: string, password: string) {
+export async function authenticateUser(identifier: string, password: string) {
   await ensureBootstrapAdminUser();
-  const user = await findUserRowByEmail(email);
+  const user = await findUserRowByIdentifier(identifier);
 
   if (!user || !verifyPassword(password, user.password_hash)) {
     return null;
@@ -306,7 +325,7 @@ export async function getUserById(userId: number) {
 }
 
 export async function getUserByEmail(email: string) {
-  const user = await findUserRowByEmail(email);
+  const user = await findUserRowByIdentifier(email);
   return user ? mapUser(user) : null;
 }
 
