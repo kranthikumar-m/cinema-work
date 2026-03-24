@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Image as ImageIcon,
@@ -18,6 +19,7 @@ import type { HomepageHeroSlide } from "@/types/homepage";
 
 interface HomeLandingHeroProps {
   slides: HomepageHeroSlide[];
+  scrollTargetId?: string;
 }
 
 const AUTOPLAY_DELAY_MS = 10_000;
@@ -94,7 +96,10 @@ function resolveHeroImage(slide: HomepageHeroSlide) {
   return slide.item.imageUrl || getBackdropUrl(slide.item.backdropPath ?? null, "original");
 }
 
-export function HomeLandingHero({ slides }: HomeLandingHeroProps) {
+export function HomeLandingHero({
+  slides,
+  scrollTargetId = "home-content",
+}: HomeLandingHeroProps) {
   const heroSlides = useMemo(
     () => slides.filter((slide) => slide.item.title),
     [slides]
@@ -117,6 +122,19 @@ export function HomeLandingHero({ slides }: HomeLandingHeroProps) {
     if (heroSlides.length < 2) return;
     setCurrent((value) => (value - 1 + heroSlides.length) % heroSlides.length);
   }, [heroSlides.length]);
+
+  const scrollToContent = useCallback(() => {
+    const target = document.getElementById(scrollTargetId);
+
+    if (!target) {
+      return;
+    }
+
+    target.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, [scrollTargetId]);
 
   useEffect(() => {
     if (heroSlides.length < 2) return;
@@ -191,6 +209,29 @@ export function HomeLandingHero({ slides }: HomeLandingHeroProps) {
           </button>
         </div>
       ) : null}
+
+      <div className="pointer-events-none absolute inset-x-0 bottom-6 z-20 flex justify-center px-5 md:bottom-8 md:px-8 xl:px-14">
+        <motion.div
+          className="pointer-events-auto"
+          animate={{ y: [0, 6, 0], opacity: [0.84, 1, 0.84] }}
+          transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <button
+            type="button"
+            onClick={scrollToContent}
+            aria-label="Scroll to content"
+            aria-controls={scrollTargetId}
+            className="group inline-flex items-center gap-3 rounded-full border border-[rgba(194,154,98,0.22)] bg-[rgba(12,16,28,0.58)] px-4 py-3 shadow-[0_18px_40px_rgba(6,8,16,0.2)] backdrop-blur-md transition hover:border-[rgba(194,154,98,0.38)] hover:bg-[rgba(16,20,34,0.74)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(194,154,98,0.4)] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgba(11,14,24,0.95)]"
+          >
+            <span className="font-[family-name:var(--font-heading)] text-[0.7rem] font-medium uppercase tracking-[0.18em] text-[var(--color-muted-strong)]">
+              Skip Hero
+            </span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[rgba(194,154,98,0.18)] bg-[rgba(194,154,98,0.08)] text-[var(--color-accent)] transition group-hover:translate-y-0.5">
+              <ChevronDown className="h-4 w-4" />
+            </span>
+          </button>
+        </motion.div>
+      </div>
 
       <div className="relative flex min-h-[calc(100svh+80px)] items-center px-5 py-16 md:px-8 xl:px-14">
         <div className="relative w-full max-w-[930px] translate-y-[100px]">

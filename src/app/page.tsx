@@ -276,9 +276,9 @@ export default async function HomePage() {
 
   return (
     <div className="overflow-x-clip bg-[var(--color-bg)]">
-      <HomeLandingHero slides={heroSlides} />
+      <HomeLandingHero slides={heroSlides} scrollTargetId="home-content" />
 
-      <section id="home-content" className="px-5 py-16 md:px-8 xl:px-14">
+      <section id="home-content" className="scroll-mt-6 px-5 py-16 md:px-8 xl:px-14">
         <div className="mx-auto max-w-[1600px]">
           <div className="flex flex-col gap-10 xl:flex-row xl:items-start xl:gap-10">
             <div className="min-w-0 flex-1 space-y-10">
