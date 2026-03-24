@@ -209,18 +209,18 @@ export function HomeLandingHero({
         </div>
       ) : null}
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-[69px] z-20 flex justify-center px-5 md:bottom-[77px] md:px-8 xl:px-14">
+      <div className="pointer-events-none absolute inset-x-0 bottom-[79px] z-20 flex justify-center px-5 md:bottom-[87px] md:px-8 xl:px-14">
         <button
           type="button"
           onClick={scrollToContent}
           aria-label="Scroll to content"
           aria-controls={scrollTargetId}
-          className="pointer-events-auto group relative flex h-[52px] w-[32px] items-start justify-center rounded-full border border-[rgba(194,154,98,0.26)] bg-[rgba(11,14,24,0.42)] shadow-[0_18px_40px_rgba(6,8,16,0.18)] backdrop-blur-sm transition hover:border-[rgba(194,154,98,0.42)] hover:bg-[rgba(14,18,31,0.62)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(194,154,98,0.4)] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgba(11,14,24,0.95)]"
+          className="pointer-events-auto group relative flex h-[38px] w-[24px] items-start justify-center rounded-full border border-[rgba(194,154,98,0.26)] bg-[rgba(11,14,24,0.42)] shadow-[0_18px_40px_rgba(6,8,16,0.18)] backdrop-blur-sm transition hover:border-[rgba(194,154,98,0.42)] hover:bg-[rgba(14,18,31,0.62)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(194,154,98,0.4)] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgba(11,14,24,0.95)]"
         >
           <motion.span
             aria-hidden="true"
-            className="mt-3 h-2.5 w-[3px] rounded-full bg-[var(--color-accent)]"
-            animate={{ y: [0, 12, 0], opacity: [0.15, 1, 0.15] }}
+            className="mt-2.5 h-2 w-[2px] rounded-full bg-[var(--color-accent)]"
+            animate={{ y: [0, 9, 0], opacity: [0.15, 1, 0.15] }}
             transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
           />
           <span className="sr-only">Skip hero and scroll to content</span>
