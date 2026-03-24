@@ -139,7 +139,7 @@ export function HomeLandingHero({ slides }: HomeLandingHeroProps) {
   const activeStars = Math.max(0, Math.min(5, Math.round(ratingOutOfFive)));
 
   return (
-    <section className="relative min-h-[100svh] overflow-hidden">
+    <section className="relative min-h-[calc(100svh+80px)] overflow-hidden">
       <AnimatePresence mode="wait">
         <motion.div
           key={String(slide.item.id)}
@@ -192,14 +192,15 @@ export function HomeLandingHero({ slides }: HomeLandingHeroProps) {
         </div>
       ) : null}
 
-      <div className="relative flex min-h-[100svh] items-center px-5 py-16 md:px-8 xl:px-14">
-        <motion.div
-          key={`${slide.item.id}-content`}
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, ease: "easeOut" }}
-          className="w-full max-w-[930px]"
-        >
+      <div className="relative flex min-h-[calc(100svh+80px)] items-center px-5 py-16 md:px-8 xl:px-14">
+        <div className="relative w-full max-w-[930px] translate-y-[80px]">
+          <motion.div
+            key={`${slide.item.id}-content`}
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: "easeOut" }}
+            className="w-full"
+          >
           <div className="flex flex-wrap items-center gap-5">
             <span className="rounded-full border border-[rgba(194,154,98,0.3)] bg-[rgba(194,154,98,0.12)] px-4 py-2 font-[family-name:var(--font-heading)] text-[0.82rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)]">
               Latest Telugu Release
@@ -247,7 +248,8 @@ export function HomeLandingHero({ slides }: HomeLandingHeroProps) {
             <HeroButton href="/features" label="Audio" icon={Music4} />
             <HeroButton href="/photos" label="Images" icon={ImageIcon} />
           </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
     </section>
   );
