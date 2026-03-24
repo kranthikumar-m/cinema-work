@@ -193,7 +193,7 @@ export function HomeLandingHero({ slides }: HomeLandingHeroProps) {
       ) : null}
 
       <div className="relative flex min-h-[calc(100svh+80px)] items-center px-5 py-16 md:px-8 xl:px-14">
-        <div className="relative w-full max-w-[930px] translate-y-[90px]">
+        <div className="relative w-full max-w-[930px] translate-y-[100px]">
           <motion.div
             key={`${slide.item.id}-content`}
             initial={{ opacity: 0, y: 18 }}
