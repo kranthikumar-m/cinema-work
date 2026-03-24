@@ -193,7 +193,7 @@ export function HomeLandingHero({ slides }: HomeLandingHeroProps) {
       ) : null}
 
       <div className="relative flex min-h-[calc(100svh+80px)] items-center px-5 py-16 md:px-8 xl:px-14">
-        <div className="relative w-full max-w-[930px] translate-y-[80px]">
+        <div className="relative w-full max-w-[930px] translate-y-[90px]">
           <motion.div
             key={`${slide.item.id}-content`}
             initial={{ opacity: 0, y: 18 }}
@@ -223,7 +223,7 @@ export function HomeLandingHero({ slides }: HomeLandingHeroProps) {
             </div>
           </div>
 
-          <h1 className="mt-10 w-full overflow-hidden text-ellipsis whitespace-nowrap font-[family-name:var(--font-heading)] text-[clamp(2.8rem,6vw,5.4rem)] font-extrabold uppercase leading-[0.96] tracking-[-0.05em] text-[#e8ebff]">
+          <h1 className="mt-10 w-full overflow-hidden text-ellipsis whitespace-nowrap font-[family-name:var(--font-heading)] text-[clamp(2.4rem,5.2vw,4.8rem)] font-extrabold uppercase leading-[0.96] tracking-[-0.05em] text-[#e8ebff]">
             {leading ? (
               <>
                 {leading} <span className="text-[var(--color-accent)]">{accent}</span>
