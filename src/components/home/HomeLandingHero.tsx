@@ -201,7 +201,7 @@ export function HomeLandingHero({ slides }: HomeLandingHeroProps) {
             transition={{ duration: 0.45, ease: "easeOut" }}
             className="flex min-h-[620px] w-full flex-col"
           >
-            <div className="translate-y-[15px]">
+            <div className="translate-y-[40px]">
               <div className="flex flex-wrap items-center gap-5">
                 <span className="rounded-full border border-[rgba(194,154,98,0.3)] bg-[rgba(194,154,98,0.12)] px-4 py-2 font-[family-name:var(--font-heading)] text-[0.82rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)]">
                   Latest Telugu Release
