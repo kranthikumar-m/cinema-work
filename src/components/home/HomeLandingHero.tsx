@@ -201,53 +201,55 @@ export function HomeLandingHero({ slides }: HomeLandingHeroProps) {
             transition={{ duration: 0.45, ease: "easeOut" }}
             className="flex min-h-[620px] w-full flex-col"
           >
-          <div className="flex flex-wrap items-center gap-5">
-            <span className="rounded-full border border-[rgba(194,154,98,0.3)] bg-[rgba(194,154,98,0.12)] px-4 py-2 font-[family-name:var(--font-heading)] text-[0.82rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)]">
-              Latest Telugu Release
-            </span>
+            <div className="translate-y-[15px]">
+              <div className="flex flex-wrap items-center gap-5">
+                <span className="rounded-full border border-[rgba(194,154,98,0.3)] bg-[rgba(194,154,98,0.12)] px-4 py-2 font-[family-name:var(--font-heading)] text-[0.82rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)]">
+                  Latest Telugu Release
+                </span>
 
-            <div className="flex items-center gap-1 text-[var(--color-accent)]">
-              {Array.from({ length: 5 }, (_, index) => (
-                <Star
-                  key={index}
-                  className={
-                    index < activeStars
-                      ? "h-4 w-4 fill-current"
-                      : "h-4 w-4 text-[rgba(194,154,98,0.32)]"
-                  }
-                />
-              ))}
-              <span className="ml-3 text-[1.05rem] font-semibold text-[var(--color-text)]">
-                {ratingOutOfFive.toFixed(1)} / 5.0
-              </span>
+                <div className="flex items-center gap-1 text-[var(--color-accent)]">
+                  {Array.from({ length: 5 }, (_, index) => (
+                    <Star
+                      key={index}
+                      className={
+                        index < activeStars
+                          ? "h-4 w-4 fill-current"
+                          : "h-4 w-4 text-[rgba(194,154,98,0.32)]"
+                      }
+                    />
+                  ))}
+                  <span className="ml-3 text-[1.05rem] font-semibold text-[var(--color-text)]">
+                    {ratingOutOfFive.toFixed(1)} / 5.0
+                  </span>
+                </div>
+              </div>
+
+              <h1 className="mt-10 w-full overflow-hidden text-ellipsis whitespace-nowrap font-[family-name:var(--font-heading)] text-[clamp(2.4rem,5.2vw,4.8rem)] font-extrabold uppercase leading-[0.96] tracking-[-0.05em] text-[#e8ebff]">
+                {leading ? (
+                  <>
+                    {leading} <span className="text-[var(--color-accent)]">{accent}</span>
+                  </>
+                ) : (
+                  <span className="text-[var(--color-accent)]">{accent}</span>
+                )}
+              </h1>
+
+              <div className="mt-10 flex flex-wrap items-start gap-10">
+                <MetaItem label="Release Date" value={slide.item.releaseLabel} />
+                <MetaItem label="Genres" value={slide.genreLabel} />
+                <MetaItem label="Director" value={slide.item.director} />
+              </div>
+
+              <p className="mt-10 max-h-[120px] max-w-[880px] overflow-hidden text-[1.08rem] leading-10 text-[#d8ddee] md:text-[1.12rem]">
+                {slide.overview}
+              </p>
             </div>
-          </div>
 
-          <h1 className="mt-10 w-full overflow-hidden text-ellipsis whitespace-nowrap font-[family-name:var(--font-heading)] text-[clamp(2.4rem,5.2vw,4.8rem)] font-extrabold uppercase leading-[0.96] tracking-[-0.05em] text-[#e8ebff]">
-            {leading ? (
-              <>
-                {leading} <span className="text-[var(--color-accent)]">{accent}</span>
-              </>
-            ) : (
-              <span className="text-[var(--color-accent)]">{accent}</span>
-            )}
-          </h1>
-
-          <div className="mt-10 flex flex-wrap items-start gap-10">
-            <MetaItem label="Release Date" value={slide.item.releaseLabel} />
-            <MetaItem label="Genres" value={slide.genreLabel} />
-            <MetaItem label="Director" value={slide.item.director} />
-          </div>
-
-          <p className="mt-10 max-h-[120px] max-w-[880px] overflow-hidden text-[1.08rem] leading-10 text-[#d8ddee] md:text-[1.12rem]">
-            {slide.overview}
-          </p>
-
-          <div className="mt-auto flex flex-wrap gap-4 pt-12">
-            <HeroButton href={slide.item.trailerHref} label="Trailers" icon={Play} primary />
-            <HeroButton href="/features" label="Audio" icon={Music4} />
-            <HeroButton href="/photos" label="Images" icon={ImageIcon} />
-          </div>
+            <div className="mt-auto flex flex-wrap gap-4 pt-12">
+              <HeroButton href={slide.item.trailerHref} label="Trailers" icon={Play} primary />
+              <HeroButton href="/features" label="Audio" icon={Music4} />
+              <HeroButton href="/photos" label="Images" icon={ImageIcon} />
+            </div>
           </motion.div>
         </div>
       </div>
