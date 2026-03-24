@@ -15,9 +15,9 @@ export interface AppSidebarItem {
   href: string;
 }
 
-export const APP_SIDEBAR_DESKTOP_WIDTH_CLASS = "lg:w-[304px]";
-export const APP_SIDEBAR_CONTENT_OFFSET_CLASS = "lg:pl-[304px]";
-export const APP_SIDEBAR_DRAWER_WIDTH_CLASS = "w-[280px]";
+export const APP_SIDEBAR_DESKTOP_WIDTH_CLASS = "lg:w-[280px]";
+export const APP_SIDEBAR_CONTENT_OFFSET_CLASS = "lg:pl-[280px]";
+export const APP_SIDEBAR_DRAWER_WIDTH_CLASS = "w-[256px]";
 
 export const APP_SIDEBAR_ITEMS: AppSidebarItem[] = [
   { icon: Rss, label: "FEEDS", href: "/" },

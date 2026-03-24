@@ -154,7 +154,7 @@ export function HomeLandingHero({ slides }: HomeLandingHeroProps) {
             alt={slide.item.title}
             fill
             priority={current === 0}
-            sizes="(min-width: 1280px) calc(100vw - 304px), 100vw"
+            sizes="(min-width: 1280px) calc(100vw - 280px), 100vw"
             quality={95}
             className="object-cover object-center"
             unoptimized={shouldUseUnoptimizedImage(heroImage)}
