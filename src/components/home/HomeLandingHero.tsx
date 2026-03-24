@@ -199,7 +199,7 @@ export function HomeLandingHero({ slides }: HomeLandingHeroProps) {
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, ease: "easeOut" }}
-            className="w-full"
+            className="flex min-h-[620px] w-full flex-col"
           >
           <div className="flex flex-wrap items-center gap-5">
             <span className="rounded-full border border-[rgba(194,154,98,0.3)] bg-[rgba(194,154,98,0.12)] px-4 py-2 font-[family-name:var(--font-heading)] text-[0.82rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)]">
@@ -223,7 +223,7 @@ export function HomeLandingHero({ slides }: HomeLandingHeroProps) {
             </div>
           </div>
 
-          <h1 className="mt-10 font-[family-name:var(--font-heading)] text-[clamp(3.5rem,7.8vw,7rem)] font-extrabold uppercase leading-[0.92] tracking-[-0.06em] text-[#e8ebff]">
+          <h1 className="mt-10 w-full overflow-hidden text-ellipsis whitespace-nowrap font-[family-name:var(--font-heading)] text-[clamp(2.8rem,6vw,5.4rem)] font-extrabold uppercase leading-[0.96] tracking-[-0.05em] text-[#e8ebff]">
             {leading ? (
               <>
                 {leading} <span className="text-[var(--color-accent)]">{accent}</span>
@@ -239,11 +239,11 @@ export function HomeLandingHero({ slides }: HomeLandingHeroProps) {
             <MetaItem label="Director" value={slide.item.director} />
           </div>
 
-          <p className="mt-10 max-w-[880px] text-[1.08rem] leading-10 text-[#d8ddee] md:text-[1.12rem]">
+          <p className="mt-10 max-h-[120px] max-w-[880px] overflow-hidden text-[1.08rem] leading-10 text-[#d8ddee] md:text-[1.12rem]">
             {slide.overview}
           </p>
 
-          <div className="mt-12 flex flex-wrap gap-4">
+          <div className="mt-auto flex flex-wrap gap-4 pt-12">
             <HeroButton href={slide.item.trailerHref} label="Trailers" icon={Play} primary />
             <HeroButton href="/features" label="Audio" icon={Music4} />
             <HeroButton href="/photos" label="Images" icon={ImageIcon} />
