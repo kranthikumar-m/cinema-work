@@ -245,7 +245,7 @@ export function HomeLandingHero({ slides }: HomeLandingHeroProps) {
               </p>
             </div>
 
-            <div className="mt-auto flex flex-wrap gap-4 pt-12">
+            <div className="mt-auto flex flex-wrap gap-4 pt-8">
               <HeroButton href={slide.item.trailerHref} label="Trailers" icon={Play} primary />
               <HeroButton href="/features" label="Audio" icon={Music4} />
               <HeroButton href="/photos" label="Images" icon={ImageIcon} />
