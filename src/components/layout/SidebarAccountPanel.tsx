@@ -19,16 +19,16 @@ export function SidebarAccountPanel() {
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl border border-[var(--color-border)] bg-[rgba(255,255,255,0.02)] px-4 py-3 shadow-[0_14px_30px_rgba(0,0,0,0.18)]">
-        <div className="animate-pulse space-y-2.5">
-          <div className="flex items-center gap-2.5">
-            <div className="h-10 w-10 rounded-xl bg-[rgba(255,255,255,0.06)]" />
+      <div className="rounded-2xl border border-[var(--color-border)] bg-[rgba(255,255,255,0.02)] px-4 py-3 shadow-[0_14px_30px_rgba(0,0,0,0.18)] [@media(max-height:900px)]:px-3.5 [@media(max-height:900px)]:py-2.5">
+        <div className="animate-pulse space-y-2.5 [@media(max-height:900px)]:space-y-2">
+          <div className="flex items-center gap-2.5 [@media(max-height:900px)]:gap-2">
+            <div className="h-10 w-10 rounded-xl bg-[rgba(255,255,255,0.06)] [@media(max-height:900px)]:h-9 [@media(max-height:900px)]:w-9" />
             <div className="flex-1 space-y-2">
               <div className="h-3.5 rounded bg-[rgba(255,255,255,0.06)]" />
               <div className="h-2.5 w-2/3 rounded bg-[rgba(255,255,255,0.05)]" />
             </div>
           </div>
-          <div className="h-8 rounded-lg bg-[rgba(255,255,255,0.05)]" />
+          <div className="h-8 rounded-lg bg-[rgba(255,255,255,0.05)] [@media(max-height:900px)]:h-[30px]" />
         </div>
       </div>
     );
@@ -36,13 +36,13 @@ export function SidebarAccountPanel() {
 
   if (!user) {
     return (
-      <div className="rounded-2xl border border-[var(--color-border)] bg-[rgba(255,255,255,0.02)] px-4 py-3 shadow-[0_14px_30px_rgba(0,0,0,0.18)]">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
+      <div className="rounded-2xl border border-[var(--color-border)] bg-[rgba(255,255,255,0.02)] px-4 py-3 shadow-[0_14px_30px_rgba(0,0,0,0.18)] [@media(max-height:900px)]:px-3.5 [@media(max-height:900px)]:py-2.5">
+        <div className="flex items-center gap-2.5 [@media(max-height:900px)]:gap-2">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-accent-soft)] text-[var(--color-accent)] [@media(max-height:900px)]:h-9 [@media(max-height:900px)]:w-9">
             <UserRound className="h-4.5 w-4.5" />
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-[var(--color-text)]">
+            <p className="truncate text-sm font-semibold text-[var(--color-text)] [@media(max-height:900px)]:text-[0.82rem]">
               Guest Viewer
             </p>
             <p className="truncate text-xs text-[var(--color-muted-strong)]">
@@ -51,16 +51,16 @@ export function SidebarAccountPanel() {
           </div>
         </div>
 
-        <div className="mt-3 grid gap-2">
+        <div className="mt-3 grid gap-2 [@media(max-height:900px)]:mt-2.5">
           <Link
             href="/login"
-            className="inline-flex h-8 items-center justify-center rounded-lg border border-[var(--color-border)] text-xs text-[var(--color-text)] transition hover:border-[rgba(194,154,98,0.34)] hover:bg-[rgba(255,255,255,0.03)]"
+            className="inline-flex h-8 items-center justify-center rounded-lg border border-[var(--color-border)] text-xs text-[var(--color-text)] transition hover:border-[rgba(194,154,98,0.34)] hover:bg-[rgba(255,255,255,0.03)] [@media(max-height:900px)]:h-[30px]"
           >
             Log In
           </Link>
           <Link
             href="/register"
-            className="inline-flex h-8 items-center justify-center rounded-lg bg-[var(--color-accent)] text-xs font-medium text-[var(--color-accent-contrast)] transition hover:brightness-105"
+            className="inline-flex h-8 items-center justify-center rounded-lg bg-[var(--color-accent)] text-xs font-medium text-[var(--color-accent-contrast)] transition hover:brightness-105 [@media(max-height:900px)]:h-[30px]"
           >
             Create Account
           </Link>
@@ -72,13 +72,13 @@ export function SidebarAccountPanel() {
   const label = user.name?.trim() || user.email;
 
   return (
-    <div className="rounded-2xl border border-[var(--color-border)] bg-[rgba(255,255,255,0.02)] px-4 py-3 shadow-[0_14px_30px_rgba(0,0,0,0.18)]">
-      <div className="flex items-center gap-2.5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-accent-soft)] text-xs font-semibold uppercase tracking-[0.1em] text-[var(--color-accent)]">
+    <div className="rounded-2xl border border-[var(--color-border)] bg-[rgba(255,255,255,0.02)] px-4 py-3 shadow-[0_14px_30px_rgba(0,0,0,0.18)] [@media(max-height:900px)]:px-3.5 [@media(max-height:900px)]:py-2.5">
+      <div className="flex items-center gap-2.5 [@media(max-height:900px)]:gap-2">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-accent-soft)] text-xs font-semibold uppercase tracking-[0.1em] text-[var(--color-accent)] [@media(max-height:900px)]:h-9 [@media(max-height:900px)]:w-9">
           {getInitials(label)}
         </div>
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-[var(--color-text)]">
+          <p className="truncate text-sm font-semibold text-[var(--color-text)] [@media(max-height:900px)]:text-[0.82rem]">
             {label}
           </p>
           <p className="truncate text-xs text-[var(--color-muted-strong)]">
@@ -87,17 +87,17 @@ export function SidebarAccountPanel() {
         </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 flex flex-wrap gap-2 [@media(max-height:900px)]:mt-2.5">
         <Link
           href="/account"
-          className="inline-flex h-8 items-center justify-center rounded-lg border border-[var(--color-border)] px-2.5 text-[11px] uppercase tracking-[0.12em] text-[var(--color-text)] transition hover:border-[rgba(194,154,98,0.34)] hover:bg-[rgba(255,255,255,0.03)]"
+          className="inline-flex h-8 items-center justify-center rounded-lg border border-[var(--color-border)] px-2.5 text-[11px] uppercase tracking-[0.12em] text-[var(--color-text)] transition hover:border-[rgba(194,154,98,0.34)] hover:bg-[rgba(255,255,255,0.03)] [@media(max-height:900px)]:h-[30px] [@media(max-height:900px)]:px-2 [@media(max-height:900px)]:text-[10px]"
         >
           Account
         </Link>
         {user.role === "admin" ? (
           <Link
             href="/admin"
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-2.5 text-[11px] uppercase tracking-[0.12em] text-[var(--color-text)] transition hover:border-[rgba(194,154,98,0.34)] hover:bg-[rgba(255,255,255,0.03)]"
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-2.5 text-[11px] uppercase tracking-[0.12em] text-[var(--color-text)] transition hover:border-[rgba(194,154,98,0.34)] hover:bg-[rgba(255,255,255,0.03)] [@media(max-height:900px)]:h-[30px] [@media(max-height:900px)]:gap-1 [@media(max-height:900px)]:px-2 [@media(max-height:900px)]:text-[10px]"
           >
             <Shield className="h-3 w-3 text-[var(--color-accent)]" />
             <span>Admin</span>
@@ -105,7 +105,7 @@ export function SidebarAccountPanel() {
         ) : null}
       </div>
 
-      <div className="mt-3">
+      <div className="mt-3 [@media(max-height:900px)]:mt-2.5">
         <SignOutButton
           variant="ghost"
           className="h-auto w-full justify-start px-0 py-0 text-xs text-[var(--color-muted-strong)] hover:bg-transparent hover:text-[var(--color-text)]"

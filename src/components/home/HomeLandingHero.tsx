@@ -64,11 +64,11 @@ function HeroButton({
       rel={external ? "noreferrer" : undefined}
       className={
         primary
-          ? "inline-flex h-[68px] items-center gap-4 rounded-[18px] bg-[var(--color-accent)] px-10 font-[family-name:var(--font-heading)] text-[1.05rem] font-semibold text-[var(--color-accent-contrast)] transition hover:brightness-105"
-          : "inline-flex h-[68px] items-center gap-4 rounded-[18px] border border-[var(--color-border)] bg-[rgba(15,19,34,0.42)] px-10 font-[family-name:var(--font-heading)] text-[1.05rem] font-semibold text-[var(--color-accent)] transition hover:border-[rgba(194,154,98,0.32)] hover:bg-[rgba(255,255,255,0.03)]"
+          ? "inline-flex h-[clamp(52px,6vh,68px)] items-center gap-[clamp(0.75rem,1vw,1rem)] rounded-[18px] bg-[var(--color-accent)] px-[clamp(1.4rem,2.2vw,2.5rem)] font-[family-name:var(--font-heading)] text-[clamp(0.95rem,1vw,1.05rem)] font-semibold text-[var(--color-accent-contrast)] transition hover:brightness-105"
+          : "inline-flex h-[clamp(52px,6vh,68px)] items-center gap-[clamp(0.75rem,1vw,1rem)] rounded-[18px] border border-[var(--color-border)] bg-[rgba(15,19,34,0.42)] px-[clamp(1.4rem,2.2vw,2.5rem)] font-[family-name:var(--font-heading)] text-[clamp(0.95rem,1vw,1.05rem)] font-semibold text-[var(--color-accent)] transition hover:border-[rgba(194,154,98,0.32)] hover:bg-[rgba(255,255,255,0.03)]"
       }
     >
-      <Icon className={primary ? "h-5 w-5 fill-current" : "h-5 w-5"} />
+      <Icon className={primary ? "h-[clamp(1.1rem,1.3vw,1.25rem)] w-[clamp(1.1rem,1.3vw,1.25rem)] fill-current" : "h-[clamp(1.1rem,1.3vw,1.25rem)] w-[clamp(1.1rem,1.3vw,1.25rem)]"} />
       <span>{label}</span>
     </Link>
   );
@@ -82,11 +82,13 @@ function MetaItem({
   value: string;
 }) {
   return (
-    <div className="min-w-[120px]">
-      <p className="font-[family-name:var(--font-heading)] text-[0.88rem] uppercase tracking-[0.16em] text-[var(--color-accent)]">
+    <div className="min-w-[min(11rem,30vw)]">
+      <p className="font-[family-name:var(--font-heading)] text-[clamp(0.76rem,0.8vw,0.88rem)] uppercase tracking-[0.16em] text-[var(--color-accent)]">
         {label}
       </p>
-      <p className="mt-2 text-[1.05rem] text-[var(--color-text)]">{value}</p>
+      <p className="mt-1.5 text-[clamp(1rem,1vw,1.08rem)] text-[var(--color-text)]">
+        {value}
+      </p>
     </div>
   );
 }
@@ -182,17 +184,17 @@ export function HomeLandingHero({
       </AnimatePresence>
 
       {heroSlides.length > 1 ? (
-        <div className="absolute right-5 top-1/2 z-20 flex -translate-y-1/2 items-center gap-4 md:right-8 xl:right-14">
+        <div className="absolute right-[clamp(1rem,2.8vw,3.5rem)] top-1/2 z-20 flex -translate-y-1/2 items-center gap-3 [@media(max-height:900px)]:top-[46%] [@media(min-width:2560px)]:gap-4">
           <button
             type="button"
             onClick={previous}
-            className="flex h-12 w-12 items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgba(20,24,39,0.5)] text-[var(--color-text)] backdrop-blur-sm transition hover:border-[rgba(194,154,98,0.32)] hover:text-[var(--color-accent)]"
+            className="flex h-[clamp(2.75rem,4vw,3.25rem)] w-[clamp(2.75rem,4vw,3.25rem)] items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgba(20,24,39,0.5)] text-[var(--color-text)] backdrop-blur-sm transition hover:border-[rgba(194,154,98,0.32)] hover:text-[var(--color-accent)]"
             aria-label="Previous featured release"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ChevronLeft className="h-[clamp(1rem,1.2vw,1.15rem)] w-[clamp(1rem,1.2vw,1.15rem)]" />
           </button>
 
-          <div className="min-w-[74px] text-center font-[family-name:var(--font-heading)] text-sm uppercase tracking-[0.14em] text-[var(--color-text)]">
+          <div className="min-w-[70px] text-center font-[family-name:var(--font-heading)] text-[clamp(0.82rem,0.8vw,0.95rem)] uppercase tracking-[0.14em] text-[var(--color-text)]">
             <span className="text-[var(--color-accent)]">{String(current + 1).padStart(2, "0")}</span>
             <span className="mx-2 text-[var(--color-muted)]">/</span>
             <span className="text-[var(--color-muted-strong)]">{String(heroSlides.length).padStart(2, "0")}</span>
@@ -201,15 +203,15 @@ export function HomeLandingHero({
           <button
             type="button"
             onClick={next}
-            className="flex h-12 w-12 items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgba(20,24,39,0.5)] text-[var(--color-text)] backdrop-blur-sm transition hover:border-[rgba(194,154,98,0.32)] hover:text-[var(--color-accent)]"
+            className="flex h-[clamp(2.75rem,4vw,3.25rem)] w-[clamp(2.75rem,4vw,3.25rem)] items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgba(20,24,39,0.5)] text-[var(--color-text)] backdrop-blur-sm transition hover:border-[rgba(194,154,98,0.32)] hover:text-[var(--color-accent)]"
             aria-label="Next featured release"
           >
-            <ChevronRight className="h-5 w-5" />
+            <ChevronRight className="h-[clamp(1rem,1.2vw,1.15rem)] w-[clamp(1rem,1.2vw,1.15rem)]" />
           </button>
         </div>
       ) : null}
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-[79px] z-20 flex justify-center px-[var(--app-page-gutter)] md:bottom-[87px]">
+      <div className="pointer-events-none absolute inset-x-0 bottom-[clamp(2.8rem,7vh,5.5rem)] z-20 flex justify-center px-[var(--app-page-gutter)]">
         <button
           type="button"
           onClick={scrollToContent}
@@ -227,17 +229,17 @@ export function HomeLandingHero({
         </button>
       </div>
 
-      <div className="relative flex min-h-[calc(100dvh+80px)] items-center px-[var(--app-page-gutter)] py-16">
-        <div className="relative w-full max-w-[930px] translate-y-[100px]">
+      <div className="relative flex min-h-[calc(100dvh+80px)] items-end px-[var(--app-page-gutter)] pb-[clamp(6.75rem,14vh,10.5rem)] pt-[clamp(6rem,10vh,8.5rem)]">
+        <div className="relative w-full max-w-[clamp(48rem,54vw,72rem)]">
           <motion.div
             key={`${slide.item.id}-content`}
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, ease: "easeOut" }}
-            className="flex min-h-[620px] w-full flex-col"
+            className="flex min-h-[clamp(430px,54vh,620px)] w-full flex-col justify-end [@media(max-height:900px)]:min-h-[470px] [@media(max-height:800px)]:min-h-[430px] [@media(min-width:2560px)]:min-h-[700px]"
           >
-            <div className="translate-y-[55px]">
-              <div className="flex flex-wrap items-center gap-5">
+            <div className="space-y-[clamp(1.25rem,2.4vh,2.5rem)]">
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-3 [@media(max-height:900px)]:gap-x-4">
                 <span className="rounded-full border border-[rgba(194,154,98,0.3)] bg-[rgba(194,154,98,0.12)] px-4 py-2 font-[family-name:var(--font-heading)] text-[0.82rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)]">
                   Latest Telugu Release
                 </span>
@@ -253,13 +255,13 @@ export function HomeLandingHero({
                       }
                     />
                   ))}
-                  <span className="ml-3 text-[1.05rem] font-semibold text-[var(--color-text)]">
+                  <span className="ml-3 text-[clamp(1rem,1vw,1.08rem)] font-semibold text-[var(--color-text)]">
                     {ratingOutOfFive.toFixed(1)} / 5.0
                   </span>
                 </div>
               </div>
 
-              <h1 className="mt-10 w-full overflow-hidden text-ellipsis whitespace-nowrap font-[family-name:var(--font-heading)] text-[clamp(2.4rem,5.2vw,4.8rem)] font-extrabold uppercase leading-[0.96] tracking-[-0.05em] text-[#e8ebff]">
+              <h1 className="w-full overflow-hidden text-ellipsis whitespace-nowrap font-[family-name:var(--font-heading)] text-[clamp(2.35rem,4.8vw,5.75rem)] font-extrabold uppercase leading-[0.96] tracking-[-0.05em] text-[#e8ebff] [@media(max-height:900px)]:text-[clamp(2.05rem,4.2vw,4.45rem)] [@media(min-width:2560px)]:text-[clamp(3.3rem,4vw,6.4rem)]">
                 {leading ? (
                   <>
                     {leading} <span className="text-[var(--color-accent)]">{accent}</span>
@@ -269,18 +271,18 @@ export function HomeLandingHero({
                 )}
               </h1>
 
-              <div className="mt-10 flex flex-wrap items-start gap-10">
+              <div className="flex flex-wrap items-start gap-x-[clamp(1.75rem,3vw,3.5rem)] gap-y-5 [@media(max-height:900px)]:gap-y-4">
                 <MetaItem label="Release Date" value={slide.item.releaseLabel} />
                 <MetaItem label="Genres" value={slide.genreLabel} />
                 <MetaItem label="Director" value={slide.item.director} />
               </div>
 
-              <p className="mt-10 max-h-[120px] max-w-[880px] overflow-hidden text-[1.08rem] leading-10 text-[#d8ddee] md:text-[1.12rem]">
+              <p className="max-h-[clamp(6rem,16vh,8.25rem)] max-w-[min(55rem,95%)] overflow-hidden text-[clamp(1rem,1vw,1.12rem)] leading-[1.75] text-[#d8ddee] [@media(max-height:900px)]:max-h-[clamp(5.5rem,14vh,7rem)] [@media(max-height:900px)]:leading-[1.6] [@media(min-width:2560px)]:max-w-[58rem] [@media(min-width:2560px)]:text-[1.16rem]">
                 {slide.overview}
               </p>
             </div>
 
-            <div className="mt-auto flex flex-wrap gap-4 pt-0 -translate-y-[40px]">
+            <div className="mt-auto flex flex-wrap gap-4 pt-[clamp(1.5rem,3.6vh,2.75rem)]">
               <HeroButton href={slide.item.trailerHref} label="Trailers" icon={Play} primary />
               <HeroButton href="/features" label="Audio" icon={Music4} />
               <HeroButton href="/photos" label="Images" icon={ImageIcon} />

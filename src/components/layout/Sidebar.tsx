@@ -18,7 +18,7 @@ function SidebarBrand() {
   return (
     <Link
       href="/"
-      className="w-full px-6 pt-8"
+      className="w-full origin-top-left px-6 pt-8 [@media(max-height:900px)]:scale-[0.92] [@media(max-height:900px)]:px-5 [@media(max-height:900px)]:pt-6"
     >
       <SiteLogo variant="sidebar" priority />
     </Link>
@@ -29,7 +29,7 @@ function SidebarDesktopNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="mt-10 flex w-full flex-col gap-1 px-0">
+    <nav className="mt-10 flex w-full flex-col gap-1 px-0 [@media(max-height:900px)]:mt-7 [@media(max-height:900px)]:gap-0.5">
       {APP_SIDEBAR_ITEMS.map((item) => {
         const isActive = isSidebarItemActive(item.href, pathname);
 
@@ -38,14 +38,14 @@ function SidebarDesktopNav() {
             key={item.label}
             href={item.href}
             className={cn(
-              "group relative flex min-h-[52px] items-center gap-4 px-6 py-3.5 text-left transition-all",
+              "group relative flex min-h-[52px] items-center gap-4 px-6 py-3.5 text-left transition-all [@media(max-height:900px)]:min-h-[46px] [@media(max-height:900px)]:gap-3 [@media(max-height:900px)]:px-5 [@media(max-height:900px)]:py-2.5",
               isActive
                 ? "bg-[rgba(255,255,255,0.03)] text-[var(--color-text)] before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-[var(--color-accent)]"
                 : "text-[var(--color-muted-strong)] hover:bg-white/4 hover:text-[var(--color-text)]"
             )}
           >
             <item.icon className="h-5 w-5 shrink-0" strokeWidth={2} />
-            <span className="font-[family-name:var(--font-heading)] text-[0.88rem] font-medium uppercase tracking-[0.08em]">
+            <span className="font-[family-name:var(--font-heading)] text-[0.88rem] font-medium uppercase tracking-[0.08em] [@media(max-height:900px)]:text-[0.82rem]">
               {item.label}
             </span>
           </Link>
@@ -69,11 +69,11 @@ export function Sidebar() {
       >
         <SidebarBrand />
         <SidebarDesktopNav />
-        <div className="mt-auto w-full px-6 pb-8">
+        <div className="mt-auto w-full px-6 pb-8 [@media(max-height:900px)]:px-5 [@media(max-height:900px)]:pb-6">
           <SidebarAccountPanel />
           <button
             type="button"
-            className="mt-5 flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-muted-strong)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-text)]"
+            className="mt-5 flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-muted-strong)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-text)] [@media(max-height:900px)]:mt-4 [@media(max-height:900px)]:h-10 [@media(max-height:900px)]:w-10"
             aria-label="Help and info"
           >
             <CircleHelp className="h-[18px] w-[18px]" />

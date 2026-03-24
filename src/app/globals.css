@@ -22,10 +22,10 @@
   --foreground: var(--color-text);
   --app-page-gutter: clamp(1rem, 0.55rem + 1.4vw, 3.5rem);
   --app-sidebar-width: clamp(184px, 10vw + 28px, 208px);
-  --app-max-content-width: 112rem;
-  --app-max-detail-width: 88rem;
-  --app-max-compact-width: 84rem;
-  --app-max-narrow-width: 64rem;
+  --app-max-content-width: 1600px;
+  --app-max-detail-width: 1400px;
+  --app-max-compact-width: 1320px;
+  --app-max-narrow-width: 960px;
 }
 
 body {
@@ -39,7 +39,6 @@ body {
 
 html {
   min-height: 100%;
-  font-size: clamp(14px, 13.3px + 0.22vw, 17px);
   scroll-behavior: smooth;
 }
 
