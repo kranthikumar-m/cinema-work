@@ -18,7 +18,7 @@ function SidebarBrand() {
   return (
     <Link
       href="/"
-      className="w-full px-8 pt-8"
+      className="w-full px-6 pt-8"
     >
       <SiteLogo variant="sidebar" priority />
     </Link>
@@ -38,14 +38,14 @@ function SidebarDesktopNav() {
             key={item.label}
             href={item.href}
             className={cn(
-              "group relative flex min-h-[56px] items-center gap-5 px-10 py-4 text-left transition-all",
+              "group relative flex min-h-[52px] items-center gap-4 px-6 py-3.5 text-left transition-all",
               isActive
                 ? "bg-[rgba(255,255,255,0.03)] text-[var(--color-text)] before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-[var(--color-accent)]"
                 : "text-[var(--color-muted-strong)] hover:bg-white/4 hover:text-[var(--color-text)]"
             )}
           >
             <item.icon className="h-5 w-5 shrink-0" strokeWidth={2} />
-            <span className="font-[family-name:var(--font-heading)] text-[1.1rem] font-medium uppercase tracking-[0.14em]">
+            <span className="font-[family-name:var(--font-heading)] text-[0.98rem] font-medium uppercase tracking-[0.1em]">
               {item.label}
             </span>
           </Link>
@@ -69,7 +69,7 @@ export function Sidebar() {
       >
         <SidebarBrand />
         <SidebarDesktopNav />
-        <div className="mt-auto w-full px-8 pb-8">
+        <div className="mt-auto w-full px-6 pb-8">
           <SidebarAccountPanel />
           <button
             type="button"
@@ -100,7 +100,7 @@ export function Sidebar() {
           />
           <div
             className={cn(
-              "absolute inset-y-0 left-0 flex flex-col border-r border-[var(--color-border)] bg-[var(--color-sidebar)] px-6 pb-6 pt-6 shadow-[16px_0_36px_rgba(0,0,0,0.35)]",
+              "absolute inset-y-0 left-0 flex flex-col border-r border-[var(--color-border)] bg-[var(--color-sidebar)] px-5 pb-6 pt-6 shadow-[16px_0_36px_rgba(0,0,0,0.35)]",
               APP_SIDEBAR_DRAWER_WIDTH_CLASS
             )}
           >
@@ -128,7 +128,7 @@ export function Sidebar() {
                     href={item.href}
                     onClick={() => setOpen(false)}
                     className={cn(
-                      "relative flex items-center gap-4 px-4 py-4 font-[family-name:var(--font-heading)] text-sm tracking-[0.18em] transition",
+                      "relative flex items-center gap-3 px-3 py-3.5 font-[family-name:var(--font-heading)] text-[0.82rem] tracking-[0.14em] transition",
                       isActive
                         ? "bg-[rgba(255,255,255,0.03)] text-[var(--color-text)] before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-[var(--color-accent)]"
                         : "text-[var(--color-muted-strong)] hover:bg-white/4 hover:text-[var(--color-text)]"
