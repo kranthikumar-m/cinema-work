@@ -45,7 +45,7 @@ function SidebarDesktopNav() {
             )}
           >
             <item.icon className="h-5 w-5 shrink-0" strokeWidth={2} />
-            <span className="font-[family-name:var(--font-heading)] text-[0.98rem] font-medium uppercase tracking-[0.1em]">
+            <span className="font-[family-name:var(--font-heading)] text-[0.88rem] font-medium uppercase tracking-[0.08em]">
               {item.label}
             </span>
           </Link>
@@ -128,7 +128,7 @@ export function Sidebar() {
                     href={item.href}
                     onClick={() => setOpen(false)}
                     className={cn(
-                      "relative flex items-center gap-3 px-3 py-3.5 font-[family-name:var(--font-heading)] text-[0.82rem] tracking-[0.14em] transition",
+                      "relative flex items-center gap-3 px-3 py-3.5 font-[family-name:var(--font-heading)] text-[0.76rem] tracking-[0.12em] transition",
                       isActive
                         ? "bg-[rgba(255,255,255,0.03)] text-[var(--color-text)] before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-[var(--color-accent)]"
                         : "text-[var(--color-muted-strong)] hover:bg-white/4 hover:text-[var(--color-text)]"
