@@ -131,7 +131,7 @@ export function HomeLandingHero({
 
     target.scrollIntoView({
       behavior: "smooth",
-      block: "start",
+      block: "center",
     });
   }, [scrollTargetId]);
 
