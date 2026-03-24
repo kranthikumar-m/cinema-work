@@ -209,7 +209,7 @@ export function HomeLandingHero({
         </div>
       ) : null}
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-[54px] z-20 flex justify-center px-5 md:bottom-[62px] md:px-8 xl:px-14">
+      <div className="pointer-events-none absolute inset-x-0 bottom-[69px] z-20 flex justify-center px-5 md:bottom-[77px] md:px-8 xl:px-14">
         <button
           type="button"
           onClick={scrollToContent}
@@ -280,7 +280,7 @@ export function HomeLandingHero({
               </p>
             </div>
 
-            <div className="mt-auto flex flex-wrap gap-4 pt-0 -translate-y-[20px]">
+            <div className="mt-auto flex flex-wrap gap-4 pt-0 -translate-y-[40px]">
               <HeroButton href={slide.item.trailerHref} label="Trailers" icon={Play} primary />
               <HeroButton href="/features" label="Audio" icon={Music4} />
               <HeroButton href="/photos" label="Images" icon={ImageIcon} />
