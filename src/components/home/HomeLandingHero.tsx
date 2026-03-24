@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Image as ImageIcon,
@@ -211,26 +210,21 @@ export function HomeLandingHero({
       ) : null}
 
       <div className="pointer-events-none absolute inset-x-0 bottom-6 z-20 flex justify-center px-5 md:bottom-8 md:px-8 xl:px-14">
-        <motion.div
-          className="pointer-events-auto"
-          animate={{ y: [0, 6, 0], opacity: [0.84, 1, 0.84] }}
-          transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
+        <button
+          type="button"
+          onClick={scrollToContent}
+          aria-label="Scroll to content"
+          aria-controls={scrollTargetId}
+          className="pointer-events-auto group relative flex h-[52px] w-[32px] items-start justify-center rounded-full border border-[rgba(194,154,98,0.26)] bg-[rgba(11,14,24,0.42)] shadow-[0_18px_40px_rgba(6,8,16,0.18)] backdrop-blur-sm transition hover:border-[rgba(194,154,98,0.42)] hover:bg-[rgba(14,18,31,0.62)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(194,154,98,0.4)] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgba(11,14,24,0.95)]"
         >
-          <button
-            type="button"
-            onClick={scrollToContent}
-            aria-label="Scroll to content"
-            aria-controls={scrollTargetId}
-            className="group inline-flex items-center gap-3 rounded-full border border-[rgba(194,154,98,0.22)] bg-[rgba(12,16,28,0.58)] px-4 py-3 shadow-[0_18px_40px_rgba(6,8,16,0.2)] backdrop-blur-md transition hover:border-[rgba(194,154,98,0.38)] hover:bg-[rgba(16,20,34,0.74)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(194,154,98,0.4)] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgba(11,14,24,0.95)]"
-          >
-            <span className="font-[family-name:var(--font-heading)] text-[0.7rem] font-medium uppercase tracking-[0.18em] text-[var(--color-muted-strong)]">
-              Skip Hero
-            </span>
-            <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[rgba(194,154,98,0.18)] bg-[rgba(194,154,98,0.08)] text-[var(--color-accent)] transition group-hover:translate-y-0.5">
-              <ChevronDown className="h-4 w-4" />
-            </span>
-          </button>
-        </motion.div>
+          <motion.span
+            aria-hidden="true"
+            className="mt-3 h-2.5 w-[3px] rounded-full bg-[var(--color-accent)]"
+            animate={{ y: [0, 12, 0], opacity: [0.15, 1, 0.15] }}
+            transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <span className="sr-only">Skip hero and scroll to content</span>
+        </button>
       </div>
 
       <div className="relative flex min-h-[calc(100svh+80px)] items-center px-5 py-16 md:px-8 xl:px-14">
