@@ -209,7 +209,7 @@ export function HomeLandingHero({
         </div>
       ) : null}
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-6 z-20 flex justify-center px-5 md:bottom-8 md:px-8 xl:px-14">
+      <div className="pointer-events-none absolute inset-x-0 bottom-[54px] z-20 flex justify-center px-5 md:bottom-[62px] md:px-8 xl:px-14">
         <button
           type="button"
           onClick={scrollToContent}
