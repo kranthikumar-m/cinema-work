@@ -9,14 +9,14 @@ export default async function TrendingPage() {
   try {
     const movies = await getLatestTeluguReleases(30);
     return (
-      <div className="max-w-[1600px] mx-auto px-4 py-8">
+      <div className="app-page-shell py-8">
         <SectionHeader title="Validated Telugu Releases" />
         <MovieGrid movies={movies} />
       </div>
     );
   } catch {
     return (
-      <div className="max-w-[1600px] mx-auto px-4 py-8">
+      <div className="app-page-shell py-8">
         <SectionHeader title="Validated Telugu Releases" />
         <p className="text-gray-400">Unable to load validated Telugu releases. Please try again later.</p>
       </div>

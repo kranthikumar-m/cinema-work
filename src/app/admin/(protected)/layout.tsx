@@ -14,8 +14,8 @@ export default async function AdminProtectedLayout({
   const canManageUsers = userCanManageUsers(user.storedRole);
 
   return (
-    <div className="min-h-screen px-5 py-8 md:px-8 xl:px-14">
-      <div className="mx-auto max-w-[1500px] space-y-8">
+    <div className="app-page-shell min-h-[100dvh] py-8">
+      <div className="space-y-8">
         <header className="rounded-[32px] border border-[var(--color-border)] bg-[rgba(19,23,36,0.82)] p-7 shadow-[0_30px_80px_rgba(7,10,18,0.26)]">
           <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
             <div className="space-y-5">

@@ -9,14 +9,14 @@ export default async function UpcomingPage() {
   try {
     const movies = await getUpcomingTeluguMovies(30);
     return (
-      <div className="max-w-[1600px] mx-auto px-4 py-8">
+      <div className="app-page-shell py-8">
         <SectionHeader title="Upcoming Telugu Movies" />
         <MovieGrid movies={movies} />
       </div>
     );
   } catch {
     return (
-      <div className="max-w-[1600px] mx-auto px-4 py-8">
+      <div className="app-page-shell py-8">
         <SectionHeader title="Upcoming Telugu Movies" />
         <p className="text-gray-400">Unable to load upcoming Telugu movies. Please try again later.</p>
       </div>

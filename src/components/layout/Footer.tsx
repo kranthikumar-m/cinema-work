@@ -20,7 +20,7 @@ export function Footer({
     >
       <div
         className={cn(
-          "mx-auto max-w-[1600px] px-5 py-12 md:px-8 xl:px-14",
+          "app-page-shell py-12",
           contentClassName
         )}
       >

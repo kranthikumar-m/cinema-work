@@ -7,8 +7,8 @@ export default async function AccountPage() {
   const user = await requireAuthenticatedUser("/account");
 
   return (
-    <div className="px-5 py-10 md:px-8 xl:px-14">
-      <div className="mx-auto grid max-w-[1320px] gap-8 xl:grid-cols-[minmax(0,1.2fr)_360px]">
+    <div className="app-page-shell-compact py-10">
+      <div className="grid gap-8 xl:grid-cols-[minmax(0,1.2fr)_360px]">
         <section className="rounded-[32px] border border-[var(--color-border)] bg-[rgba(16,20,31,0.84)] p-8 shadow-[0_30px_80px_rgba(5,8,18,0.28)] md:p-10">
           <p className="text-sm uppercase tracking-[0.18em] text-[var(--color-accent)]">
             Your account

@@ -2,8 +2,8 @@ import Link from "next/link";
 
 export default function UnauthorizedPage() {
   return (
-    <div className="px-5 py-12 md:px-8 xl:px-14">
-      <div className="mx-auto max-w-[960px] rounded-[32px] border border-[var(--color-border)] bg-[rgba(16,20,31,0.84)] p-8 shadow-[0_30px_80px_rgba(5,8,18,0.28)] md:p-10">
+    <div className="app-page-shell-narrow py-12">
+      <div className="rounded-[32px] border border-[var(--color-border)] bg-[rgba(16,20,31,0.84)] p-8 shadow-[0_30px_80px_rgba(5,8,18,0.28)] md:p-10">
         <p className="text-sm uppercase tracking-[0.18em] text-[var(--color-accent)]">
           Access denied
         </p>

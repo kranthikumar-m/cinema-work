@@ -9,7 +9,7 @@ import { TopNavAccountControls } from "@/components/layout/TopNavAccountControls
 export function TopNav() {
   return (
     <header className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-[rgba(28,33,51,0.92)] backdrop-blur-xl">
-      <div className="flex h-[84px] items-center justify-between px-5 md:px-8 xl:px-14">
+      <div className="flex h-[84px] items-center justify-between px-[var(--app-page-gutter)]">
         <div className="flex items-center">
           <Link href="/" className="ml-14 block lg:hidden">
             <SiteLogo variant="nav" priority />

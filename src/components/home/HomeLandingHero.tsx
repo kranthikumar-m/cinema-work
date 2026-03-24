@@ -156,7 +156,7 @@ export function HomeLandingHero({
   const activeStars = Math.max(0, Math.min(5, Math.round(ratingOutOfFive)));
 
   return (
-    <section className="relative min-h-[calc(100svh+80px)] overflow-hidden">
+    <section className="relative min-h-[calc(100dvh+80px)] overflow-hidden">
       <AnimatePresence mode="wait">
         <motion.div
           key={String(slide.item.id)}
@@ -171,7 +171,7 @@ export function HomeLandingHero({
             alt={slide.item.title}
             fill
             priority={current === 0}
-            sizes="(min-width: 1280px) calc(100vw - 208px), 100vw"
+            sizes="(min-width: 1280px) calc(100vw - 13rem), 100vw"
             quality={95}
             className="object-cover object-center"
             unoptimized={shouldUseUnoptimizedImage(heroImage)}
@@ -209,7 +209,7 @@ export function HomeLandingHero({
         </div>
       ) : null}
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-[79px] z-20 flex justify-center px-5 md:bottom-[87px] md:px-8 xl:px-14">
+      <div className="pointer-events-none absolute inset-x-0 bottom-[79px] z-20 flex justify-center px-[var(--app-page-gutter)] md:bottom-[87px]">
         <button
           type="button"
           onClick={scrollToContent}
@@ -227,7 +227,7 @@ export function HomeLandingHero({
         </button>
       </div>
 
-      <div className="relative flex min-h-[calc(100svh+80px)] items-center px-5 py-16 md:px-8 xl:px-14">
+      <div className="relative flex min-h-[calc(100dvh+80px)] items-center px-[var(--app-page-gutter)] py-16">
         <div className="relative w-full max-w-[930px] translate-y-[100px]">
           <motion.div
             key={`${slide.item.id}-content`}

@@ -101,7 +101,7 @@ export default async function MovieDetailPage({ params }: Props) {
 
       <div
         id="overview"
-        className="relative z-10 mx-auto -mt-48 max-w-[1400px] scroll-mt-[170px] px-4"
+        className="app-page-shell-detail relative z-10 -mt-48 scroll-mt-[170px]"
       >
         <div className="flex flex-col md:flex-row gap-8">
           {/* Poster */}

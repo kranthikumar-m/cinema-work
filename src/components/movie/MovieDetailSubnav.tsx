@@ -31,7 +31,7 @@ export function MovieDetailSubnav() {
 
   return (
     <div className="sticky top-[84px] z-20 border-b border-[var(--color-border)] bg-[rgba(26,30,46,0.92)] backdrop-blur-xl">
-      <div className="mx-auto flex max-w-[1400px] items-center gap-8 overflow-x-auto px-4 py-4 scrollbar-hide md:px-8 xl:px-14">
+      <div className="app-page-shell-detail flex items-center gap-8 overflow-x-auto py-4 scrollbar-hide">
         {MOVIE_DETAIL_TABS.map((tab) => {
           const isActive = activeTab === tab.id;
 

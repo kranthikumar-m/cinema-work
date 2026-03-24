@@ -281,8 +281,8 @@ export default async function HomePage() {
         scrollTargetId="validated-releases-panel"
       />
 
-      <section id="home-content" className="scroll-mt-6 px-5 py-16 md:px-8 xl:px-14">
-        <div className="mx-auto max-w-[1600px]">
+      <section id="home-content" className="scroll-mt-6 py-16">
+        <div className="app-page-shell">
           <div className="flex flex-col gap-10 xl:flex-row xl:items-start xl:gap-10">
             <div className="min-w-0 flex-1 space-y-10">
               <div

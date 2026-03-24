@@ -21,7 +21,7 @@ export function AppChrome({ children }: AppChromeProps) {
 
   if (isAdminRoute) {
     return (
-      <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
+      <div className="min-h-[100dvh] bg-[var(--color-bg)] text-[var(--color-text)]">
         {children}
       </div>
     );
@@ -32,7 +32,7 @@ export function AppChrome({ children }: AppChromeProps) {
       <Sidebar />
       <div
         className={cn(
-          "relative flex min-h-screen flex-col bg-[var(--color-bg)] text-[var(--color-text)]",
+          "relative flex min-h-[100dvh] flex-col bg-[var(--color-bg)] text-[var(--color-text)]",
           APP_SIDEBAR_CONTENT_OFFSET_CLASS
         )}
       >

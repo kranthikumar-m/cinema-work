@@ -6,7 +6,7 @@ import { SearchOverlayLauncher } from "@/components/layout/SearchOverlayLauncher
 export function HomeHeader() {
   return (
     <header className="pointer-events-none absolute inset-x-0 top-0 z-30">
-      <div className="flex h-[84px] items-center justify-end px-5 md:px-8 xl:px-14">
+      <div className="flex h-[84px] items-center justify-end px-[var(--app-page-gutter)]">
         <SearchOverlayLauncher>
           {(openSearch) => (
             <button
