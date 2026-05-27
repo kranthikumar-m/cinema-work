@@ -20,6 +20,8 @@ interface PhotoGalleryProps {
   extraImages?: GalleryImage[];
 }
 
+type Tab = "backdrops" | "posters";
+
 function toGalleryImage(img: MovieImage): GalleryImage {
   return {
     thumbnailUrl: getImageUrl(img.file_path, "w500"),
@@ -28,26 +30,70 @@ function toGalleryImage(img: MovieImage): GalleryImage {
   };
 }
 
-export function PhotoGallery({ images, title, extraImages }: PhotoGalleryProps) {
-  const [selected, setSelected] = useState<number | null>(null);
+function isLandscape(item: GalleryImage) {
+  return (item.aspectRatio ?? 16 / 9) >= 1;
+}
 
+export function PhotoGallery({ images, title, extraImages }: PhotoGalleryProps) {
   const allItems: GalleryImage[] = [
     ...(extraImages ?? []),
     ...images.map(toGalleryImage),
   ];
-  const visible = allItems.slice(0, 12);
 
-  if (!visible.length) return null;
+  const backdrops = allItems.filter((item) => isLandscape(item));
+  const posters = allItems.filter((item) => !isLandscape(item));
+
+  const defaultTab: Tab = backdrops.length > 0 ? "backdrops" : "posters";
+  const [activeTab, setActiveTab] = useState<Tab>(defaultTab);
+  const [selected, setSelected] = useState<number | null>(null);
+
+  const visible = (activeTab === "backdrops" ? backdrops : posters).slice(0, 12);
+
+  if (!backdrops.length && !posters.length) return null;
 
   return (
     <>
-      <div className="columns-2 md:columns-3 lg:columns-4 gap-3">
+      {backdrops.length > 0 && posters.length > 0 && (
+        <div className="mb-4 flex gap-2">
+          <button
+            type="button"
+            onClick={() => { setActiveTab("backdrops"); setSelected(null); }}
+            className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+              activeTab === "backdrops"
+                ? "bg-cyan-500/15 text-cyan-400 border border-cyan-500/30"
+                : "border border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-500"
+            }`}
+          >
+            Backdrops ({backdrops.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => { setActiveTab("posters"); setSelected(null); }}
+            className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+              activeTab === "posters"
+                ? "bg-cyan-500/15 text-cyan-400 border border-cyan-500/30"
+                : "border border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-500"
+            }`}
+          >
+            Posters ({posters.length})
+          </button>
+        </div>
+      )}
+
+      <div
+        className={
+          activeTab === "backdrops"
+            ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"
+            : "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3"
+        }
+      >
         {visible.map((item, i) => (
           <button
             key={item.thumbnailUrl}
             onClick={() => setSelected(i)}
-            className="relative mb-3 block w-full overflow-hidden rounded-lg group break-inside-avoid"
-            style={{ aspectRatio: item.aspectRatio ?? 16 / 9 }}
+            className={`relative overflow-hidden rounded-lg group ${
+              activeTab === "backdrops" ? "aspect-video" : "aspect-[2/3]"
+            }`}
           >
             <Image
               src={item.thumbnailUrl}
@@ -107,7 +153,11 @@ export function PhotoGallery({ images, title, extraImages }: PhotoGalleryProps) 
               </button>
             )}
             <div
-              className="relative w-full max-w-5xl mx-4 aspect-video"
+              className={`relative w-full mx-4 ${
+                activeTab === "backdrops"
+                  ? "max-w-5xl aspect-video"
+                  : "max-w-md aspect-[2/3]"
+              }`}
               onClick={(e) => e.stopPropagation()}
             >
               <Image
