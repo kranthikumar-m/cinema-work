@@ -33,6 +33,9 @@ interface Props {
 }
 
 function shouldUseUnoptimizedImage(src: string) {
+  // Local assets (e.g. placeholder SVGs) bypass the optimizer, and any
+  // non-TMDB remote URL (Google fallbacks) isn't covered by our config.
+  if (src.startsWith("/")) return true;
   return /^https?:\/\//i.test(src) && !src.includes("image.tmdb.org");
 }
 
@@ -79,9 +82,14 @@ export default async function MovieDetailPage({ params }: Props) {
     .filter((item) => item.original_language === "te")
     .slice(0, 6);
   const backdropSelection = await resolvePreferredBackdrop(movie, movie.backdrop_path);
+  // Prefer a real backdrop; when none exists (common for upcoming/regional
+  // titles), fall back to the poster so the hero always shows an actual image
+  // instead of an empty placeholder.
   const heroImage =
     backdropSelection.imageUrl ||
-    getBackdropUrl(backdropSelection.backdropPath, "original");
+    (backdropSelection.backdropPath
+      ? getBackdropUrl(backdropSelection.backdropPath, "original")
+      : getMoviePosterUrl(movie, "w1280"));
   const posterImage = getMoviePosterUrl(movie, "w500");
 
   return (
