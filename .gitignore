@@ -28,6 +28,12 @@ yarn-error.log*
 # local env files
 .env*.local
 
+# local admin database
+/data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
 # vercel
 .vercel
 

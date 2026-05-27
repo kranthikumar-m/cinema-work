@@ -12,6 +12,7 @@ import {
 import {
   getImageUrl,
   getBackdropUrl,
+  getMoviePosterUrl,
   formatDate,
   formatRuntime,
   formatCurrency,
@@ -23,21 +24,27 @@ import { PhotoGallery } from "@/components/movie/PhotoGallery";
 import { ReviewCard } from "@/components/movie/ReviewCard";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { MovieDetailClient } from "./client";
+import { enrichMovieAssets } from "@/services/telugu-movies";
+import { resolvePreferredBackdrop } from "@/services/movie-backdrops";
 import type { Metadata } from "next";
 
 interface Props {
   params: { id: string };
 }
 
+function shouldUseUnoptimizedImage(src: string) {
+  return /^https?:\/\//i.test(src) && !src.includes("image.tmdb.org");
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const movie = await getMovieDetails(Number(params.id));
     return {
-      title: `${movie.title} - TCU`,
+      title: `${movie.title} - Telugu Cinema Updates`,
       description: movie.overview,
     };
   } catch {
-    return { title: "Movie - TCU" };
+    return { title: "Movie - Telugu Cinema Updates" };
   }
 }
 
@@ -57,6 +64,8 @@ export default async function MovieDetailPage({ params }: Props) {
         getSimilarMovies(id),
         getWatchProviders(id),
       ]);
+
+    movie = await enrichMovieAssets(movie);
   } catch {
     notFound();
   }
@@ -65,50 +74,47 @@ export default async function MovieDetailPage({ params }: Props) {
     (v) => v.type === "Trailer" && v.site === "YouTube"
   );
   const director = credits.crew.find((c) => c.job === "Director");
-  const inProviders = providers.results?.IN;
-
-  // Resolve a hero backdrop with graceful fallbacks so the banner is never blank:
-  // TMDB primary backdrop -> first gallery backdrop -> poster -> placeholder.
-  const galleryBackdropPath = images.backdrops[0]?.file_path ?? null;
-  const heroBackdropUrl = movie.backdrop_path
-    ? getBackdropUrl(movie.backdrop_path, "original")
-    : galleryBackdropPath
-      ? getBackdropUrl(galleryBackdropPath, "original")
-      : movie.poster_path
-        ? getImageUrl(movie.poster_path, "w1280")
-        : "/placeholder-backdrop.svg";
-  const heroBackdropIsRemote = Boolean(
-    movie.backdrop_path || galleryBackdropPath || movie.poster_path
-  );
+  const usProviders = providers.results?.US;
+  const similarTeluguMovies = similar.results
+    .filter((item) => item.original_language === "te")
+    .slice(0, 6);
+  const backdropSelection = await resolvePreferredBackdrop(movie, movie.backdrop_path);
+  const heroImage =
+    backdropSelection.imageUrl ||
+    getBackdropUrl(backdropSelection.backdropPath, "original");
+  const posterImage = getMoviePosterUrl(movie, "w500");
 
   return (
     <div>
       {/* Hero Banner */}
       <div className="relative h-[50vh] min-h-[400px]">
         <Image
-          src={heroBackdropUrl}
+          src={heroImage}
           alt={movie.title}
           fill
           className="object-cover"
           priority
-          unoptimized={!heroBackdropIsRemote}
+          unoptimized={shouldUseUnoptimizedImage(heroImage)}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/60 to-transparent" />
       </div>
 
-      <div className="max-w-[1400px] mx-auto px-4 -mt-48 relative z-10">
+      <div
+        id="overview"
+        className="app-page-shell-detail relative z-10 -mt-48 scroll-mt-[170px]"
+      >
         <div className="flex flex-col md:flex-row gap-8">
           {/* Poster */}
           <div className="flex-shrink-0">
             <div className="w-56 md:w-64 rounded-xl overflow-hidden shadow-2xl mx-auto md:mx-0">
               <Image
-                src={getImageUrl(movie.poster_path, "w500")}
+                src={posterImage}
                 alt={movie.title}
                 width={256}
                 height={384}
                 className="w-full h-auto"
                 priority
-                unoptimized={!movie.poster_path}
+                unoptimized={shouldUseUnoptimizedImage(posterImage)}
               />
             </div>
           </div>
@@ -179,14 +185,14 @@ export default async function MovieDetailPage({ params }: Props) {
         )}
 
         {/* Watch Providers */}
-        {inProviders && (inProviders.flatrate || inProviders.rent || inProviders.buy) && (
+        {usProviders && (usProviders.flatrate || usProviders.rent || usProviders.buy) && (
           <div className="mt-12">
             <SectionHeader title="Where to Watch" />
             <div className="flex flex-wrap gap-4">
               {[
-                ...(inProviders.flatrate || []),
-                ...(inProviders.rent || []),
-                ...(inProviders.buy || []),
+                ...(usProviders.flatrate || []),
+                ...(usProviders.rent || []),
+                ...(usProviders.buy || []),
               ]
                 .filter(
                   (p, i, arr) =>
@@ -216,19 +222,23 @@ export default async function MovieDetailPage({ params }: Props) {
         )}
 
         {/* Reviews */}
-        {reviews.results.length > 0 && (
-          <div className="mt-12">
-            <SectionHeader title="Reviews" />
+        <section id="reviews" className="mt-12 scroll-mt-[170px]">
+          <SectionHeader title="Reviews" />
+          {reviews.results.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2">
               {reviews.results.slice(0, 4).map((r) => (
                 <ReviewCard key={r.id} review={r} />
               ))}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="rounded-xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.48)] px-5 py-6 text-sm text-[var(--color-muted-strong)]">
+              Critic and audience reviews have not been published for this title yet.
+            </div>
+          )}
+        </section>
 
         {/* Facts Panel */}
-        <div className="mt-12">
+        <section id="box-office" className="mt-12 scroll-mt-[170px]">
           <SectionHeader title="Movie Facts" />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
@@ -258,14 +268,14 @@ export default async function MovieDetailPage({ params }: Props) {
               ))}
             </div>
           )}
-        </div>
+        </section>
 
         {/* Similar Movies */}
-        {similar.results.length > 0 && (
+        {similarTeluguMovies.length > 0 && (
           <div className="mt-12 pb-12">
             <SectionHeader title="Similar Movies" />
             <MovieGrid
-              movies={similar.results.slice(0, 6)}
+              movies={similarTeluguMovies}
               columns="grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6"
             />
           </div>

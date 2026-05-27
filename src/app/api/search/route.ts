@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { searchMovies } from "@/services/tmdb";
+import { searchTeluguMovies } from "@/services/telugu-movies";
 
 export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get("q");
@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const data = await searchMovies(q);
+    const data = await searchTeluguMovies(q);
     return NextResponse.json(data);
   } catch (error) {
     console.error("Search API error:", error);

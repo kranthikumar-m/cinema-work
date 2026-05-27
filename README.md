@@ -1,217 +1,243 @@
-# TCU - Telugu Cinema Updates
+# Telugu Cinema Updates
 
-A modern, dark-themed movie news and discovery website focused on Indian cinema, especially Telugu films, with coverage across Hindi, Tamil, Kannada, and Malayalam industries. Built with Next.js 14, TypeScript, and Tailwind CSS and powered by the TMDB API.
+Telugu Cinema Updates is a Telugu-first movie discovery platform built with Next.js. It prioritizes Telugu movie releases and editorial coverage, validates current-year releases against Wikipedia, supports fallback artwork when TMDB is incomplete, and now includes a real database-backed authentication and authorization system for users and admins.
 
 ## Features
 
-- Full-screen hero carousel with trending movies
-- Movie listing pages: Trending, Popular, Upcoming, Top Rated, Now Playing
-- Detailed movie pages with trailers, cast, photos, reviews, and watch providers
-- Instant search with debounced input
-- Editorial content sections (News, Reviews, Interviews, Features)
-- Left sidebar + top navigation layout
-- Right sidebar widgets for quick discovery
-- Fully responsive (desktop, tablet, mobile)
-- Dark cinematic theme with cyan accent
+- Telugu-first homepage, discovery feeds, and movie detail pages
+- TMDB-driven movie data with Wikipedia validation for current-year Telugu releases
+- Fallback poster/backdrop lookup only when TMDB is missing assets
+- Real user authentication:
+  - register
+  - login
+  - logout
+  - forgot password
+  - reset password
+  - persistent cookie sessions
+- Role-based authorization:
+  - `user`
+  - `admin`
+- Protected account page for authenticated users
+- Protected admin console for backdrop overrides and user management
+- Admin tools for:
+  - viewing users
+  - searching/filtering users
+  - creating users
+  - changing role
+  - enabling/disabling users
+  - deleting users
 
 ## Tech Stack
 
-- **Framework**: Next.js 14 (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **Animations**: Framer Motion
-- **Icons**: Lucide React
-- **UI Primitives**: Radix UI
-- **API**: TMDB (The Movie Database)
+- Next.js 14 App Router
+- TypeScript
+- Tailwind CSS
+- Lucide React
+- Radix UI
+- SQLite for local development and Supabase-backed auth/admin persistence in deployment
+- TMDB API
+- Wikipedia scraping for Telugu release validation
 
 ## Prerequisites
 
 - Node.js 18+ (20 recommended)
 - npm 9+
-- A TMDB API key ([get one here](https://www.themoviedb.org/settings/api))
+- TMDB API key
 
 ## Getting Started
 
-### 1. Clone and install
+### 1. Install dependencies
 
 ```bash
-git clone <repo-url>
-cd cinema-work
 npm install
 ```
 
 ### 2. Configure environment
 
+Copy the example env file:
+
 ```bash
 cp .env.example .env.local
 ```
 
-Edit `.env.local` and add your TMDB API key:
+Set the core values:
 
-```
-TMDB_API_KEY=your_actual_tmdb_api_key
+```env
+TMDB_API_KEY=your_tmdb_key
+DATABASE_URL=file:./data/cinema.sqlite
+AUTH_SECRET=replace_with_a_long_random_secret
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
-### 3. Run development server
+For Supabase-backed deployments, set:
+
+```env
+DATABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your_server_side_service_role_key
+AUTH_SECRET=replace_with_a_long_random_secret
+```
+
+This repo also defaults production auth/admin storage to `https://jnevaakkhhndokvnickz.supabase.co` when no database URL env is set, so the only required deployment secret for Supabase storage is usually `SUPABASE_SERVICE_ROLE_KEY`.
+
+Optional bootstrap admin setup:
+
+```env
+ADMIN_BOOTSTRAP_EMAIL=admin@example.com
+ADMIN_BOOTSTRAP_PASSWORD=change-me-now
+```
+
+When the database is empty, the first server startup will create this admin automatically.
+
+### 3. Run locally
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open `http://localhost:3000`.
 
-### 4. Build for production
+## Authentication Setup
 
-```bash
-npm run build
-npm run start
-```
+The app uses a custom production-oriented auth flow backed by SQLite in local development and by Supabase when `DATABASE_URL` is set to your Supabase project URL.
+
+### What is stored
+
+- `users`
+- `sessions`
+- `password_reset_tokens`
+- `movie_backdrop_overrides`
+
+### Security model
+
+- Passwords are hashed with `scrypt`
+- Session cookies are `httpOnly`
+- Reset tokens are random, hashed, single-use, and time-limited
+- Disabled accounts are blocked server-side
+- Login, registration, and forgot-password endpoints include basic server-side rate limiting
+- Admin routes and admin APIs are enforced on the server, not just hidden in the UI
+
+### Roles
+
+- `user`: normal authenticated account
+- `admin`: admin console access and user management
+
+The database still tolerates older stored roles such as `editor` and `viewer` for backward compatibility, but the public auth system exposes the supported roles as `user` and `admin`.
+
+## Password Reset Email Integration
+
+The full reset flow is implemented, including token generation, expiry, and token consumption.
+
+Email delivery is currently stubbed in:
+
+- `src/services/auth-mail.ts`
+
+Replace that implementation with your real provider, for example:
+
+- Resend
+- Postmark
+- SES
+- SendGrid
+
+In development, the forgot-password API also returns the reset URL in the JSON response so the flow can be tested without email infrastructure.
+
+## Admin Access
+
+### Initial admin creation
+
+Use one of these approaches:
+
+1. Set `ADMIN_BOOTSTRAP_EMAIL` and `ADMIN_BOOTSTRAP_PASSWORD` before first run.
+2. Start the app with an empty database so the bootstrap admin is created automatically.
+
+### Admin routes
+
+- `/admin`
+- `/admin/users`
+
+Admin-only APIs are under:
+
+- `/api/admin/*`
 
 ## Environment Variables
 
 | Variable | Required | Description |
 |---|---|---|
-| `TMDB_API_KEY` | Yes | Your TMDB API key |
-| `TMDB_BASE_URL` | No | TMDB API base URL (default: `https://api.themoviedb.org/3`) |
-| `NEXT_PUBLIC_SITE_URL` | No | Public URL for SEO metadata |
+| `TMDB_API_KEY` | Yes | TMDB API key |
+| `DATABASE_URL` | Optional in this repo | Local SQLite `file:` URL or your Supabase project URL. Local development falls back to `file:./data/cinema.sqlite`; production falls back to this repo's configured Supabase project URL. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Required for Supabase | Server-side key used for auth/admin storage when `DATABASE_URL` points to Supabase |
+| `AUTH_SECRET` | Yes in production | Secret used to sign/hash session and reset tokens. Local development has a fallback secret only outside production. |
+| `NEXT_PUBLIC_SITE_URL` | Recommended | Public base URL used in reset links |
+| `TMDB_BASE_URL` | No | Override TMDB API base URL |
+| `GOOGLE_IMAGES_USER_AGENT` | No | User agent for fallback image retrieval |
+| `ADMIN_BOOTSTRAP_EMAIL` | Optional | Seed the first admin when DB is empty |
+| `ADMIN_BOOTSTRAP_PASSWORD` | Optional | Seed password for the first admin |
 
-## Deployment
+## Route Protection
 
-### Vercel (Recommended)
+Protection is enforced in layers:
 
-1. Push your code to GitHub
-2. Import the repository in [Vercel](https://vercel.com)
-3. Add environment variable `TMDB_API_KEY` in Vercel project settings
-4. Deploy - Vercel handles everything automatically
+- Middleware:
+  - redirects unauthenticated access away from `/account` and `/admin/*`
+- Server-side page guards:
+  - `requireAuthenticatedUser`
+  - `requireAdminUser`
+  - `requireLoggedOutUser`
+- API guards:
+  - authenticated API guard
+  - admin API guard
 
-No special configuration files are needed. The `next.config.mjs` is already configured with `output: "standalone"` and proper image domains.
+## Telugu Release Pipeline
 
-### Docker
+The Telugu movie pipeline still works like this:
 
-Build and run with Docker:
+1. TMDB is queried with Telugu-first signals such as original language, region, and release-date filters.
+2. Current-year Telugu releases are scraped from relevant Wikipedia release pages.
+3. Titles are normalized and fuzzy-matched.
+4. A movie is treated as a validated Telugu release only when TMDB and Wikipedia agree on the release date.
+5. Missing posters/backdrops fall back to Google Images only when TMDB does not provide a usable asset.
 
-```bash
-# Build the image
-docker build -t tcu --build-arg TMDB_API_KEY=your_key .
+## Deployment Notes
 
-# Run the container
-docker run -p 3000:3000 -e TMDB_API_KEY=your_key tcu
-```
-
-Or use Docker Compose:
-
-```bash
-# Create .env file with TMDB_API_KEY=your_key
-echo "TMDB_API_KEY=your_key" > .env
-
-# Build and start
-docker compose up -d
-```
-
-The app will be available at `http://localhost:3000`.
-
-### Linux VPS with PM2 + Nginx
-
-#### 1. Setup Node.js
-
-```bash
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs
-sudo npm install -g pm2
-```
-
-#### 2. Deploy the app
-
-```bash
-cd /var/www
-git clone <repo-url> tcu
-cd tcu
-npm ci
-cp .env.example .env.local
-# Edit .env.local with your TMDB_API_KEY
-npm run build
-```
-
-#### 3. Start with PM2
-
-```bash
-pm2 start npm --name "tcu" -- start
-pm2 save
-pm2 startup
-```
-
-#### 4. Nginx reverse proxy
-
-```nginx
-server {
-    listen 80;
-    server_name yourdomain.com;
-
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-```
-
-```bash
-sudo ln -s /etc/nginx/sites-available/tcu /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx
-```
-
-#### 5. HTTPS with Let's Encrypt
-
-```bash
-sudo apt install certbot python3-certbot-nginx
-sudo certbot --nginx -d yourdomain.com
-```
+- Set `DATABASE_URL`, `AUTH_SECRET`, and `TMDB_API_KEY` explicitly in production.
+- For Supabase deployments, set `DATABASE_URL` to `https://your-project-ref.supabase.co`, set `SUPABASE_SERVICE_ROLE_KEY`, and run `supabase/schema.sql` once in the Supabase SQL editor before deploying.
+- If you stay on SQLite in production, use a persistent filesystem path or mounted volume instead of relying on the default local dev path.
+- Replace the password-reset email stub before enabling user-facing password recovery in production.
 
 ## Scripts
 
 | Script | Description |
 |---|---|
-| `npm run dev` | Start development server |
+| `npm run dev` | Start the development server |
 | `npm run build` | Build for production |
-| `npm run start` | Start production server |
+| `npm run start` | Start the production server |
 | `npm run lint` | Run ESLint |
-| `npm run typecheck` | Run TypeScript type checking |
-| `npm run docker:build` | Build Docker image |
-| `npm run docker:run` | Run Docker container |
+| `npm run typecheck` | Run TypeScript checks |
 
 ## Project Structure
 
-```
+```text
 src/
-├── app/                  # Next.js App Router pages
-│   ├── api/search/       # Search API route
-│   ├── movie/[id]/       # Movie detail page
-│   ├── movies/           # Movie listing pages
-│   ├── news/             # Editorial pages
-│   ├── reviews/
-│   ├── interviews/
-│   ├── features/
-│   ├── search/           # Search results page
-│   ├── videos/
-│   └── photos/
-├── components/
-│   ├── layout/           # Sidebar, TopNav, Footer, SearchOverlay
-│   ├── movie/            # MovieCard, HeroCarousel, CastCarousel, etc.
-│   ├── shared/           # RatingRing, SectionHeader, ErrorState, etc.
-│   └── ui/               # Button, Skeleton
-├── data/                 # Editorial seed content
-├── lib/                  # Utilities, env config
-├── services/             # TMDB API service layer
-└── types/                # TypeScript type definitions
+  app/
+    account/                  # Authenticated account page
+    admin/                    # Protected admin console
+    api/auth/                 # Register/login/logout/reset APIs
+    api/admin/                # Admin-only APIs
+    movie/[id]/               # Movie detail page
+    movies/                   # Telugu movie listing pages
+  components/
+    admin/                    # Admin UI
+    auth/                     # Auth forms, provider, sign-out
+    home/                     # Homepage hero and feeds
+    layout/                   # Sidebar, top nav, footer, search overlay
+  lib/
+    auth.ts                   # Auth/session/user management
+    database.ts               # SQLite/Supabase persistence provider
+  services/
+    tmdb.ts                   # TMDB integration
+    wikipedia.ts              # Wikipedia validation
+    movie-backdrops.ts        # Admin-aware backdrop resolution
 ```
 
 ## Attribution
 
-This product uses the [TMDB API](https://www.themoviedb.org/) but is not endorsed or certified by TMDB.
+This product uses the TMDB API but is not endorsed or certified by TMDB.

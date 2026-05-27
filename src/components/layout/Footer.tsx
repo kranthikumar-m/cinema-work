@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { Logo } from "@/components/shared/Logo";
+import { SiteLogo } from "@/components/layout/SiteLogo";
 
 interface FooterProps {
   className?: string;
@@ -12,55 +12,65 @@ export function Footer({
   contentClassName = "",
 }: FooterProps) {
   return (
-    <footer className={cn("border-t border-gray-800/50 bg-gray-950", className)}>
+    <footer
+      className={cn(
+        "border-t border-[var(--color-border)] bg-[var(--color-bg-deep)]",
+        className
+      )}
+    >
       <div
         className={cn(
-          "mx-auto max-w-7xl px-4 py-10 md:px-6 xl:px-8",
+          "app-page-shell py-12",
           contentClassName
         )}
       >
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-2 xl:grid-cols-4">
           <div>
-            <div className="mb-4">
-              <Logo size={32} showLabel={true} linkTo="" />
+            <div className="mb-5">
+              <SiteLogo variant="footer" />
             </div>
-            <p className="text-sm text-gray-500">
-              Your destination for Telugu, Hindi, Tamil, Kannada &amp; Malayalam cinema updates.
+            <p className="max-w-xs text-sm leading-7 text-[var(--color-muted-strong)]">
+              Telugu-first movie coverage with validated releases, trailers, stories, and release tracking powered by TMDB and Wikipedia cross-checks.
             </p>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-white mb-3">Languages</h3>
-            <ul className="space-y-2 text-sm text-gray-400">
-              <li><Link href="/movies/telugu" className="hover:text-cyan-400 transition-colors">Telugu</Link></li>
-              <li><Link href="/movies/hindi" className="hover:text-cyan-400 transition-colors">Hindi</Link></li>
-              <li><Link href="/movies/tamil" className="hover:text-cyan-400 transition-colors">Tamil</Link></li>
-              <li><Link href="/movies/kannada" className="hover:text-cyan-400 transition-colors">Kannada</Link></li>
-              <li><Link href="/movies/malayalam" className="hover:text-cyan-400 transition-colors">Malayalam</Link></li>
+            <h3 className="mb-4 font-[family-name:var(--font-heading)] text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
+              Explore
+            </h3>
+            <ul className="space-y-3 text-sm text-[var(--color-muted-strong)]">
+              <li><Link href="/movies/trending" className="transition-colors hover:text-[var(--color-text)]">Validated Releases</Link></li>
+              <li><Link href="/movies/popular" className="transition-colors hover:text-[var(--color-text)]">Popular Telugu</Link></li>
+              <li><Link href="/movies/upcoming" className="transition-colors hover:text-[var(--color-text)]">Upcoming Telugu</Link></li>
+              <li><Link href="/movies/top-rated" className="transition-colors hover:text-[var(--color-text)]">Top Rated Telugu</Link></li>
             </ul>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-white mb-3">Content</h3>
-            <ul className="space-y-2 text-sm text-gray-400">
-              <li><Link href="/news" className="hover:text-cyan-400 transition-colors">News</Link></li>
-              <li><Link href="/reviews" className="hover:text-cyan-400 transition-colors">Reviews</Link></li>
-              <li><Link href="/interviews" className="hover:text-cyan-400 transition-colors">Interviews</Link></li>
-              <li><Link href="/features" className="hover:text-cyan-400 transition-colors">Features</Link></li>
+            <h3 className="mb-4 font-[family-name:var(--font-heading)] text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
+              Content
+            </h3>
+            <ul className="space-y-3 text-sm text-[var(--color-muted-strong)]">
+              <li><Link href="/news" className="transition-colors hover:text-[var(--color-text)]">News</Link></li>
+              <li><Link href="/reviews" className="transition-colors hover:text-[var(--color-text)]">Reviews</Link></li>
+              <li><Link href="/interviews" className="transition-colors hover:text-[var(--color-text)]">Interviews</Link></li>
+              <li><Link href="/features" className="transition-colors hover:text-[var(--color-text)]">Features</Link></li>
             </ul>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-white mb-3">Legal</h3>
-            <ul className="space-y-2 text-sm text-gray-400">
+            <h3 className="mb-4 font-[family-name:var(--font-heading)] text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
+              Legal
+            </h3>
+            <ul className="space-y-3 text-sm text-[var(--color-muted-strong)]">
               <li><span className="cursor-default">Privacy Policy</span></li>
               <li><span className="cursor-default">Terms of Service</span></li>
               <li><span className="cursor-default">Cookie Policy</span></li>
             </ul>
-            <p className="text-xs text-gray-600 mt-4">
+            <p className="mt-4 text-xs leading-6 text-[var(--color-muted)]">
               Powered by TMDB. This product uses the TMDB API but is not endorsed or certified by TMDB.
             </p>
           </div>
         </div>
-        <div className="border-t border-gray-800/50 mt-8 pt-6 text-center text-xs text-gray-600">
-          &copy; {new Date().getFullYear()} TCU - Telugu Cinema Updates. All rights reserved.
+        <div className="mt-10 border-t border-[var(--color-border)] pt-6 text-center text-xs text-[var(--color-muted)]">
+          &copy; {new Date().getFullYear()} Telugu Cinema Updates. All rights reserved.
         </div>
       </div>
     </footer>

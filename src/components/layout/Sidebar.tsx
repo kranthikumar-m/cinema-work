@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { useState } from "react";
+import { CircleHelp, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Logo } from "@/components/shared/Logo";
+import { SiteLogo } from "@/components/layout/SiteLogo";
+import { SidebarAccountPanel } from "@/components/layout/SidebarAccountPanel";
 import {
   APP_SIDEBAR_DESKTOP_WIDTH_CLASS,
   APP_SIDEBAR_DRAWER_WIDTH_CLASS,
@@ -13,59 +14,82 @@ import {
   isSidebarItemActive,
 } from "@/components/layout/sidebar-config";
 
+function SidebarBrand() {
+  return (
+    <Link
+      href="/"
+      className="w-full origin-top-left px-6 pt-8 [@media(max-height:900px)]:scale-[0.92] [@media(max-height:900px)]:px-5 [@media(max-height:900px)]:pt-6"
+    >
+      <SiteLogo variant="sidebar" priority />
+    </Link>
+  );
+}
+
+function SidebarDesktopNav() {
+  const pathname = usePathname();
+
+  return (
+    <nav className="mt-10 flex w-full flex-col gap-1 px-0 [@media(max-height:900px)]:mt-7 [@media(max-height:900px)]:gap-0.5">
+      {APP_SIDEBAR_ITEMS.map((item) => {
+        const isActive = isSidebarItemActive(item.href, pathname);
+
+        return (
+          <Link
+            key={item.label}
+            href={item.href}
+            className={cn(
+              "group relative flex min-h-[52px] items-center gap-4 px-6 py-3.5 text-left transition-all [@media(max-height:900px)]:min-h-[46px] [@media(max-height:900px)]:gap-3 [@media(max-height:900px)]:px-5 [@media(max-height:900px)]:py-2.5",
+              isActive
+                ? "bg-[rgba(255,255,255,0.03)] text-[var(--color-text)] before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-[var(--color-accent)]"
+                : "text-[var(--color-muted-strong)] hover:bg-white/4 hover:text-[var(--color-text)]"
+            )}
+          >
+            <item.icon className="h-5 w-5 shrink-0" strokeWidth={2} />
+            <span className="font-[family-name:var(--font-heading)] text-[0.88rem] font-medium uppercase tracking-[0.08em] [@media(max-height:900px)]:text-[0.82rem]">
+              {item.label}
+            </span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
 export function Sidebar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
   return (
     <>
-      {/* Desktop rail */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 hidden flex-col items-center border-r border-gray-800/50 bg-gray-950/95 pb-6 pt-5 backdrop-blur-sm lg:flex",
+          "fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-[var(--color-border)] bg-[var(--color-sidebar)] shadow-[12px_0_35px_rgba(7,9,18,0.35)] lg:flex",
           APP_SIDEBAR_DESKTOP_WIDTH_CLASS
         )}
       >
-        <Logo
-          size={44}
-          showLabel
-          className="mb-8 flex-col"
-          labelClass="mt-1 text-[10px] font-bold tracking-wider text-cyan-400"
-        />
-
-        <nav className="flex w-full flex-1 flex-col gap-1 px-2">
-          {APP_SIDEBAR_ITEMS.map((item) => {
-            const isActive = isSidebarItemActive(item.href, pathname);
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                className={cn(
-                  "flex flex-col items-center gap-1 rounded-lg py-2.5 text-[10px] font-medium transition-all",
-                  isActive
-                    ? "border-l-2 border-cyan-400 bg-cyan-500/10 text-cyan-400"
-                    : "text-gray-500 hover:bg-gray-800/50 hover:text-white"
-                )}
-              >
-                <item.icon className="h-5 w-5" />
-                <span className="tracking-wide">{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
+        <SidebarBrand />
+        <SidebarDesktopNav />
+        <div className="mt-auto w-full px-6 pb-8 [@media(max-height:900px)]:px-5 [@media(max-height:900px)]:pb-6">
+          <SidebarAccountPanel />
+          <button
+            type="button"
+            className="mt-5 flex h-11 w-11 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-muted-strong)] transition hover:border-[var(--color-accent)] hover:text-[var(--color-text)] [@media(max-height:900px)]:mt-4 [@media(max-height:900px)]:h-10 [@media(max-height:900px)]:w-10"
+            aria-label="Help and info"
+          >
+            <CircleHelp className="h-[18px] w-[18px]" />
+          </button>
+        </div>
       </aside>
 
-      {/* Mobile menu trigger */}
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed left-4 top-4 z-50 flex h-11 w-11 items-center justify-center rounded-2xl border border-gray-800/60 bg-gray-900/90 text-white backdrop-blur-md lg:hidden"
+        className="fixed left-4 top-4 z-50 flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[rgba(26,30,46,0.9)] text-[var(--color-text)] backdrop-blur-md lg:hidden"
         aria-label="Open navigation"
       >
         <Menu className="h-5 w-5" />
       </button>
 
-      {/* Mobile drawer */}
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
@@ -76,18 +100,18 @@ export function Sidebar() {
           />
           <div
             className={cn(
-              "absolute inset-y-0 left-0 flex flex-col border-r border-gray-800/50 bg-gray-950 px-5 pb-6 pt-6 shadow-[16px_0_36px_rgba(0,0,0,0.35)]",
+              "absolute inset-y-0 left-0 flex flex-col border-r border-[var(--color-border)] bg-[var(--color-sidebar)] px-5 pb-6 pt-6 shadow-[16px_0_36px_rgba(0,0,0,0.35)]",
               APP_SIDEBAR_DRAWER_WIDTH_CLASS
             )}
           >
-            <div className="mb-8 flex items-center justify-between">
-              <Link href="/" onClick={() => setOpen(false)}>
-                <Logo size={36} showLabel />
+            <div className="mb-8 flex items-start justify-between gap-4">
+              <Link href="/" onClick={() => setOpen(false)} className="block">
+                <SiteLogo variant="drawer" priority />
               </Link>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-gray-800/60 text-gray-300"
+                className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--color-border)] text-[var(--color-muted-strong)]"
                 aria-label="Close navigation"
               >
                 <X className="h-5 w-5" />
@@ -97,16 +121,17 @@ export function Sidebar() {
             <div className="flex flex-1 flex-col gap-1">
               {APP_SIDEBAR_ITEMS.map((item) => {
                 const isActive = isSidebarItemActive(item.href, pathname);
+
                 return (
                   <Link
                     key={item.label}
                     href={item.href}
                     onClick={() => setOpen(false)}
                     className={cn(
-                      "flex items-center gap-4 rounded-2xl px-4 py-3.5 text-sm tracking-[0.14em] transition",
+                      "relative flex items-center gap-3 px-3 py-3.5 font-[family-name:var(--font-heading)] text-[0.76rem] tracking-[0.12em] transition",
                       isActive
-                        ? "bg-cyan-500/10 text-cyan-400"
-                        : "text-gray-300 hover:bg-white/5 hover:text-white"
+                        ? "bg-[rgba(255,255,255,0.03)] text-[var(--color-text)] before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-[var(--color-accent)]"
+                        : "text-[var(--color-muted-strong)] hover:bg-white/4 hover:text-[var(--color-text)]"
                     )}
                   >
                     <item.icon className="h-5 w-5" />
@@ -114,6 +139,10 @@ export function Sidebar() {
                   </Link>
                 );
               })}
+            </div>
+
+            <div className="mt-6">
+              <SidebarAccountPanel />
             </div>
           </div>
         </div>

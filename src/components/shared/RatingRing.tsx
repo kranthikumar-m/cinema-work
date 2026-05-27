@@ -15,7 +15,7 @@ export function RatingRing({ rating, size = 48, className }: RatingRingProps) {
   const display = rating.toFixed(1);
 
   const color =
-    rating >= 7 ? "#4ade80" : rating >= 5 ? "#facc15" : "#f87171";
+    rating >= 7 ? "#c29a62" : rating >= 5 ? "#d9b27f" : "#996d58";
 
   return (
     <div className={cn("relative inline-flex items-center justify-center", className)}>
@@ -25,7 +25,7 @@ export function RatingRing({ rating, size = 48, className }: RatingRingProps) {
           cy={size / 2}
           r={radius}
           fill="transparent"
-          stroke="#374151"
+          stroke="rgba(194,154,98,0.18)"
           strokeWidth="3"
         />
         <circle

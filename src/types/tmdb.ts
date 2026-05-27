@@ -1,3 +1,14 @@
+export type MovieAssetSource = "tmdb" | "google_fallback" | "placeholder";
+
+export interface MovieValidation {
+  status: "validated" | "tmdb_only" | "excluded";
+  reason?: string;
+  matchedBy?: "exact" | "fuzzy";
+  wikipediaTitle?: string;
+  wikipediaPageTitle?: string;
+  wikipediaReleaseDate?: string;
+}
+
 export interface Movie {
   id: number;
   title: string;
@@ -14,6 +25,13 @@ export interface Movie {
   original_language: string;
   video: boolean;
   media_type?: string;
+  poster_url?: string | null;
+  backdrop_url?: string | null;
+  asset_sources?: {
+    poster: MovieAssetSource;
+    backdrop: MovieAssetSource;
+  };
+  validation?: MovieValidation;
 }
 
 export interface MovieDetails extends Movie {

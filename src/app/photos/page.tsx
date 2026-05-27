@@ -1,26 +1,26 @@
-import { getPopular } from "@/services/tmdb";
+import { getPopularTeluguMovies } from "@/services/telugu-movies";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 
-export const metadata = { title: "Photos - TCU" };
+export const metadata = { title: "Photos - Telugu Cinema Updates" };
 export const dynamic = "force-dynamic";
 
 export default async function PhotosPage() {
   try {
-    const data = await getPopular();
+    const movies = await getPopularTeluguMovies(24);
     return (
-      <div className="max-w-[1600px] mx-auto px-4 py-8">
-        <SectionHeader title="Movie Photos & Galleries" />
+      <div className="app-page-shell py-8">
+        <SectionHeader title="Telugu Movie Photos & Galleries" />
         <p className="text-gray-400 mb-6">
-          Explore photos from popular movies. Visit each movie&apos;s detail page for full galleries.
+          Explore stills from popular Telugu movies. Visit each movie&apos;s detail page for full galleries.
         </p>
-        <MovieGrid movies={data.results} />
+        <MovieGrid movies={movies} />
       </div>
     );
   } catch {
     return (
-      <div className="max-w-[1600px] mx-auto px-4 py-8">
-        <SectionHeader title="Movie Photos & Galleries" />
+      <div className="app-page-shell py-8">
+        <SectionHeader title="Telugu Movie Photos & Galleries" />
         <p className="text-gray-400">Unable to load photos. Please try again later.</p>
       </div>
     );
