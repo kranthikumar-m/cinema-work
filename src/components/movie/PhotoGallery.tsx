@@ -11,6 +11,7 @@ export interface GalleryImage {
   thumbnailUrl: string;
   fullUrl: string;
   label?: string;
+  aspectRatio?: number;
 }
 
 interface PhotoGalleryProps {
@@ -23,6 +24,7 @@ function toGalleryImage(img: MovieImage): GalleryImage {
   return {
     thumbnailUrl: getImageUrl(img.file_path, "w500"),
     fullUrl: getImageUrl(img.file_path, "original"),
+    aspectRatio: img.aspect_ratio || 16 / 9,
   };
 }
 
@@ -39,12 +41,13 @@ export function PhotoGallery({ images, title, extraImages }: PhotoGalleryProps) 
 
   return (
     <>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+      <div className="columns-2 md:columns-3 lg:columns-4 gap-3">
         {visible.map((item, i) => (
           <button
             key={item.thumbnailUrl}
             onClick={() => setSelected(i)}
-            className="relative aspect-video rounded-lg overflow-hidden group"
+            className="relative mb-3 block w-full overflow-hidden rounded-lg group break-inside-avoid"
+            style={{ aspectRatio: item.aspectRatio ?? 16 / 9 }}
           >
             <Image
               src={item.thumbnailUrl}

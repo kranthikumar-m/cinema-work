@@ -130,11 +130,11 @@ export default async function MovieDetailPage({ params }: Props) {
   const customGalleryImages: GalleryImage[] = [];
   if (customBackdrop) {
     const url = `/api/images/custom/${id}/backdrop`;
-    customGalleryImages.push({ thumbnailUrl: url, fullUrl: url, label: "Custom Backdrop" });
+    customGalleryImages.push({ thumbnailUrl: url, fullUrl: url, label: "Custom Backdrop", aspectRatio: 16 / 9 });
   }
   if (customPoster) {
     const url = `/api/images/custom/${id}/poster`;
-    customGalleryImages.push({ thumbnailUrl: url, fullUrl: url, label: "Custom Poster" });
+    customGalleryImages.push({ thumbnailUrl: url, fullUrl: url, label: "Custom Poster", aspectRatio: 2 / 3 });
   }
   const hasPhotos = images.backdrops.length > 0 || customGalleryImages.length > 0;
 
