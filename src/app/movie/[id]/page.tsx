@@ -118,25 +118,34 @@ export default async function MovieDetailPage({ params }: Props) {
     ? getBackdropUrl(heroBackdropPath, "w1280")
     : getMoviePosterUrl(movie, "w1280") ||
       backdropSelection.imageUrl ||
-      "/placeholder-backdrop.svg";
-  // Serve the hero straight from the TMDB CDN (like the gallery) rather than
-  // through the optimizer, which is unreliable for large backdrop images.
-  const heroIsRemote = /^https?:\/\//i.test(heroImage);
+      null;
+  const heroIsRemote = heroImage ? /^https?:\/\//i.test(heroImage) : false;
   const posterImage = getMoviePosterUrl(movie, "w500");
 
   return (
     <div>
       {/* Hero Banner */}
       <div className="relative h-[50vh] min-h-[400px]">
-        <Image
-          src={heroImage}
-          alt={movie.title}
-          fill
-          className="object-cover"
-          priority
-          unoptimized={heroIsRemote || shouldUseUnoptimizedImage(heroImage)}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/60 to-transparent" />
+        {heroImage ? (
+          <>
+            <Image
+              src={heroImage}
+              alt={movie.title}
+              fill
+              className="object-cover"
+              priority
+              unoptimized={heroIsRemote || shouldUseUnoptimizedImage(heroImage)}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/60 to-transparent" />
+          </>
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center bg-black">
+            <h2 className="px-6 text-center font-[family-name:var(--font-heading)] text-4xl font-bold text-white md:text-5xl lg:text-6xl">
+              {movie.title}
+            </h2>
+            <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent to-transparent" />
+          </div>
+        )}
       </div>
 
       <div
