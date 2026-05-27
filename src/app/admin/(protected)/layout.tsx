@@ -19,7 +19,7 @@ export default async function AdminProtectedLayout({
         <header className="rounded-[32px] border border-[var(--color-border)] bg-[rgba(19,23,36,0.82)] p-7 shadow-[0_30px_80px_rgba(7,10,18,0.26)]">
           <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
             <div className="space-y-5">
-              <Link href="/admin" className="inline-flex">
+              <Link href="/" className="inline-flex">
                 <SiteLogo variant="nav" />
               </Link>
               <div>
