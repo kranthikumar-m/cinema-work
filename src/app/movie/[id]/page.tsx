@@ -21,6 +21,7 @@ import { RatingRing } from "@/components/shared/RatingRing";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 import { CastCarousel } from "@/components/movie/CastCarousel";
 import { PhotoGallery } from "@/components/movie/PhotoGallery";
+import type { GalleryImage } from "@/components/movie/PhotoGallery";
 import { ReviewCard } from "@/components/movie/ReviewCard";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { MovieDetailClient } from "./client";
@@ -126,6 +127,17 @@ export default async function MovieDetailPage({ params }: Props) {
     ? `/api/images/custom/${id}/poster`
     : getMoviePosterUrl(movie, "w500");
 
+  const customGalleryImages: GalleryImage[] = [];
+  if (customBackdrop) {
+    const url = `/api/images/custom/${id}/backdrop`;
+    customGalleryImages.push({ thumbnailUrl: url, fullUrl: url, label: "Custom Backdrop" });
+  }
+  if (customPoster) {
+    const url = `/api/images/custom/${id}/poster`;
+    customGalleryImages.push({ thumbnailUrl: url, fullUrl: url, label: "Custom Poster" });
+  }
+  const hasPhotos = images.backdrops.length > 0 || customGalleryImages.length > 0;
+
   return (
     <div>
       {/* Hero Banner */}
@@ -230,10 +242,14 @@ export default async function MovieDetailPage({ params }: Props) {
         </div>
 
         {/* Photos */}
-        {images.backdrops.length > 0 && (
+        {hasPhotos && (
           <div className="mt-12">
             <SectionHeader title="Photos" />
-            <PhotoGallery images={images.backdrops} title={movie.title} />
+            <PhotoGallery
+              images={images.backdrops}
+              title={movie.title}
+              extraImages={customGalleryImages}
+            />
           </div>
         )}
 

@@ -7,33 +7,57 @@ import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { getImageUrl } from "@/lib/utils";
 import type { MovieImage } from "@/types/tmdb";
 
+export interface GalleryImage {
+  thumbnailUrl: string;
+  fullUrl: string;
+  label?: string;
+}
+
 interface PhotoGalleryProps {
   images: MovieImage[];
   title: string;
+  extraImages?: GalleryImage[];
 }
 
-export function PhotoGallery({ images, title }: PhotoGalleryProps) {
+function toGalleryImage(img: MovieImage): GalleryImage {
+  return {
+    thumbnailUrl: getImageUrl(img.file_path, "w500"),
+    fullUrl: getImageUrl(img.file_path, "original"),
+  };
+}
+
+export function PhotoGallery({ images, title, extraImages }: PhotoGalleryProps) {
   const [selected, setSelected] = useState<number | null>(null);
-  const visible = images.slice(0, 12);
+
+  const allItems: GalleryImage[] = [
+    ...(extraImages ?? []),
+    ...images.map(toGalleryImage),
+  ];
+  const visible = allItems.slice(0, 12);
 
   if (!visible.length) return null;
 
   return (
     <>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        {visible.map((img, i) => (
+        {visible.map((item, i) => (
           <button
-            key={img.file_path}
+            key={item.thumbnailUrl}
             onClick={() => setSelected(i)}
             className="relative aspect-video rounded-lg overflow-hidden group"
           >
             <Image
-              src={getImageUrl(img.file_path, "w500")}
-              alt={`${title} photo ${i + 1}`}
+              src={item.thumbnailUrl}
+              alt={item.label || `${title} photo ${i + 1}`}
               fill
               className="object-cover transition-transform group-hover:scale-105"
               unoptimized
             />
+            {item.label && (
+              <span className="absolute bottom-1.5 left-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                {item.label}
+              </span>
+            )}
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
           </button>
         ))}
@@ -84,8 +108,8 @@ export function PhotoGallery({ images, title }: PhotoGalleryProps) {
               onClick={(e) => e.stopPropagation()}
             >
               <Image
-                src={getImageUrl(visible[selected].file_path, "original")}
-                alt={`${title} photo ${selected + 1}`}
+                src={visible[selected].fullUrl}
+                alt={visible[selected].label || `${title} photo ${selected + 1}`}
                 fill
                 className="object-contain"
                 unoptimized
