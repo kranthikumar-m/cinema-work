@@ -307,7 +307,7 @@ export default async function HomePage() {
                 className={panelClass}
               >
                 <SectionHeader
-                  title="Validated Telugu Releases"
+                  title="Recent Releases"
                   href="/movies/trending"
                 />
                 <MovieGrid
@@ -363,7 +363,7 @@ export default async function HomePage() {
                 href="/movies/top-rated"
               />
               <MovieListWidget
-                title="Recently Validated"
+                title="Recent Releases"
                 movies={latestReleases.slice(0, 5)}
                 href="/movies/trending"
               />
