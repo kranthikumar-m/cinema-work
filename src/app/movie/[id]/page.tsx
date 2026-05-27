@@ -139,100 +139,99 @@ export default async function MovieDetailPage({ params }: Props) {
 
   return (
     <div>
-      {/* Hero Banner */}
-      <div className="relative h-[56vh] min-h-[420px] bg-gray-950">
+      {/* Hero with backdrop background */}
+      <div className="relative min-h-[100dvh] bg-gray-950">
+        {/* Backdrop image */}
         {heroImage ? (
-          <>
-            <Image
-              src={heroImage}
-              alt={movie.title}
-              fill
-              className="object-contain object-top"
-              priority
-              unoptimized={heroIsRemote || shouldUseUnoptimizedImage(heroImage)}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/40 to-transparent" />
-          </>
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-black">
-            <h2 className="px-6 text-center font-[family-name:var(--font-heading)] text-4xl font-bold text-white md:text-5xl lg:text-6xl">
-              {movie.title}
-            </h2>
-            <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent to-transparent" />
-          </div>
-        )}
-      </div>
+          <Image
+            src={heroImage}
+            alt={movie.title}
+            fill
+            className="object-cover"
+            priority
+            unoptimized={heroIsRemote || shouldUseUnoptimizedImage(heroImage)}
+          />
+        ) : null}
+        {/* Gradient overlays for readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/70 to-gray-950/30" />
+        <div className="absolute inset-0 bg-gradient-to-r from-gray-950/80 via-transparent to-transparent" />
 
-      <div
-        id="overview"
-        className="app-page-shell-detail relative z-10 -mt-48 scroll-mt-[170px]"
-      >
-        <div className="flex flex-col md:flex-row gap-8">
-          {/* Poster */}
-          <div className="flex-shrink-0">
-            <div className="w-56 md:w-64 rounded-xl overflow-hidden shadow-2xl mx-auto md:mx-0">
-              <Image
-                src={posterImage}
-                alt={movie.title}
-                width={256}
-                height={384}
-                className="w-full h-auto"
-                priority
-                unoptimized={shouldUseUnoptimizedImage(posterImage)}
-              />
+        {/* Movie info overlaid on backdrop */}
+        <div
+          id="overview"
+          className="relative z-10 flex min-h-[100dvh] items-end scroll-mt-[170px]"
+        >
+          <div className="app-page-shell-detail w-full pb-12 pt-24">
+            <div className="flex flex-col md:flex-row gap-8">
+              {/* Poster */}
+              <div className="flex-shrink-0">
+                <div className="w-48 md:w-56 rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10 mx-auto md:mx-0">
+                  <Image
+                    src={posterImage}
+                    alt={movie.title}
+                    width={224}
+                    height={336}
+                    className="w-full h-auto"
+                    priority
+                    unoptimized={shouldUseUnoptimizedImage(posterImage)}
+                  />
+                </div>
+              </div>
+
+              {/* Info */}
+              <div className="flex-1">
+                <h1 className="text-3xl md:text-5xl font-bold text-white mb-2 drop-shadow-lg">
+                  {movie.title}
+                </h1>
+                {movie.tagline && (
+                  <p className="text-gray-300 italic mb-4 drop-shadow">{movie.tagline}</p>
+                )}
+
+                <div className="flex flex-wrap items-center gap-3 mb-4">
+                  <RatingRing rating={movie.vote_average} size={56} />
+                  <span className="text-sm text-gray-300">
+                    {movie.vote_count.toLocaleString()} votes
+                  </span>
+                  <span className="text-sm text-gray-500">|</span>
+                  <span className="text-sm text-gray-200">
+                    {formatDate(movie.release_date)}
+                  </span>
+                  <span className="text-sm text-gray-500">|</span>
+                  <span className="text-sm text-gray-200">
+                    {formatRuntime(movie.runtime)}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap gap-2 mb-5">
+                  {movie.genres.map((g) => (
+                    <span
+                      key={g.id}
+                      className="px-3 py-1 text-xs font-medium rounded-full bg-white/10 text-white border border-white/20 backdrop-blur-sm"
+                    >
+                      {g.name}
+                    </span>
+                  ))}
+                </div>
+
+                <p className="text-gray-200 leading-relaxed mb-6 max-w-2xl drop-shadow">
+                  {movie.overview}
+                </p>
+
+                <MovieDetailClient trailerKey={trailer?.key ?? null} />
+
+                {director && (
+                  <p className="text-sm text-gray-300 mt-4">
+                    <span className="text-gray-400">Director:</span>{" "}
+                    <span className="text-white font-medium">{director.name}</span>
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
-
-          {/* Info */}
-          <div className="flex-1 pt-4 md:pt-24">
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-              {movie.title}
-            </h1>
-            {movie.tagline && (
-              <p className="text-gray-400 italic mb-4">{movie.tagline}</p>
-            )}
-
-            <div className="flex flex-wrap items-center gap-3 mb-4">
-              <RatingRing rating={movie.vote_average} size={56} />
-              <span className="text-sm text-gray-400">
-                {movie.vote_count.toLocaleString()} votes
-              </span>
-              <span className="text-sm text-gray-500">|</span>
-              <span className="text-sm text-gray-300">
-                {formatDate(movie.release_date)}
-              </span>
-              <span className="text-sm text-gray-500">|</span>
-              <span className="text-sm text-gray-300">
-                {formatRuntime(movie.runtime)}
-              </span>
-            </div>
-
-            <div className="flex flex-wrap gap-2 mb-6">
-              {movie.genres.map((g) => (
-                <span
-                  key={g.id}
-                  className="px-3 py-1 text-xs font-medium rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
-                >
-                  {g.name}
-                </span>
-              ))}
-            </div>
-
-            <p className="text-gray-300 leading-relaxed mb-6 max-w-2xl">
-              {movie.overview}
-            </p>
-
-            {/* Trailer + Details Buttons */}
-            <MovieDetailClient trailerKey={trailer?.key ?? null} />
-
-            {director && (
-              <p className="text-sm text-gray-400 mt-4">
-                <span className="text-gray-500">Director:</span>{" "}
-                <span className="text-white">{director.name}</span>
-              </p>
-            )}
           </div>
         </div>
+      </div>
+
+      <div className="app-page-shell-detail">
 
         {/* Cast */}
         <div className="mt-12">
