@@ -1,9 +1,14 @@
 import {
   getMovieCredits,
   getMovieDetails,
+  getMovieImages,
   getMovieVideos,
 } from "@/services/tmdb";
 import { resolvePreferredBackdrop } from "@/services/movie-backdrops";
+import {
+  getCustomImageRecordsByMovieId,
+  hasDatabaseConfiguration,
+} from "@/lib/database";
 import {
   getLatestTeluguReleases,
   getPopularTeluguMovies,
@@ -164,20 +169,32 @@ async function buildFeaturedBundle(movie: Movie | null): Promise<HomepageHeroSli
 
   const enhancements = await getMovieEnhancements(movie);
   const details = enhancements.details;
-  const heroBackdrop = await resolvePreferredBackdrop(
-    movie,
-    details?.backdrop_path ?? movie.backdrop_path
-  ).catch(() => ({
-    backdropPath: details?.backdrop_path ?? movie.backdrop_path ?? null,
-    imageUrl: movie.backdrop_url ?? null,
-  }));
+  const [heroBackdrop, tmdbImages, customImages] = await Promise.all([
+    resolvePreferredBackdrop(
+      movie,
+      details?.backdrop_path ?? movie.backdrop_path
+    ).catch(() => ({
+      backdropPath: details?.backdrop_path ?? movie.backdrop_path ?? null,
+      imageUrl: movie.backdrop_url ?? null,
+    })),
+    getMovieImages(movie.id).catch(() => ({ backdrops: [], posters: [] })),
+    hasDatabaseConfiguration()
+      ? getCustomImageRecordsByMovieId(movie.id)
+      : Promise.resolve([]),
+  ]);
+
+  const hasTmdbBackdrops = tmdbImages.backdrops.length > 0;
+  const customBackdrop = customImages.find((r) => r.image_type === "backdrop");
+  const useCustomBackdrop = !hasTmdbBackdrops && !!customBackdrop;
 
   return {
     item: {
       id: movie.id,
       title: movie.title,
-      backdropPath: heroBackdrop.backdropPath,
-      imageUrl: heroBackdrop.imageUrl ?? movie.backdrop_url ?? null,
+      backdropPath: useCustomBackdrop ? null : heroBackdrop.backdropPath,
+      imageUrl: useCustomBackdrop
+        ? `/api/images/custom/${movie.id}/backdrop`
+        : heroBackdrop.imageUrl ?? movie.backdrop_url ?? null,
       runtimeLabel: details?.runtime ? formatRuntime(details.runtime) : "Telugu Feature",
       viewsLabel: "",
       director: getDirector(enhancements.credits),

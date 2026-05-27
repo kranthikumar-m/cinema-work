@@ -35,18 +35,14 @@ interface Props {
   params: { id: string };
 }
 
-// Pick the best hero backdrop from the movie's photo gallery: closest to a
-// 16:9 landscape ratio, then widest, then best-voted. Returns a file_path.
 function pickHeroBackdropPath(backdrops: MovieImage[]): string | null {
   if (!backdrops?.length) return null;
-  const IDEAL_RATIO = 16 / 9;
 
   const best = [...backdrops]
-    .filter((img) => img.file_path)
+    .filter((img) => img.file_path && (img.aspect_ratio || 0) >= 1)
     .sort((a, b) => {
-      const aDelta = Math.abs((a.aspect_ratio || 0) - IDEAL_RATIO);
-      const bDelta = Math.abs((b.aspect_ratio || 0) - IDEAL_RATIO);
-      if (aDelta !== bDelta) return aDelta - bDelta;
+      if ((b.aspect_ratio || 0) !== (a.aspect_ratio || 0))
+        return (b.aspect_ratio || 0) - (a.aspect_ratio || 0);
       if (b.width !== a.width) return b.width - a.width;
       return (b.vote_average || 0) - (a.vote_average || 0);
     })[0];
@@ -110,18 +106,21 @@ export default async function MovieDetailPage({ params }: Props) {
   const customBackdrop = customImages.find((r) => r.image_type === "backdrop");
   const customPoster = customImages.find((r) => r.image_type === "poster");
 
+  const hasTmdbBackdrops = (images?.backdrops ?? []).length > 0;
   const heroBackdropPath =
     pickHeroBackdropPath(images?.backdrops ?? []) ??
     backdropSelection.backdropPath ??
     movie.backdrop_path ??
     null;
-  const heroImage = customBackdrop
-    ? `/api/images/custom/${id}/backdrop`
-    : heroBackdropPath
-      ? getBackdropUrl(heroBackdropPath, "w1280")
-      : getMoviePosterUrl(movie, "w1280") ||
-        backdropSelection.imageUrl ||
-        null;
+  const heroImage = hasTmdbBackdrops && heroBackdropPath
+    ? getBackdropUrl(heroBackdropPath, "w1280")
+    : customBackdrop
+      ? `/api/images/custom/${id}/backdrop`
+      : heroBackdropPath
+        ? getBackdropUrl(heroBackdropPath, "w1280")
+        : getMoviePosterUrl(movie, "w1280") ||
+          backdropSelection.imageUrl ||
+          null;
   const heroIsRemote = heroImage ? /^https?:\/\//i.test(heroImage) : false;
   const posterImage = customPoster
     ? `/api/images/custom/${id}/poster`
