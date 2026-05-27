@@ -50,6 +50,16 @@ export interface DatabaseBackdropOverrideRow {
   updated_at: string;
 }
 
+export interface DatabaseCustomImageRow {
+  id: number;
+  movie_id: number;
+  image_type: "poster" | "backdrop";
+  file_name: string;
+  mime_type: string;
+  uploaded_by_user_id: number | null;
+  created_at: string;
+}
+
 interface CreateUserRecordInput {
   name: string | null;
   email: string;
@@ -95,6 +105,15 @@ interface UpsertBackdropOverrideRecordInput {
   updatedAt: string;
 }
 
+interface UpsertCustomImageRecordInput {
+  movieId: number;
+  imageType: "poster" | "backdrop";
+  fileName: string;
+  mimeType: string;
+  uploadedByUserId: number | null;
+  createdAt: string;
+}
+
 interface StorageProvider {
   getUserByEmail(email: string): Promise<DatabaseUserRow | null>;
   getUserByIdentifier(identifier: string): Promise<DatabaseUserRow | null>;
@@ -118,6 +137,10 @@ interface StorageProvider {
     input: UpsertBackdropOverrideRecordInput
   ): Promise<DatabaseBackdropOverrideRow | null>;
   deleteBackdropOverride(movieId: number): Promise<void>;
+  getCustomImage(movieId: number, imageType: "poster" | "backdrop"): Promise<DatabaseCustomImageRow | null>;
+  getCustomImagesByMovieId(movieId: number): Promise<DatabaseCustomImageRow[]>;
+  upsertCustomImage(input: UpsertCustomImageRecordInput): Promise<DatabaseCustomImageRow | null>;
+  deleteCustomImage(movieId: number, imageType: "poster" | "backdrop"): Promise<void>;
 }
 
 interface TableColumnInfo {
@@ -151,6 +174,8 @@ const USER_SELECT =
 const PASSWORD_RESET_TOKEN_SELECT = "id,user_id,expires_at,created_at,used_at";
 const BACKDROP_OVERRIDE_SELECT =
   "movie_id,selected_backdrop_path,source,selected_by_user_id,created_at,updated_at";
+const CUSTOM_IMAGE_SELECT =
+  "id,movie_id,image_type,file_name,mime_type,uploaded_by_user_id,created_at";
 
 function hasSupabaseProjectUrl(databaseUrl: string) {
   try {
@@ -238,12 +263,25 @@ function initializeSqliteDatabase(database: BetterSqlite3Database) {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS movie_custom_images (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      movie_id INTEGER NOT NULL,
+      image_type TEXT NOT NULL CHECK (image_type IN ('poster', 'backdrop')),
+      file_name TEXT NOT NULL,
+      mime_type TEXT NOT NULL,
+      uploaded_by_user_id INTEGER,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (uploaded_by_user_id) REFERENCES users(id) ON DELETE SET NULL,
+      UNIQUE(movie_id, image_type)
+    );
+
     CREATE INDEX IF NOT EXISTS idx_sessions_token_hash ON sessions(token_hash);
     CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
     CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
     CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_hash ON password_reset_tokens(token_hash);
     CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user_id ON password_reset_tokens(user_id);
+    CREATE INDEX IF NOT EXISTS idx_custom_images_movie_id ON movie_custom_images(movie_id);
   `);
 
   ensureColumn(database, "users", "name", "ALTER TABLE users ADD COLUMN name TEXT");
@@ -666,6 +704,57 @@ function createSqliteStorageProvider(databaseUrl: string): StorageProvider {
         .prepare("DELETE FROM movie_backdrop_overrides WHERE movie_id = ?")
         .run(movieId);
     },
+    async getCustomImage(movieId, imageType) {
+      return (
+        database
+          .prepare(
+            `SELECT ${CUSTOM_IMAGE_SELECT} FROM movie_custom_images WHERE movie_id = ? AND image_type = ?`
+          )
+          .get<DatabaseCustomImageRow>(movieId, imageType) ?? null
+      );
+    },
+    async getCustomImagesByMovieId(movieId) {
+      return database
+        .prepare(
+          `SELECT ${CUSTOM_IMAGE_SELECT} FROM movie_custom_images WHERE movie_id = ?`
+        )
+        .all<DatabaseCustomImageRow>(movieId);
+    },
+    async upsertCustomImage(input) {
+      database
+        .prepare(
+          `
+            INSERT INTO movie_custom_images (movie_id, image_type, file_name, mime_type, uploaded_by_user_id, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(movie_id, image_type) DO UPDATE SET
+              file_name = excluded.file_name,
+              mime_type = excluded.mime_type,
+              uploaded_by_user_id = excluded.uploaded_by_user_id,
+              created_at = excluded.created_at
+          `
+        )
+        .run(
+          input.movieId,
+          input.imageType,
+          input.fileName,
+          input.mimeType,
+          input.uploadedByUserId,
+          input.createdAt
+        );
+
+      return (
+        database
+          .prepare(
+            `SELECT ${CUSTOM_IMAGE_SELECT} FROM movie_custom_images WHERE movie_id = ? AND image_type = ?`
+          )
+          .get<DatabaseCustomImageRow>(input.movieId, input.imageType) ?? null
+      );
+    },
+    async deleteCustomImage(movieId, imageType) {
+      database
+        .prepare("DELETE FROM movie_custom_images WHERE movie_id = ? AND image_type = ?")
+        .run(movieId, imageType);
+    },
   };
 }
 
@@ -1014,6 +1103,48 @@ function createSupabaseStorageProvider(databaseUrl: string): StorageProvider {
         },
       });
     },
+    async getCustomImage(movieId, imageType) {
+      return selectSingleRow<DatabaseCustomImageRow>("movie_custom_images", {
+        select: CUSTOM_IMAGE_SELECT,
+        movie_id: `eq.${movieId}`,
+        image_type: `eq.${imageType}`,
+      });
+    },
+    async getCustomImagesByMovieId(movieId) {
+      return selectRows<DatabaseCustomImageRow>("movie_custom_images", {
+        select: CUSTOM_IMAGE_SELECT,
+        movie_id: `eq.${movieId}`,
+      });
+    },
+    async upsertCustomImage(input) {
+      const rows = await request<DatabaseCustomImageRow[]>("movie_custom_images", {
+        method: "POST",
+        query: {
+          on_conflict: "movie_id,image_type",
+          select: CUSTOM_IMAGE_SELECT,
+        },
+        body: {
+          movie_id: input.movieId,
+          image_type: input.imageType,
+          file_name: input.fileName,
+          mime_type: input.mimeType,
+          uploaded_by_user_id: input.uploadedByUserId,
+          created_at: input.createdAt,
+        },
+        prefer: ["resolution=merge-duplicates", "return=representation"],
+      });
+
+      return rows?.[0] ?? null;
+    },
+    async deleteCustomImage(movieId, imageType) {
+      await request("movie_custom_images", {
+        method: "DELETE",
+        query: {
+          movie_id: `eq.${movieId}`,
+          image_type: `eq.${imageType}`,
+        },
+      });
+    },
   };
 }
 
@@ -1141,4 +1272,27 @@ export async function upsertMovieBackdropOverrideRecord(
 
 export async function deleteMovieBackdropOverrideRecord(movieId: number) {
   return requireStorageProvider().deleteBackdropOverride(movieId);
+}
+
+export async function getCustomImageRecord(movieId: number, imageType: "poster" | "backdrop") {
+  return requireStorageProvider().getCustomImage(movieId, imageType);
+}
+
+export async function getCustomImageRecordsByMovieId(movieId: number) {
+  return requireStorageProvider().getCustomImagesByMovieId(movieId);
+}
+
+export async function upsertCustomImageRecord(input: {
+  movieId: number;
+  imageType: "poster" | "backdrop";
+  fileName: string;
+  mimeType: string;
+  uploadedByUserId: number | null;
+  createdAt: string;
+}) {
+  return requireStorageProvider().upsertCustomImage(input);
+}
+
+export async function deleteCustomImageRecord(movieId: number, imageType: "poster" | "backdrop") {
+  return requireStorageProvider().deleteCustomImage(movieId, imageType);
 }

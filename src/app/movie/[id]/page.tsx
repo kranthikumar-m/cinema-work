@@ -26,6 +26,7 @@ import { MovieGrid } from "@/components/movie/MovieGrid";
 import { MovieDetailClient } from "./client";
 import { enrichMovieAssets } from "@/services/telugu-movies";
 import { resolvePreferredBackdrop } from "@/services/movie-backdrops";
+import { getCustomImageRecordsByMovieId, hasDatabaseConfiguration } from "@/lib/database";
 import type { MovieImage } from "@/types/tmdb";
 import type { Metadata } from "next";
 
@@ -102,25 +103,28 @@ export default async function MovieDetailPage({ params }: Props) {
     .filter((item) => item.original_language === "te")
     .slice(0, 6);
   const backdropSelection = await resolvePreferredBackdrop(movie, movie.backdrop_path);
-  // Choose the hero source in priority order:
-  //   1. best gallery backdrop by aspect ratio (the photos we already fetched)
-  //   2. the resolver's / movie's own backdrop
-  //   3. the poster (always a real image)
-  // Render at a bounded "w1280" size — the full-size "original" is too large
-  // for the image optimizer and fails to load, while the gallery proves w-sized
-  // TMDB images load reliably.
+  const customImages = hasDatabaseConfiguration()
+    ? await getCustomImageRecordsByMovieId(id)
+    : [];
+  const customBackdrop = customImages.find((r) => r.image_type === "backdrop");
+  const customPoster = customImages.find((r) => r.image_type === "poster");
+
   const heroBackdropPath =
     pickHeroBackdropPath(images?.backdrops ?? []) ??
     backdropSelection.backdropPath ??
     movie.backdrop_path ??
     null;
-  const heroImage = heroBackdropPath
-    ? getBackdropUrl(heroBackdropPath, "w1280")
-    : getMoviePosterUrl(movie, "w1280") ||
-      backdropSelection.imageUrl ||
-      null;
+  const heroImage = customBackdrop
+    ? `/api/images/custom/${id}/backdrop`
+    : heroBackdropPath
+      ? getBackdropUrl(heroBackdropPath, "w1280")
+      : getMoviePosterUrl(movie, "w1280") ||
+        backdropSelection.imageUrl ||
+        null;
   const heroIsRemote = heroImage ? /^https?:\/\//i.test(heroImage) : false;
-  const posterImage = getMoviePosterUrl(movie, "w500");
+  const posterImage = customPoster
+    ? `/api/images/custom/${id}/poster`
+    : getMoviePosterUrl(movie, "w500");
 
   return (
     <div>

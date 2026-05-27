@@ -48,3 +48,24 @@ export interface AdminMovieSearchResult {
   backdropPath: string | null;
   validationStatus: "validated" | "tmdb_only" | "excluded" | "unknown";
 }
+
+export interface CustomImageRecord {
+  id: number;
+  movieId: number;
+  imageType: "poster" | "backdrop";
+  fileName: string;
+  mimeType: string;
+  uploadedByUserId: number | null;
+  createdAt: string;
+}
+
+export interface MovieCustomImagesPayload {
+  movieId: number;
+  title: string;
+  posterUrl: string | null;
+  backdropUrl: string | null;
+  hasTmdbPoster: boolean;
+  hasTmdbBackdrop: boolean;
+  customPoster: CustomImageRecord | null;
+  customBackdrop: CustomImageRecord | null;
+}
