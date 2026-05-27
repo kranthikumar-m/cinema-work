@@ -26,10 +26,30 @@ import { MovieGrid } from "@/components/movie/MovieGrid";
 import { MovieDetailClient } from "./client";
 import { enrichMovieAssets } from "@/services/telugu-movies";
 import { resolvePreferredBackdrop } from "@/services/movie-backdrops";
+import type { MovieImage } from "@/types/tmdb";
 import type { Metadata } from "next";
 
 interface Props {
   params: { id: string };
+}
+
+// Pick the best hero backdrop from the movie's photo gallery: closest to a
+// 16:9 landscape ratio, then widest, then best-voted. Returns a file_path.
+function pickHeroBackdropPath(backdrops: MovieImage[]): string | null {
+  if (!backdrops?.length) return null;
+  const IDEAL_RATIO = 16 / 9;
+
+  const best = [...backdrops]
+    .filter((img) => img.file_path)
+    .sort((a, b) => {
+      const aDelta = Math.abs((a.aspect_ratio || 0) - IDEAL_RATIO);
+      const bDelta = Math.abs((b.aspect_ratio || 0) - IDEAL_RATIO);
+      if (aDelta !== bDelta) return aDelta - bDelta;
+      if (b.width !== a.width) return b.width - a.width;
+      return (b.vote_average || 0) - (a.vote_average || 0);
+    })[0];
+
+  return best?.file_path ?? null;
 }
 
 function shouldUseUnoptimizedImage(src: string) {
@@ -82,14 +102,26 @@ export default async function MovieDetailPage({ params }: Props) {
     .filter((item) => item.original_language === "te")
     .slice(0, 6);
   const backdropSelection = await resolvePreferredBackdrop(movie, movie.backdrop_path);
-  // Prefer a real backdrop; when none exists (common for upcoming/regional
-  // titles), fall back to the poster so the hero always shows an actual image
-  // instead of an empty placeholder.
-  const heroImage = backdropSelection.backdropPath
-    ? getBackdropUrl(backdropSelection.backdropPath, "original")
+  // Choose the hero source in priority order:
+  //   1. best gallery backdrop by aspect ratio (the photos we already fetched)
+  //   2. the resolver's / movie's own backdrop
+  //   3. the poster (always a real image)
+  // Render at a bounded "w1280" size — the full-size "original" is too large
+  // for the image optimizer and fails to load, while the gallery proves w-sized
+  // TMDB images load reliably.
+  const heroBackdropPath =
+    pickHeroBackdropPath(images?.backdrops ?? []) ??
+    backdropSelection.backdropPath ??
+    movie.backdrop_path ??
+    null;
+  const heroImage = heroBackdropPath
+    ? getBackdropUrl(heroBackdropPath, "w1280")
     : getMoviePosterUrl(movie, "w1280") ||
       backdropSelection.imageUrl ||
       "/placeholder-backdrop.svg";
+  // Serve the hero straight from the TMDB CDN (like the gallery) rather than
+  // through the optimizer, which is unreliable for large backdrop images.
+  const heroIsRemote = /^https?:\/\//i.test(heroImage);
   const posterImage = getMoviePosterUrl(movie, "w500");
 
   return (
@@ -102,7 +134,7 @@ export default async function MovieDetailPage({ params }: Props) {
           fill
           className="object-cover"
           priority
-          unoptimized={shouldUseUnoptimizedImage(heroImage)}
+          unoptimized={heroIsRemote || shouldUseUnoptimizedImage(heroImage)}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/60 to-transparent" />
       </div>
