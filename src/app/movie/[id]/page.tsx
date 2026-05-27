@@ -85,11 +85,11 @@ export default async function MovieDetailPage({ params }: Props) {
   // Prefer a real backdrop; when none exists (common for upcoming/regional
   // titles), fall back to the poster so the hero always shows an actual image
   // instead of an empty placeholder.
-  const heroImage =
-    backdropSelection.imageUrl ||
-    (backdropSelection.backdropPath
-      ? getBackdropUrl(backdropSelection.backdropPath, "original")
-      : getMoviePosterUrl(movie, "w1280"));
+  const heroImage = backdropSelection.backdropPath
+    ? getBackdropUrl(backdropSelection.backdropPath, "original")
+    : getMoviePosterUrl(movie, "w1280") ||
+      backdropSelection.imageUrl ||
+      "/placeholder-backdrop.svg";
   const posterImage = getMoviePosterUrl(movie, "w500");
 
   return (
