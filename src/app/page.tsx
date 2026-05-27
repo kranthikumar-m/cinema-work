@@ -289,18 +289,28 @@ async function getData() {
           m.vote_count >= TOP_RATED_MIN_VOTE_COUNT
       );
 
-      latestReleases = mergeUnique(latestReleases, recentAdditions);
+      const oldestOnHomepage = latestReleases.length
+        ? latestReleases[latestReleases.length - 1].release_date || ""
+        : "";
+      const recentForHomepage = recentAdditions.filter(
+        (m) => !oldestOnHomepage || (m.release_date || "") >= oldestOnHomepage
+      );
+
+      latestReleases = mergeUnique(latestReleases, recentForHomepage);
       latestReleases.sort((a, b) =>
         (b.release_date || "").localeCompare(a.release_date || "")
       );
+      latestReleases = latestReleases.slice(0, 10);
 
       upcoming = mergeUnique(upcoming, upcomingAdditions);
       upcoming.sort((a, b) =>
         (a.release_date || "").localeCompare(b.release_date || "")
       );
+      upcoming = upcoming.slice(0, 10);
 
       topRated = mergeUnique(topRated, topRatedAdditions);
       topRated.sort((a, b) => b.vote_average - a.vote_average);
+      topRated = topRated.slice(0, 10);
     }
 
     const heroCandidates = selectHeroCandidates({
