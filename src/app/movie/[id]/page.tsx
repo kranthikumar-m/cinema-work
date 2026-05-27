@@ -136,7 +136,7 @@ export default async function MovieDetailPage({ params }: Props) {
     const url = `/api/images/custom/${id}/poster`;
     customGalleryImages.push({ thumbnailUrl: url, fullUrl: url, label: "Custom Poster", aspectRatio: 2 / 3 });
   }
-  const hasPhotos = images.backdrops.length > 0 || customGalleryImages.length > 0;
+  const hasPhotos = images.backdrops.length > 0 || images.posters.length > 0 || customGalleryImages.length > 0;
 
   return (
     <div>
@@ -247,6 +247,7 @@ export default async function MovieDetailPage({ params }: Props) {
             <SectionHeader title="Photos" />
             <PhotoGallery
               images={images.backdrops}
+              posterImages={images.posters}
               title={movie.title}
               extraImages={customGalleryImages}
             />

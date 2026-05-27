@@ -16,6 +16,7 @@ export interface GalleryImage {
 
 interface PhotoGalleryProps {
   images: MovieImage[];
+  posterImages?: MovieImage[];
   title: string;
   extraImages?: GalleryImage[];
 }
@@ -34,10 +35,11 @@ function isLandscape(item: GalleryImage) {
   return (item.aspectRatio ?? 16 / 9) >= 1;
 }
 
-export function PhotoGallery({ images, title, extraImages }: PhotoGalleryProps) {
+export function PhotoGallery({ images, posterImages, title, extraImages }: PhotoGalleryProps) {
   const allItems: GalleryImage[] = [
     ...(extraImages ?? []),
     ...images.map(toGalleryImage),
+    ...(posterImages ?? []).map(toGalleryImage),
   ];
 
   const backdrops = allItems.filter((item) => isLandscape(item));
