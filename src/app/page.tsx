@@ -71,7 +71,7 @@ function getActors(credits: Credits | null) {
   return actors.length ? actors : ["Cast details coming soon"];
 }
 
-function getTrailerHref(videos: { results: Video[] } | null, movieId?: number) {
+function getTrailerInfo(videos: { results: Video[] } | null, movieId?: number) {
   const trailer =
     videos?.results.find(
       (video) =>
@@ -85,14 +85,14 @@ function getTrailerHref(videos: { results: Video[] } | null, movieId?: number) {
     videos?.results.find((video) => video.site === "YouTube");
 
   if (trailer) {
-    return `https://www.youtube.com/watch?v=${trailer.key}`;
+    return { href: `https://www.youtube.com/watch?v=${trailer.key}`, key: trailer.key };
   }
 
   if (movieId) {
-    return `/movie/${movieId}`;
+    return { href: `/movie/${movieId}`, key: null };
   }
 
-  return "/videos";
+  return { href: "/videos", key: null };
 }
 
 function isUsableHeroMovie(movie: Movie | null) {
@@ -203,7 +203,8 @@ async function buildFeaturedBundle(movie: Movie | null): Promise<HomepageHeroSli
       actors: getActors(enhancements.credits),
       releaseLabel: formatReleaseLabel(movie.release_date),
       watchHref: `/movie/${movie.id}`,
-      trailerHref: getTrailerHref(enhancements.videos, movie.id),
+      trailerHref: getTrailerInfo(enhancements.videos, movie.id).href,
+      trailerKey: getTrailerInfo(enhancements.videos, movie.id).key,
       trailerLabel: "TRAILER",
       accentLinks: {
         director: `/movie/${movie.id}`,

@@ -10,6 +10,7 @@ export interface HomepageHeroItem {
   releaseLabel: string;
   watchHref: string;
   trailerHref: string;
+  trailerKey?: string | null;
   trailerLabel: string;
   accentLinks: {
     director?: string;
