@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Search, User, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SearchOverlay } from "@/components/layout/SearchOverlay";
+import { SearchOverlayLauncher } from "@/components/layout/SearchOverlayLauncher";
 import { Logo } from "@/components/shared/Logo";
 
 const tabs = [

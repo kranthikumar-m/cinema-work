@@ -67,17 +67,31 @@ export default async function MovieDetailPage({ params }: Props) {
   const director = credits.crew.find((c) => c.job === "Director");
   const inProviders = providers.results?.IN;
 
+  // Resolve a hero backdrop with graceful fallbacks so the banner is never blank:
+  // TMDB primary backdrop -> first gallery backdrop -> poster -> placeholder.
+  const galleryBackdropPath = images.backdrops[0]?.file_path ?? null;
+  const heroBackdropUrl = movie.backdrop_path
+    ? getBackdropUrl(movie.backdrop_path, "original")
+    : galleryBackdropPath
+      ? getBackdropUrl(galleryBackdropPath, "original")
+      : movie.poster_path
+        ? getImageUrl(movie.poster_path, "w1280")
+        : "/placeholder-backdrop.svg";
+  const heroBackdropIsRemote = Boolean(
+    movie.backdrop_path || galleryBackdropPath || movie.poster_path
+  );
+
   return (
     <div>
       {/* Hero Banner */}
       <div className="relative h-[50vh] min-h-[400px]">
         <Image
-          src={getBackdropUrl(movie.backdrop_path, "original")}
+          src={heroBackdropUrl}
           alt={movie.title}
           fill
           className="object-cover"
           priority
-          unoptimized={!movie.backdrop_path}
+          unoptimized={!heroBackdropIsRemote}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/60 to-transparent" />
       </div>
