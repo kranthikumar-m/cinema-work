@@ -93,7 +93,7 @@ export default async function MovieDetailPage({ params }: Props) {
     notFound();
   }
 
-  const trailer = videos.results.find(
+  const tmdbTrailer = videos.results.find(
     (v) => v.type === "Trailer" && v.site === "YouTube"
   );
   const director = credits.crew.find((c) => c.job === "Director");
@@ -143,6 +143,9 @@ export default async function MovieDetailPage({ params }: Props) {
     customGalleryImages.push({ thumbnailUrl: url, fullUrl: url, label: "Custom Poster", aspectRatio: 2 / 3 });
   }
   const hasPhotos = images.backdrops.length > 0 || images.posters.length > 0 || customGalleryImages.length > 0;
+
+  const customTrailer = customVideoRows.find((r) => r.category === "trailer");
+  const trailerKey = tmdbTrailer?.key ?? customTrailer?.youtube_key ?? null;
 
   const tmdbVideoTypeToCategory = (type: string): string => {
     const lower = type.toLowerCase();
@@ -253,7 +256,7 @@ export default async function MovieDetailPage({ params }: Props) {
                   {movie.overview}
                 </p>
 
-                <MovieDetailClient trailerKey={trailer?.key ?? null} />
+                <MovieDetailClient trailerKey={trailerKey} />
 
                 {director && (
                   <p className="text-sm text-gray-300 mt-4">
