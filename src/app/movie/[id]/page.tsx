@@ -140,18 +140,18 @@ export default async function MovieDetailPage({ params }: Props) {
   return (
     <div>
       {/* Hero Banner */}
-      <div className="relative h-[50vh] min-h-[400px]">
+      <div className="relative h-[56vh] min-h-[420px] bg-gray-950">
         {heroImage ? (
           <>
             <Image
               src={heroImage}
               alt={movie.title}
               fill
-              className="object-cover"
+              className="object-contain object-top"
               priority
               unoptimized={heroIsRemote || shouldUseUnoptimizedImage(heroImage)}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/60 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/40 to-transparent" />
           </>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-black">
