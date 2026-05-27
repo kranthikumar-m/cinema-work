@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import Image from "next/image";
-import { Play, X } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Play } from "lucide-react";
+import { VideoPlayerModal } from "@/components/movie/VideoPlayerModal";
 
 export interface VideoItem {
   key: string;
@@ -23,60 +23,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   review: "Reviews",
   miscellaneous: "Miscellaneous",
 };
-
-function VideoModal({ videoKey, title, onClose }: { videoKey: string; title: string; onClose: () => void }) {
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "";
-    };
-  }, [onClose]);
-
-  return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
-        onClick={onClose}
-      >
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.9, opacity: 0 }}
-          className="relative w-[90vw] max-w-5xl"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute -right-2 -top-12 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
-            aria-label="Close video"
-          >
-            <X className="h-5 w-5" />
-          </button>
-          <div className="overflow-hidden rounded-2xl bg-black shadow-2xl">
-            <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
-              <iframe
-                src={`https://www.youtube.com/embed/${videoKey}?autoplay=1&rel=0`}
-                title={title}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="absolute inset-0 h-full w-full"
-              />
-            </div>
-          </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
-  );
-}
 
 function VideoCard({ video, onPlay }: { video: VideoItem; onPlay: () => void }) {
   return (
@@ -156,13 +102,12 @@ export function VideoSection({ videos }: VideoSectionProps) {
         ))}
       </div>
 
-      {playingVideo && (
-        <VideoModal
-          videoKey={playingVideo.key}
-          title={playingVideo.title}
-          onClose={handleClose}
-        />
-      )}
+      <VideoPlayerModal
+        videoKey={playingVideo?.key ?? null}
+        title={playingVideo?.title ?? ""}
+        videos={videos}
+        onClose={handleClose}
+      />
     </>
   );
 }

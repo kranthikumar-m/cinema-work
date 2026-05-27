@@ -3,13 +3,15 @@
 import { useState } from "react";
 import { Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { TrailerModal } from "@/components/movie/TrailerModal";
+import { VideoPlayerModal } from "@/components/movie/VideoPlayerModal";
+import type { VideoPlayerItem } from "@/components/movie/VideoPlayerModal";
 
 interface MovieDetailClientProps {
   trailerKey: string | null;
+  videos?: VideoPlayerItem[];
 }
 
-export function MovieDetailClient({ trailerKey }: MovieDetailClientProps) {
+export function MovieDetailClient({ trailerKey, videos = [] }: MovieDetailClientProps) {
   const [showTrailer, setShowTrailer] = useState(false);
 
   return (
@@ -20,8 +22,10 @@ export function MovieDetailClient({ trailerKey }: MovieDetailClientProps) {
           Watch Trailer
         </Button>
       )}
-      <TrailerModal
+      <VideoPlayerModal
         videoKey={showTrailer ? trailerKey : null}
+        title="Trailer"
+        videos={videos}
         onClose={() => setShowTrailer(false)}
       />
     </>

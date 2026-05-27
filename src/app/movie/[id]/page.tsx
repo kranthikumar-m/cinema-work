@@ -256,7 +256,7 @@ export default async function MovieDetailPage({ params }: Props) {
                   {movie.overview}
                 </p>
 
-                <MovieDetailClient trailerKey={trailerKey} />
+                <MovieDetailClient trailerKey={trailerKey} videos={allVideos} />
 
                 {director && (
                   <p className="text-sm text-gray-300 mt-4">

@@ -13,9 +13,9 @@ import {
   Music4,
   Play,
   Star,
-  X,
 } from "lucide-react";
 import { getBackdropUrl } from "@/lib/utils";
+import { VideoPlayerModal } from "@/components/movie/VideoPlayerModal";
 import type { HomepageHeroSlide } from "@/types/homepage";
 
 interface HomeLandingHeroProps {
@@ -105,60 +105,6 @@ function TrailerButton({
       <Play className="h-[clamp(1.1rem,1.3vw,1.25rem)] w-[clamp(1.1rem,1.3vw,1.25rem)] fill-current" />
       <span>Trailers</span>
     </button>
-  );
-}
-
-function YouTubeModal({
-  videoKey,
-  title,
-  onClose,
-}: {
-  videoKey: string;
-  title: string;
-  onClose: () => void;
-}) {
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "";
-    };
-  }, [onClose]);
-
-  return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="relative w-[90vw] max-w-5xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute -right-2 -top-12 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
-          aria-label="Close trailer"
-        >
-          <X className="h-5 w-5" />
-        </button>
-        <div className="overflow-hidden rounded-2xl bg-black shadow-2xl">
-          <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
-            <iframe
-              src={`https://www.youtube.com/embed/${videoKey}?autoplay=1&rel=0`}
-              title={`${title} - Trailer`}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="absolute inset-0 h-full w-full"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -402,13 +348,11 @@ export function HomeLandingHero({
         </div>
       </section>
 
-      {trailerModal && (
-        <YouTubeModal
-          videoKey={trailerModal.key}
-          title={trailerModal.title}
-          onClose={() => setTrailerModal(null)}
-        />
-      )}
+      <VideoPlayerModal
+        videoKey={trailerModal?.key ?? null}
+        title={trailerModal?.title ?? ""}
+        onClose={() => setTrailerModal(null)}
+      />
     </>
   );
 }
