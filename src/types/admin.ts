@@ -77,3 +77,22 @@ export interface MovieCustomImagesPayload {
   customPoster: CustomImageRecord | null;
   customBackdrop: CustomImageRecord | null;
 }
+
+export type VideoCategory = "trailer" | "teaser" | "review" | "miscellaneous";
+
+export interface MovieVideoRecord {
+  id: number;
+  movieId: number;
+  youtubeKey: string;
+  title: string;
+  category: VideoCategory;
+  addedByUserId: number | null;
+  createdAt: string;
+}
+
+export interface YouTubeSearchResult {
+  videoId: string;
+  title: string;
+  thumbnailUrl: string;
+  channelTitle: string;
+}

@@ -68,6 +68,16 @@ export interface DatabaseManualMovieRow {
   created_at: string;
 }
 
+export interface DatabaseMovieVideoRow {
+  id: number;
+  movie_id: number;
+  youtube_key: string;
+  title: string;
+  category: string;
+  added_by_user_id: number | null;
+  created_at: string;
+}
+
 interface CreateUserRecordInput {
   name: string | null;
   email: string;
@@ -130,6 +140,15 @@ interface InsertManualMovieRecordInput {
   createdAt: string;
 }
 
+interface InsertMovieVideoRecordInput {
+  movieId: number;
+  youtubeKey: string;
+  title: string;
+  category: string;
+  addedByUserId: number | null;
+  createdAt: string;
+}
+
 interface StorageProvider {
   getUserByEmail(email: string): Promise<DatabaseUserRow | null>;
   getUserByIdentifier(identifier: string): Promise<DatabaseUserRow | null>;
@@ -161,6 +180,9 @@ interface StorageProvider {
   getManualMovie(movieId: number): Promise<DatabaseManualMovieRow | null>;
   insertManualMovie(input: InsertManualMovieRecordInput): Promise<DatabaseManualMovieRow | null>;
   deleteManualMovie(movieId: number): Promise<void>;
+  listMovieVideos(movieId: number): Promise<DatabaseMovieVideoRow[]>;
+  insertMovieVideo(input: InsertMovieVideoRecordInput): Promise<DatabaseMovieVideoRow | null>;
+  deleteMovieVideo(id: number): Promise<void>;
 }
 
 interface TableColumnInfo {
@@ -198,6 +220,8 @@ const CUSTOM_IMAGE_SELECT =
   "id,movie_id,image_type,file_name,mime_type,uploaded_by_user_id,created_at";
 const MANUAL_MOVIE_SELECT =
   "movie_id,tmdb_title,release_date,added_by_user_id,created_at";
+const MOVIE_VIDEO_SELECT =
+  "id,movie_id,youtube_key,title,category,added_by_user_id,created_at";
 
 function hasSupabaseProjectUrl(databaseUrl: string) {
   try {
@@ -313,6 +337,20 @@ function initializeSqliteDatabase(database: BetterSqlite3Database) {
       created_at TEXT NOT NULL,
       FOREIGN KEY (added_by_user_id) REFERENCES users(id) ON DELETE SET NULL
     );
+
+    CREATE TABLE IF NOT EXISTS movie_videos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      movie_id INTEGER NOT NULL,
+      youtube_key TEXT NOT NULL,
+      title TEXT NOT NULL,
+      category TEXT NOT NULL CHECK (category IN ('trailer', 'teaser', 'review', 'miscellaneous')),
+      added_by_user_id INTEGER,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (added_by_user_id) REFERENCES users(id) ON DELETE SET NULL,
+      UNIQUE(movie_id, youtube_key)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_movie_videos_movie_id ON movie_videos(movie_id);
   `);
 
   ensureColumn(database, "users", "name", "ALTER TABLE users ADD COLUMN name TEXT");
@@ -815,6 +853,28 @@ function createSqliteStorageProvider(databaseUrl: string): StorageProvider {
     async deleteManualMovie(movieId) {
       database.prepare("DELETE FROM movie_manual_additions WHERE movie_id = ?").run(movieId);
     },
+    async listMovieVideos(movieId) {
+      return database
+        .prepare(`SELECT ${MOVIE_VIDEO_SELECT} FROM movie_videos WHERE movie_id = ? ORDER BY created_at ASC`)
+        .all<DatabaseMovieVideoRow>(movieId);
+    },
+    async insertMovieVideo(input) {
+      database
+        .prepare(
+          `INSERT OR IGNORE INTO movie_videos (movie_id, youtube_key, title, category, added_by_user_id, created_at)
+           VALUES (?, ?, ?, ?, ?, ?)`
+        )
+        .run(input.movieId, input.youtubeKey, input.title, input.category, input.addedByUserId, input.createdAt);
+
+      return (
+        database
+          .prepare(`SELECT ${MOVIE_VIDEO_SELECT} FROM movie_videos WHERE movie_id = ? AND youtube_key = ?`)
+          .get<DatabaseMovieVideoRow>(input.movieId, input.youtubeKey) ?? null
+      );
+    },
+    async deleteMovieVideo(id) {
+      database.prepare("DELETE FROM movie_videos WHERE id = ?").run(id);
+    },
   };
 }
 
@@ -1238,6 +1298,35 @@ function createSupabaseStorageProvider(databaseUrl: string): StorageProvider {
         query: { movie_id: `eq.${movieId}` },
       });
     },
+    async listMovieVideos(movieId) {
+      return selectRows<DatabaseMovieVideoRow>("movie_videos", {
+        select: MOVIE_VIDEO_SELECT,
+        movie_id: `eq.${movieId}`,
+        order: "created_at.asc",
+      });
+    },
+    async insertMovieVideo(input) {
+      const rows = await request<DatabaseMovieVideoRow[]>("movie_videos", {
+        method: "POST",
+        query: { on_conflict: "movie_id,youtube_key", select: MOVIE_VIDEO_SELECT },
+        body: {
+          movie_id: input.movieId,
+          youtube_key: input.youtubeKey,
+          title: input.title,
+          category: input.category,
+          added_by_user_id: input.addedByUserId,
+          created_at: input.createdAt,
+        },
+        prefer: ["resolution=merge-duplicates", "return=representation"],
+      });
+      return rows?.[0] ?? null;
+    },
+    async deleteMovieVideo(id) {
+      await request("movie_videos", {
+        method: "DELETE",
+        query: { id: `eq.${id}` },
+      });
+    },
   };
 }
 
@@ -1410,4 +1499,23 @@ export async function insertManualMovieRecord(input: {
 
 export async function deleteManualMovieRecord(movieId: number) {
   return requireStorageProvider().deleteManualMovie(movieId);
+}
+
+export async function listMovieVideoRecords(movieId: number) {
+  return requireStorageProvider().listMovieVideos(movieId);
+}
+
+export async function insertMovieVideoRecord(input: {
+  movieId: number;
+  youtubeKey: string;
+  title: string;
+  category: string;
+  addedByUserId: number | null;
+  createdAt: string;
+}) {
+  return requireStorageProvider().insertMovieVideo(input);
+}
+
+export async function deleteMovieVideoRecord(id: number) {
+  return requireStorageProvider().deleteMovieVideo(id);
 }

@@ -27,7 +27,9 @@ import { MovieGrid } from "@/components/movie/MovieGrid";
 import { MovieDetailClient } from "./client";
 import { enrichMovieAssets } from "@/services/telugu-movies";
 import { resolvePreferredBackdrop } from "@/services/movie-backdrops";
-import { getCustomImageRecordsByMovieId, hasDatabaseConfiguration } from "@/lib/database";
+import { getCustomImageRecordsByMovieId, listMovieVideoRecords, hasDatabaseConfiguration } from "@/lib/database";
+import { VideoSection } from "@/components/movie/VideoSection";
+import type { VideoItem } from "@/components/movie/VideoSection";
 import type { MovieImage } from "@/types/tmdb";
 import type { Metadata } from "next";
 
@@ -100,9 +102,14 @@ export default async function MovieDetailPage({ params }: Props) {
     .filter((item) => item.original_language === "te")
     .slice(0, 6);
   const backdropSelection = await resolvePreferredBackdrop(movie, movie.backdrop_path);
-  const customImages = hasDatabaseConfiguration()
-    ? await getCustomImageRecordsByMovieId(id)
-    : [];
+  const [customImages, customVideoRows] = await Promise.all([
+    hasDatabaseConfiguration()
+      ? getCustomImageRecordsByMovieId(id)
+      : Promise.resolve([]),
+    hasDatabaseConfiguration()
+      ? listMovieVideoRecords(id)
+      : Promise.resolve([]),
+  ]);
   const customBackdrop = customImages.find((r) => r.image_type === "backdrop");
   const customPoster = customImages.find((r) => r.image_type === "poster");
 
@@ -136,6 +143,35 @@ export default async function MovieDetailPage({ params }: Props) {
     customGalleryImages.push({ thumbnailUrl: url, fullUrl: url, label: "Custom Poster", aspectRatio: 2 / 3 });
   }
   const hasPhotos = images.backdrops.length > 0 || images.posters.length > 0 || customGalleryImages.length > 0;
+
+  const tmdbVideoTypeToCategory = (type: string): string => {
+    const lower = type.toLowerCase();
+    if (lower === "trailer") return "trailer";
+    if (lower === "teaser") return "teaser";
+    return "miscellaneous";
+  };
+
+  const tmdbVideoItems: VideoItem[] = videos.results
+    .filter((v) => v.site === "YouTube" && v.key)
+    .map((v) => ({
+      key: v.key,
+      title: v.name,
+      category: tmdbVideoTypeToCategory(v.type),
+      source: "tmdb" as const,
+    }));
+
+  const customVideoItems: VideoItem[] = customVideoRows.map((r) => ({
+    key: r.youtube_key,
+    title: r.title,
+    category: r.category,
+    source: "custom" as const,
+  }));
+
+  const existingKeys = new Set(tmdbVideoItems.map((v) => v.key));
+  const allVideos = [
+    ...tmdbVideoItems,
+    ...customVideoItems.filter((v) => !existingKeys.has(v.key)),
+  ];
 
   return (
     <div>
@@ -238,6 +274,14 @@ export default async function MovieDetailPage({ params }: Props) {
           <SectionHeader title="Cast" />
           <CastCarousel cast={credits.cast} />
         </div>
+
+        {/* Videos */}
+        {allVideos.length > 0 && (
+          <div className="mt-12">
+            <SectionHeader title="Videos" />
+            <VideoSection videos={allVideos} />
+          </div>
+        )}
 
         {/* Photos */}
         {hasPhotos && (
