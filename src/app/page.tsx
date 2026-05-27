@@ -8,7 +8,9 @@ import { resolvePreferredBackdrop } from "@/services/movie-backdrops";
 import {
   getCustomImageRecordsByMovieId,
   hasDatabaseConfiguration,
+  listManualMovieRecords,
 } from "@/lib/database";
+import { enrichMovieAssets } from "@/services/telugu-movies";
 import {
   getLatestTeluguReleases,
   getPopularTeluguMovies,
@@ -221,32 +223,85 @@ async function buildFeaturedBundle(movie: Movie | null): Promise<HomepageHeroSli
   } satisfies HomepageHeroSlide;
 }
 
+const TOP_RATED_MIN_VOTE_AVG = 7.0;
+const TOP_RATED_MIN_VOTE_COUNT = 50;
+
+async function getManuallyAddedMovies() {
+  if (!hasDatabaseConfiguration()) return [];
+
+  const rows = await listManualMovieRecords().catch(() => []);
+  if (!rows.length) return [];
+
+  const results = await Promise.allSettled(
+    rows.map((row) =>
+      getMovieDetails(row.movie_id).then((details) =>
+        enrichMovieAssets(details as unknown as Movie)
+      )
+    )
+  );
+
+  return results
+    .filter(
+      (r): r is PromiseFulfilledResult<Movie> => r.status === "fulfilled"
+    )
+    .map((r) => r.value);
+}
+
+function mergeUnique(base: Movie[], additions: Movie[]) {
+  const ids = new Set(base.map((m) => m.id));
+  const merged = [...base];
+  for (const movie of additions) {
+    if (!ids.has(movie.id)) {
+      merged.push(movie);
+      ids.add(movie.id);
+    }
+  }
+  return merged;
+}
+
 async function getData() {
   try {
-    const [latestReleasesResult, popularResult, upcomingResult, topRatedResult] =
-      await Promise.allSettled([
-        getLatestTeluguReleases(10),
-        getPopularTeluguMovies(10),
-        getUpcomingTeluguMovies(10),
-        getTopRatedTeluguMovies(10),
+    const [latestReleasesResult, popularResult, upcomingResult, topRatedResult, manualMovies] =
+      await Promise.all([
+        getLatestTeluguReleases(10).catch(() => [] as Movie[]),
+        getPopularTeluguMovies(10).catch(() => [] as Movie[]),
+        getUpcomingTeluguMovies(10).catch(() => [] as Movie[]),
+        getTopRatedTeluguMovies(10).catch(() => [] as Movie[]),
+        getManuallyAddedMovies(),
       ]);
 
-    const latestReleases =
-      latestReleasesResult.status === "fulfilled" ? latestReleasesResult.value : [];
-    const popular = popularResult.status === "fulfilled" ? popularResult.value : [];
-    const upcoming = upcomingResult.status === "fulfilled" ? upcomingResult.value : [];
-    const topRated = topRatedResult.status === "fulfilled" ? topRatedResult.value : [];
+    let latestReleases = latestReleasesResult;
+    const popular = popularResult;
+    let upcoming = upcomingResult;
+    let topRated = topRatedResult;
 
-    [
-      { label: "latest releases", result: latestReleasesResult },
-      { label: "popular titles", result: popularResult },
-      { label: "upcoming titles", result: upcomingResult },
-      { label: "top rated titles", result: topRatedResult },
-    ].forEach(({ label, result }) => {
-      if (result.status === "rejected") {
-        console.error(`Failed to load homepage ${label}:`, result.reason);
-      }
-    });
+    if (manualMovies.length) {
+      const today = new Date().toISOString().slice(0, 10);
+      const recentAdditions = manualMovies.filter(
+        (m) => m.release_date && m.release_date <= today
+      );
+      const upcomingAdditions = manualMovies.filter(
+        (m) => !m.release_date || m.release_date > today
+      );
+      const topRatedAdditions = manualMovies.filter(
+        (m) =>
+          m.vote_average >= TOP_RATED_MIN_VOTE_AVG &&
+          m.vote_count >= TOP_RATED_MIN_VOTE_COUNT
+      );
+
+      latestReleases = mergeUnique(latestReleases, recentAdditions);
+      latestReleases.sort((a, b) =>
+        (b.release_date || "").localeCompare(a.release_date || "")
+      );
+
+      upcoming = mergeUnique(upcoming, upcomingAdditions);
+      upcoming.sort((a, b) =>
+        (a.release_date || "").localeCompare(b.release_date || "")
+      );
+
+      topRated = mergeUnique(topRated, topRatedAdditions);
+      topRated.sort((a, b) => b.vote_average - a.vote_average);
+    }
 
     const heroCandidates = selectHeroCandidates({
       latestReleases,

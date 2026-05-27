@@ -59,6 +59,14 @@ export interface CustomImageRecord {
   createdAt: string;
 }
 
+export interface ManualMovieRecord {
+  movieId: number;
+  tmdbTitle: string;
+  releaseDate: string | null;
+  addedByUserId: number | null;
+  createdAt: string;
+}
+
 export interface MovieCustomImagesPayload {
   movieId: number;
   title: string;

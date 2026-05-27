@@ -60,6 +60,14 @@ export interface DatabaseCustomImageRow {
   created_at: string;
 }
 
+export interface DatabaseManualMovieRow {
+  movie_id: number;
+  tmdb_title: string;
+  release_date: string | null;
+  added_by_user_id: number | null;
+  created_at: string;
+}
+
 interface CreateUserRecordInput {
   name: string | null;
   email: string;
@@ -114,6 +122,14 @@ interface UpsertCustomImageRecordInput {
   createdAt: string;
 }
 
+interface InsertManualMovieRecordInput {
+  movieId: number;
+  tmdbTitle: string;
+  releaseDate: string | null;
+  addedByUserId: number | null;
+  createdAt: string;
+}
+
 interface StorageProvider {
   getUserByEmail(email: string): Promise<DatabaseUserRow | null>;
   getUserByIdentifier(identifier: string): Promise<DatabaseUserRow | null>;
@@ -141,6 +157,10 @@ interface StorageProvider {
   getCustomImagesByMovieId(movieId: number): Promise<DatabaseCustomImageRow[]>;
   upsertCustomImage(input: UpsertCustomImageRecordInput): Promise<DatabaseCustomImageRow | null>;
   deleteCustomImage(movieId: number, imageType: "poster" | "backdrop"): Promise<void>;
+  listManualMovies(): Promise<DatabaseManualMovieRow[]>;
+  getManualMovie(movieId: number): Promise<DatabaseManualMovieRow | null>;
+  insertManualMovie(input: InsertManualMovieRecordInput): Promise<DatabaseManualMovieRow | null>;
+  deleteManualMovie(movieId: number): Promise<void>;
 }
 
 interface TableColumnInfo {
@@ -176,6 +196,8 @@ const BACKDROP_OVERRIDE_SELECT =
   "movie_id,selected_backdrop_path,source,selected_by_user_id,created_at,updated_at";
 const CUSTOM_IMAGE_SELECT =
   "id,movie_id,image_type,file_name,mime_type,uploaded_by_user_id,created_at";
+const MANUAL_MOVIE_SELECT =
+  "movie_id,tmdb_title,release_date,added_by_user_id,created_at";
 
 function hasSupabaseProjectUrl(databaseUrl: string) {
   try {
@@ -282,6 +304,15 @@ function initializeSqliteDatabase(database: BetterSqlite3Database) {
     CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_hash ON password_reset_tokens(token_hash);
     CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user_id ON password_reset_tokens(user_id);
     CREATE INDEX IF NOT EXISTS idx_custom_images_movie_id ON movie_custom_images(movie_id);
+
+    CREATE TABLE IF NOT EXISTS movie_manual_additions (
+      movie_id INTEGER PRIMARY KEY,
+      tmdb_title TEXT NOT NULL,
+      release_date TEXT,
+      added_by_user_id INTEGER,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (added_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+    );
   `);
 
   ensureColumn(database, "users", "name", "ALTER TABLE users ADD COLUMN name TEXT");
@@ -755,6 +786,35 @@ function createSqliteStorageProvider(databaseUrl: string): StorageProvider {
         .prepare("DELETE FROM movie_custom_images WHERE movie_id = ? AND image_type = ?")
         .run(movieId, imageType);
     },
+    async listManualMovies() {
+      return database
+        .prepare(`SELECT ${MANUAL_MOVIE_SELECT} FROM movie_manual_additions ORDER BY created_at DESC`)
+        .all<DatabaseManualMovieRow>();
+    },
+    async getManualMovie(movieId) {
+      return (
+        database
+          .prepare(`SELECT ${MANUAL_MOVIE_SELECT} FROM movie_manual_additions WHERE movie_id = ?`)
+          .get<DatabaseManualMovieRow>(movieId) ?? null
+      );
+    },
+    async insertManualMovie(input) {
+      database
+        .prepare(
+          `INSERT OR IGNORE INTO movie_manual_additions (movie_id, tmdb_title, release_date, added_by_user_id, created_at)
+           VALUES (?, ?, ?, ?, ?)`
+        )
+        .run(input.movieId, input.tmdbTitle, input.releaseDate, input.addedByUserId, input.createdAt);
+
+      return (
+        database
+          .prepare(`SELECT ${MANUAL_MOVIE_SELECT} FROM movie_manual_additions WHERE movie_id = ?`)
+          .get<DatabaseManualMovieRow>(input.movieId) ?? null
+      );
+    },
+    async deleteManualMovie(movieId) {
+      database.prepare("DELETE FROM movie_manual_additions WHERE movie_id = ?").run(movieId);
+    },
   };
 }
 
@@ -1145,6 +1205,39 @@ function createSupabaseStorageProvider(databaseUrl: string): StorageProvider {
         },
       });
     },
+    async listManualMovies() {
+      return selectRows<DatabaseManualMovieRow>("movie_manual_additions", {
+        select: MANUAL_MOVIE_SELECT,
+        order: "created_at.desc",
+      });
+    },
+    async getManualMovie(movieId) {
+      return selectSingleRow<DatabaseManualMovieRow>("movie_manual_additions", {
+        select: MANUAL_MOVIE_SELECT,
+        movie_id: `eq.${movieId}`,
+      });
+    },
+    async insertManualMovie(input) {
+      const rows = await request<DatabaseManualMovieRow[]>("movie_manual_additions", {
+        method: "POST",
+        query: { on_conflict: "movie_id", select: MANUAL_MOVIE_SELECT },
+        body: {
+          movie_id: input.movieId,
+          tmdb_title: input.tmdbTitle,
+          release_date: input.releaseDate,
+          added_by_user_id: input.addedByUserId,
+          created_at: input.createdAt,
+        },
+        prefer: ["resolution=merge-duplicates", "return=representation"],
+      });
+      return rows?.[0] ?? null;
+    },
+    async deleteManualMovie(movieId) {
+      await request("movie_manual_additions", {
+        method: "DELETE",
+        query: { movie_id: `eq.${movieId}` },
+      });
+    },
   };
 }
 
@@ -1295,4 +1388,26 @@ export async function upsertCustomImageRecord(input: {
 
 export async function deleteCustomImageRecord(movieId: number, imageType: "poster" | "backdrop") {
   return requireStorageProvider().deleteCustomImage(movieId, imageType);
+}
+
+export async function listManualMovieRecords() {
+  return requireStorageProvider().listManualMovies();
+}
+
+export async function getManualMovieRecord(movieId: number) {
+  return requireStorageProvider().getManualMovie(movieId);
+}
+
+export async function insertManualMovieRecord(input: {
+  movieId: number;
+  tmdbTitle: string;
+  releaseDate: string | null;
+  addedByUserId: number | null;
+  createdAt: string;
+}) {
+  return requireStorageProvider().insertManualMovie(input);
+}
+
+export async function deleteManualMovieRecord(movieId: number) {
+  return requireStorageProvider().deleteManualMovie(movieId);
 }
