@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
-import { Search, Plus, Trash2, Play, Film } from "lucide-react";
+import { Search, Plus, Trash2, Play, Film, Music, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { YouTubeSearchResult, MovieVideoRecord, VideoCategory } from "@/types/admin";
 import type { AdminMovieSearchResult } from "@/types/admin";
@@ -31,6 +31,13 @@ function CategoryBadge({ category }: { category: string }) {
   );
 }
 
+interface SongResult {
+  videoId: string;
+  title: string;
+  channelTitle: string;
+  thumbnailUrl: string;
+}
+
 export function AdminVideoManager() {
   const [movieQuery, setMovieQuery] = useState("");
   const [movieResults, setMovieResults] = useState<AdminMovieSearchResult[]>([]);
@@ -40,6 +47,10 @@ export function AdminVideoManager() {
   const [ytQuery, setYtQuery] = useState("");
   const [ytResults, setYtResults] = useState<YouTubeSearchResult[]>([]);
   const [searchingYt, setSearchingYt] = useState(false);
+
+  const [songResults, setSongResults] = useState<SongResult[]>([]);
+  const [fetchingSongs, setFetchingSongs] = useState(false);
+  const [songsFetched, setSongsFetched] = useState(false);
 
   const [addedVideos, setAddedVideos] = useState<MovieVideoRecord[]>([]);
   const [saving, setSaving] = useState(false);
@@ -61,6 +72,8 @@ export function AdminVideoManager() {
     if (selectedMovie) {
       loadAddedVideos(selectedMovie.id);
       setYtQuery(selectedMovie.title + " Telugu");
+      setSongResults([]);
+      setSongsFetched(false);
     }
   }, [selectedMovie, loadAddedVideos]);
 
@@ -98,7 +111,27 @@ export function AdminVideoManager() {
     }
   }
 
-  async function addVideo(yt: YouTubeSearchResult) {
+  async function fetchSongs() {
+    if (!selectedMovie) return;
+    setFetchingSongs(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const params = new URLSearchParams({ title: selectedMovie.title });
+      if (selectedMovie.releaseDate) params.set("releaseDate", selectedMovie.releaseDate);
+      const res = await fetch(`/api/admin/videos/song-search?${params}`);
+      const data = (await res.json()) as { error?: string; results?: SongResult[] };
+      if (!res.ok || !data.results) throw new Error(data.error || "Song search failed.");
+      setSongResults(data.results);
+      setSongsFetched(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Song search failed.");
+    } finally {
+      setFetchingSongs(false);
+    }
+  }
+
+  async function addVideo(yt: YouTubeSearchResult | SongResult, category: VideoCategory) {
     if (!selectedMovie) return;
     setSaving(true);
     setError(null);
@@ -110,12 +143,12 @@ export function AdminVideoManager() {
         body: JSON.stringify({
           youtubeKey: yt.videoId,
           title: yt.title,
-          category: selectedCategory,
+          category,
         }),
       });
       const data = (await res.json()) as { error?: string; ok?: boolean };
       if (!res.ok || !data.ok) throw new Error(data.error || "Failed to add video.");
-      setSuccess(`"${yt.title}" added as ${selectedCategory}.`);
+      setSuccess(`"${yt.title}" added as ${category}.`);
       await loadAddedVideos(selectedMovie.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to add video.");
@@ -154,7 +187,7 @@ export function AdminVideoManager() {
         </h2>
         <p className="mt-2 max-w-3xl text-sm text-[var(--color-muted-strong)]">
           Search for a movie, then search YouTube to find and add trailers, teasers, reviews, and other videos.
-          Added videos appear in the Videos section on each movie&apos;s page.
+          Use &quot;Fetch Songs&quot; to auto-discover songs filtered by relevance.
         </p>
       </div>
 
@@ -229,6 +262,8 @@ export function AdminVideoManager() {
               onClick={() => {
                 setSelectedMovie(null);
                 setYtResults([]);
+                setSongResults([]);
+                setSongsFetched(false);
                 setAddedVideos([]);
                 setError(null);
                 setSuccess(null);
@@ -246,6 +281,93 @@ export function AdminVideoManager() {
           {success && (
             <div className="mb-4 rounded-xl border border-[rgba(60,180,100,0.28)] bg-[rgba(28,80,48,0.28)] px-4 py-3 text-sm text-[#c0f0d0]">
               {success}
+            </div>
+          )}
+
+          {/* Fetch Songs button */}
+          <div className="mb-5 flex items-center gap-3 rounded-xl border border-[rgba(255,120,180,0.18)] bg-[rgba(255,120,180,0.04)] px-4 py-3">
+            <Music className="h-5 w-5 shrink-0 text-[#ff80b4]" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-[var(--color-text)]">Song Discovery</p>
+              <p className="text-xs text-[var(--color-muted-strong)]">
+                Auto-search YouTube for songs matching this movie, filtered by relevance, duration, and release year.
+              </p>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              disabled={fetchingSongs}
+              onClick={fetchSongs}
+              className="gap-1.5 shrink-0"
+            >
+              <Music className="h-3.5 w-3.5" />
+              {fetchingSongs ? "Searching..." : "Fetch Songs"}
+            </Button>
+          </div>
+
+          {/* Song Results */}
+          {songsFetched && (
+            <div className="mb-5 rounded-2xl border border-[rgba(255,120,180,0.18)] bg-[rgba(15,19,34,0.44)] p-3">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="text-xs uppercase tracking-[0.16em] text-[#ff80b4]">
+                  Song Results ({songResults.length})
+                </div>
+                {songResults.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => { setSongResults([]); setSongsFetched(false); }}
+                    className="text-xs text-[var(--color-muted-strong)] hover:text-[var(--color-text)]"
+                  >
+                    Dismiss
+                  </button>
+                )}
+              </div>
+              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                {songResults.length ? (
+                  songResults.map((song) => {
+                    const alreadyAdded = addedKeys.has(song.videoId);
+                    return (
+                      <div
+                        key={song.videoId}
+                        className={`flex items-center gap-3 rounded-xl border px-3 py-3 ${
+                          alreadyAdded
+                            ? "border-[rgba(60,180,100,0.2)] bg-[rgba(28,80,48,0.12)]"
+                            : "border-transparent hover:border-[var(--color-border)] hover:bg-white/2"
+                        }`}
+                      >
+                        <div className="relative h-16 w-28 flex-shrink-0 overflow-hidden rounded-lg bg-[var(--color-bg-deep)]">
+                          <Image src={song.thumbnailUrl} alt={song.title} fill className="object-cover" unoptimized />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="line-clamp-2 text-sm font-medium text-[var(--color-text)]">{song.title}</p>
+                          <p className="mt-1 text-xs text-[var(--color-muted-strong)]">{song.channelTitle}</p>
+                        </div>
+                        {alreadyAdded ? (
+                          <span className="inline-flex items-center gap-1 shrink-0 rounded-full bg-[rgba(60,180,100,0.15)] px-3 py-1.5 text-xs font-medium text-[#60c880]">
+                            <Check className="h-3 w-3" />
+                            Added
+                          </span>
+                        ) : (
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={saving}
+                            onClick={() => addVideo(song, "song")}
+                            className="gap-1 shrink-0"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            Add Song
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="rounded-xl border border-dashed border-[var(--color-border)] px-4 py-8 text-center text-sm text-[var(--color-muted-strong)]">
+                    No matching songs found for this movie.
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -307,10 +429,10 @@ export function AdminVideoManager() {
                           type="button"
                           size="sm"
                           disabled={saving || alreadyAdded}
-                          onClick={() => addVideo(yt)}
+                          onClick={() => addVideo(yt, selectedCategory)}
                           className="gap-1 shrink-0"
                         >
-                          <Plus className="h-3.5 w-3.5" />
+                          {alreadyAdded ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
                           {alreadyAdded ? "Added" : "Add"}
                         </Button>
                       </div>

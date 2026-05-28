@@ -28,7 +28,6 @@ import { MovieDetailClient } from "./client";
 import { enrichMovieAssets } from "@/services/telugu-movies";
 import { resolvePreferredBackdrop } from "@/services/movie-backdrops";
 import { getCustomImageRecordsByMovieId, listMovieVideoRecords, hasDatabaseConfiguration } from "@/lib/database";
-import { ensureMovieSongsSync } from "@/services/song-sync";
 import { VideoSection } from "@/components/movie/VideoSection";
 import type { VideoItem } from "@/components/movie/VideoSection";
 import type { MovieImage } from "@/types/tmdb";
@@ -103,13 +102,6 @@ export default async function MovieDetailPage({ params }: Props) {
     .filter((item) => item.original_language === "te")
     .slice(0, 6);
   const backdropSelection = await resolvePreferredBackdrop(movie, movie.backdrop_path);
-
-  try {
-    await ensureMovieSongsSync(id, movie.title, movie.release_date);
-  } catch {
-    // non-critical — page still renders with whatever videos exist
-  }
-
   const [customImages, customVideoRows] = await Promise.all([
     hasDatabaseConfiguration()
       ? getCustomImageRecordsByMovieId(id)

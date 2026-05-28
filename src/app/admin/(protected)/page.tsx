@@ -3,7 +3,6 @@ import { AdminBackdropManager } from "@/components/admin/AdminBackdropManager";
 import { AdminImageUploader } from "@/components/admin/AdminImageUploader";
 import { AdminMovieAdder } from "@/components/admin/AdminMovieAdder";
 import { AdminVideoManager } from "@/components/admin/AdminVideoManager";
-import { AdminSongSync } from "@/components/admin/AdminSongSync";
 import { listUsers, requireAdminUser, userCanManageUsers } from "@/lib/auth";
 
 export default async function AdminDashboardPage() {
@@ -100,8 +99,6 @@ export default async function AdminDashboardPage() {
       <AdminMovieAdder />
 
       <AdminVideoManager />
-
-      <AdminSongSync />
 
       <AdminImageUploader />
     </div>
