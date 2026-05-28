@@ -18,12 +18,23 @@ export function AppChrome({ children }: AppChromeProps) {
   const pathname = usePathname();
   const isHome = pathname === "/";
   const isAdminRoute = pathname.startsWith("/admin");
+  const isSearch = pathname === "/search";
 
   if (isAdminRoute) {
     return (
       <div className="min-h-[100dvh] bg-[var(--color-bg)] text-[var(--color-text)]">
         {children}
       </div>
+    );
+  }
+
+  if (isSearch) {
+    return (
+      <AuthUserProvider>
+        <div className="min-h-[100dvh] bg-[var(--color-bg)] text-[var(--color-text)]">
+          {children}
+        </div>
+      </AuthUserProvider>
     );
   }
 
