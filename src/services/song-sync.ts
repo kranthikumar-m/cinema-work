@@ -280,6 +280,54 @@ async function syncSongsForMovie(
   return { added, removed };
 }
 
+export async function ensureMovieSongsSync(
+  movieId: number,
+  movieTitle: string
+): Promise<void> {
+  if (!hasDatabaseConfiguration() || !env.YOUTUBE_API_KEY) return;
+
+  const syncRecord = await getSongSyncRecord(movieId);
+  if (!shouldSync(syncRecord?.last_synced_at ?? null)) return;
+
+  await removeIrrelevantSongs(movieId, movieTitle);
+
+  const existingVideos = await listMovieVideoRecords(movieId);
+  const existingKeys = new Set(existingVideos.map((v) => v.youtube_key));
+
+  const searchItems = await searchYouTube(`"${movieTitle}" Telugu movie songs`);
+  if (!searchItems.length) {
+    await upsertSongSyncRecord(movieId, new Date().toISOString());
+    return;
+  }
+
+  const videoIds = searchItems
+    .map((item) => item.id.videoId)
+    .filter((id) => !existingKeys.has(id));
+
+  if (!videoIds.length) {
+    await upsertSongSyncRecord(movieId, new Date().toISOString());
+    return;
+  }
+
+  const details = await getVideoDetails(videoIds);
+  const filtered = filterAndRankSongs(details, movieTitle);
+
+  const now = new Date().toISOString();
+  for (const result of filtered) {
+    if (existingKeys.has(result.videoId)) continue;
+    await insertMovieVideoRecord({
+      movieId,
+      youtubeKey: result.videoId,
+      title: result.title,
+      category: "song",
+      addedByUserId: null,
+      createdAt: now,
+    });
+  }
+
+  await upsertSongSyncRecord(movieId, now);
+}
+
 export async function runSongSync(): Promise<{
   processed: number;
   songsAdded: number;
