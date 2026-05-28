@@ -45,6 +45,7 @@ export const env = {
   ADMIN_BOOTSTRAP_EMAIL: getOptionalEnvVar("ADMIN_BOOTSTRAP_EMAIL"),
   ADMIN_BOOTSTRAP_PASSWORD: getOptionalEnvVar("ADMIN_BOOTSTRAP_PASSWORD"),
   YOUTUBE_API_KEY: getOptionalEnvVar("YOUTUBE_API_KEY"),
+  CRON_SECRET: getOptionalEnvVar("CRON_SECRET"),
   TMDB_BASE_URL:
     getOptionalEnvVar("TMDB_BASE_URL", "https://api.themoviedb.org/3") ||
     "https://api.themoviedb.org/3",

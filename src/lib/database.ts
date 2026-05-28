@@ -78,6 +78,11 @@ export interface DatabaseMovieVideoRow {
   created_at: string;
 }
 
+export interface DatabaseSongSyncRow {
+  movie_id: number;
+  last_synced_at: string;
+}
+
 interface CreateUserRecordInput {
   name: string | null;
   email: string;
@@ -183,6 +188,8 @@ interface StorageProvider {
   listMovieVideos(movieId: number): Promise<DatabaseMovieVideoRow[]>;
   insertMovieVideo(input: InsertMovieVideoRecordInput): Promise<DatabaseMovieVideoRow | null>;
   deleteMovieVideo(id: number): Promise<void>;
+  getSongSync(movieId: number): Promise<DatabaseSongSyncRow | null>;
+  upsertSongSync(movieId: number, syncedAt: string): Promise<void>;
 }
 
 interface TableColumnInfo {
@@ -351,6 +358,11 @@ function initializeSqliteDatabase(database: BetterSqlite3Database) {
     );
 
     CREATE INDEX IF NOT EXISTS idx_movie_videos_movie_id ON movie_videos(movie_id);
+
+    CREATE TABLE IF NOT EXISTS movie_song_syncs (
+      movie_id INTEGER PRIMARY KEY,
+      last_synced_at TEXT NOT NULL
+    );
   `);
 
   migrateMovieVideosTable(database);
@@ -907,6 +919,21 @@ function createSqliteStorageProvider(databaseUrl: string): StorageProvider {
     async deleteMovieVideo(id) {
       database.prepare("DELETE FROM movie_videos WHERE id = ?").run(id);
     },
+    async getSongSync(movieId) {
+      return (
+        database
+          .prepare("SELECT movie_id, last_synced_at FROM movie_song_syncs WHERE movie_id = ?")
+          .get<DatabaseSongSyncRow>(movieId) ?? null
+      );
+    },
+    async upsertSongSync(movieId, syncedAt) {
+      database
+        .prepare(
+          `INSERT INTO movie_song_syncs (movie_id, last_synced_at) VALUES (?, ?)
+           ON CONFLICT(movie_id) DO UPDATE SET last_synced_at = excluded.last_synced_at`
+        )
+        .run(movieId, syncedAt);
+    },
   };
 }
 
@@ -1359,6 +1386,20 @@ function createSupabaseStorageProvider(databaseUrl: string): StorageProvider {
         query: { id: `eq.${id}` },
       });
     },
+    async getSongSync(movieId) {
+      return selectSingleRow<DatabaseSongSyncRow>("movie_song_syncs", {
+        select: "movie_id,last_synced_at",
+        movie_id: `eq.${movieId}`,
+      });
+    },
+    async upsertSongSync(movieId, syncedAt) {
+      await request("movie_song_syncs", {
+        method: "POST",
+        query: { on_conflict: "movie_id" },
+        body: { movie_id: movieId, last_synced_at: syncedAt },
+        prefer: ["resolution=merge-duplicates"],
+      });
+    },
   };
 }
 
@@ -1550,4 +1591,12 @@ export async function insertMovieVideoRecord(input: {
 
 export async function deleteMovieVideoRecord(id: number) {
   return requireStorageProvider().deleteMovieVideo(id);
+}
+
+export async function getSongSyncRecord(movieId: number) {
+  return requireStorageProvider().getSongSync(movieId);
+}
+
+export async function upsertSongSyncRecord(movieId: number, syncedAt: string) {
+  return requireStorageProvider().upsertSongSync(movieId, syncedAt);
 }
