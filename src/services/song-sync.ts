@@ -13,21 +13,80 @@ import { getMovieDetails } from "@/services/tmdb";
 
 const SYNC_WINDOW_DAYS = 50;
 const MIN_SYNC_INTERVAL_HOURS = 20;
-const MAX_SONGS_PER_MOVIE = 15;
+const MAX_SEARCH_RESULTS = 25;
+const MAX_SONGS_PER_MOVIE = 10;
+const MAX_DURATION_SECONDS = 8 * 60;
+const MIN_DURATION_SECONDS = 60;
 
 interface YouTubeSearchItem {
   id: { videoId: string };
   snippet: {
     title: string;
-    thumbnails: { medium?: { url: string }; default?: { url: string } };
     channelTitle: string;
   };
 }
 
-async function searchYouTubeSongs(
-  query: string,
-  maxResults = MAX_SONGS_PER_MOVIE
-): Promise<{ videoId: string; title: string }[]> {
+interface YouTubeVideoDetail {
+  id: string;
+  snippet: {
+    title: string;
+    channelTitle: string;
+  };
+  contentDetails: {
+    duration: string;
+  };
+}
+
+function parseIsoDuration(iso: string): number {
+  const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!match) return 0;
+  const h = parseInt(match[1] || "0", 10);
+  const m = parseInt(match[2] || "0", 10);
+  const s = parseInt(match[3] || "0", 10);
+  return h * 3600 + m * 60 + s;
+}
+
+const JUNK_PATTERNS = [
+  /jukebox/i,
+  /video\s*jukebox/i,
+  /hits\s*(collection|compilation)/i,
+  /top\s*\d+\s*(hits|songs)/i,
+  /latest\s*(tollywood|telugu|bollywood)\s*(hits|songs)/i,
+  /best\s*of\s*\d{4}/i,
+  /trending\s*(songs|hits)/i,
+  /nonstop/i,
+  /non[\s-]?stop/i,
+  /mashup/i,
+  /back\s*to\s*back/i,
+  /b2b/i,
+  /full\s*video\s*songs?\s*jukebox/i,
+  /mega\s*(hit|mix)/i,
+  /dance\s*&?\s*(romance|hits)/i,
+  /love\s*hits/i,
+  /emotion\s*&?\s*(energy|hits)/i,
+  /party\s*songs/i,
+  /workout\s*songs/i,
+  /sad\s*songs/i,
+];
+
+function isJunkTitle(title: string): boolean {
+  return JUNK_PATTERNS.some((p) => p.test(title));
+}
+
+function titleMatchesMovie(videoTitle: string, movieTitle: string): boolean {
+  const normalizedVideo = videoTitle.toLowerCase().replace(/[^\w\s]/g, "");
+  const normalizedMovie = movieTitle.toLowerCase().replace(/[^\w\s]/g, "");
+
+  const movieWords = normalizedMovie.split(/\s+/).filter((w) => w.length > 1);
+  if (!movieWords.length) return false;
+
+  if (normalizedVideo.includes(normalizedMovie)) return true;
+
+  const matchCount = movieWords.filter((w) => normalizedVideo.includes(w)).length;
+  return matchCount >= Math.ceil(movieWords.length * 0.6);
+}
+
+async function searchYouTube(query: string): Promise<YouTubeSearchItem[]> {
   if (!env.YOUTUBE_API_KEY) return [];
 
   const url = new URL("https://www.googleapis.com/youtube/v3/search");
@@ -35,16 +94,78 @@ async function searchYouTubeSongs(
   url.searchParams.set("q", query);
   url.searchParams.set("type", "video");
   url.searchParams.set("videoCategoryId", "10");
-  url.searchParams.set("maxResults", String(maxResults));
+  url.searchParams.set("maxResults", String(MAX_SEARCH_RESULTS));
   url.searchParams.set("key", env.YOUTUBE_API_KEY);
 
   const res = await fetch(url.toString());
   if (!res.ok) return [];
 
   const data = await res.json();
-  return (data.items ?? []).map((item: YouTubeSearchItem) => ({
-    videoId: item.id.videoId,
-    title: item.snippet.title,
+  return data.items ?? [];
+}
+
+async function getVideoDetails(videoIds: string[]): Promise<YouTubeVideoDetail[]> {
+  if (!env.YOUTUBE_API_KEY || !videoIds.length) return [];
+
+  const url = new URL("https://www.googleapis.com/youtube/v3/videos");
+  url.searchParams.set("part", "snippet,contentDetails");
+  url.searchParams.set("id", videoIds.join(","));
+  url.searchParams.set("key", env.YOUTUBE_API_KEY);
+
+  const res = await fetch(url.toString());
+  if (!res.ok) return [];
+
+  const data = await res.json();
+  return data.items ?? [];
+}
+
+function filterAndRankSongs(
+  details: YouTubeVideoDetail[],
+  movieTitle: string
+): { videoId: string; title: string }[] {
+  const candidates: { videoId: string; title: string; score: number }[] = [];
+
+  for (const video of details) {
+    const title = video.snippet.title;
+    const duration = parseIsoDuration(video.contentDetails.duration);
+
+    if (duration < MIN_DURATION_SECONDS || duration > MAX_DURATION_SECONDS) continue;
+
+    if (isJunkTitle(title)) continue;
+
+    if (!titleMatchesMovie(title, movieTitle)) continue;
+
+    let score = 0;
+
+    const titleLower = title.toLowerCase();
+    if (titleLower.includes("full video")) score += 3;
+    if (titleLower.includes("lyric")) score += 2;
+    if (titleLower.includes("video song")) score += 2;
+    if (titleLower.includes("official")) score += 1;
+    if (titleLower.includes("from")) score += 1;
+
+    if (duration >= 120 && duration <= 360) score += 2;
+
+    const channelLower = video.snippet.channelTitle.toLowerCase();
+    if (
+      channelLower.includes("saregama") ||
+      channelLower.includes("aditya music") ||
+      channelLower.includes("sony music") ||
+      channelLower.includes("lahari") ||
+      channelLower.includes("mango music") ||
+      channelLower.includes("anand audio") ||
+      channelLower.includes("t-series")
+    ) {
+      score += 5;
+    }
+
+    candidates.push({ videoId: video.id, title, score });
+  }
+
+  candidates.sort((a, b) => b.score - a.score);
+  return candidates.slice(0, MAX_SONGS_PER_MOVIE).map((c) => ({
+    videoId: c.videoId,
+    title: c.title,
   }));
 }
 
@@ -72,13 +193,28 @@ async function syncSongsForMovie(movie: { id: number; title: string; releaseDate
   const existingVideos = await listMovieVideoRecords(movie.id);
   const existingKeys = new Set(existingVideos.map((v) => v.youtube_key));
 
-  const query = `${movie.title} Telugu album songs`;
-  const results = await searchYouTubeSongs(query);
+  const searchItems = await searchYouTube(`"${movie.title}" Telugu movie songs`);
+  if (!searchItems.length) {
+    await upsertSongSyncRecord(movie.id, new Date().toISOString());
+    return 0;
+  }
+
+  const videoIds = searchItems
+    .map((item) => item.id.videoId)
+    .filter((id) => !existingKeys.has(id));
+
+  if (!videoIds.length) {
+    await upsertSongSyncRecord(movie.id, new Date().toISOString());
+    return 0;
+  }
+
+  const details = await getVideoDetails(videoIds);
+  const filtered = filterAndRankSongs(details, movie.title);
 
   let added = 0;
   const now = new Date().toISOString();
 
-  for (const result of results) {
+  for (const result of filtered) {
     if (existingKeys.has(result.videoId)) continue;
 
     await insertMovieVideoRecord({
