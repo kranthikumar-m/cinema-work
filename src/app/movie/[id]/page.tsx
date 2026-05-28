@@ -147,10 +147,12 @@ export default async function MovieDetailPage({ params }: Props) {
   const customTrailer = customVideoRows.find((r) => r.category === "trailer");
   const trailerKey = tmdbTrailer?.key ?? customTrailer?.youtube_key ?? null;
 
-  const tmdbVideoTypeToCategory = (type: string): string => {
+  const tmdbVideoTypeToCategory = (type: string, name: string): string => {
     const lower = type.toLowerCase();
     if (lower === "trailer") return "trailer";
     if (lower === "teaser") return "teaser";
+    const nameLower = name.toLowerCase();
+    if (nameLower.includes("song") || nameLower.includes("lyric") || nameLower.includes("music video")) return "song";
     return "miscellaneous";
   };
 
@@ -159,7 +161,7 @@ export default async function MovieDetailPage({ params }: Props) {
     .map((v) => ({
       key: v.key,
       title: v.name,
-      category: tmdbVideoTypeToCategory(v.type),
+      category: tmdbVideoTypeToCategory(v.type, v.name),
       source: "tmdb" as const,
     }));
 

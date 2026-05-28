@@ -16,10 +16,11 @@ interface VideoSectionProps {
   videos: VideoItem[];
 }
 
-const CATEGORY_ORDER = ["trailer", "teaser", "review", "miscellaneous"];
+const CATEGORY_ORDER = ["trailer", "teaser", "song", "review", "miscellaneous"];
 const CATEGORY_LABELS: Record<string, string> = {
   trailer: "Trailers",
   teaser: "Teasers",
+  song: "Songs",
   review: "Reviews",
   miscellaneous: "Miscellaneous",
 };

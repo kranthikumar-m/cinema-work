@@ -21,6 +21,7 @@ interface VideoPlayerModalProps {
 const CATEGORY_LABELS: Record<string, string> = {
   trailer: "TRAILERS",
   teaser: "TEASERS",
+  song: "SONGS",
   review: "REVIEWS",
   miscellaneous: "MISC",
 };

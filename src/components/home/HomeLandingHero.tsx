@@ -283,7 +283,7 @@ export function HomeLandingHero({
           </button>
         </div>
 
-        <div className="relative flex min-h-[calc(100dvh+80px)] items-end px-[var(--app-page-gutter)] pb-[clamp(6.75rem,14vh,10.5rem)] pt-[clamp(6rem,10vh,8.5rem)]">
+        <div className="relative z-10 flex min-h-[calc(100dvh+80px)] items-end px-[var(--app-page-gutter)] pb-[clamp(6.75rem,14vh,10.5rem)] pt-[clamp(6rem,10vh,8.5rem)]">
           <div className="relative w-full max-w-[clamp(48rem,54vw,72rem)]">
             <motion.div
               key={`${slide.item.id}-content`}

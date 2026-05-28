@@ -78,7 +78,7 @@ export interface MovieCustomImagesPayload {
   customBackdrop: CustomImageRecord | null;
 }
 
-export type VideoCategory = "trailer" | "teaser" | "review" | "miscellaneous";
+export type VideoCategory = "trailer" | "teaser" | "song" | "review" | "miscellaneous";
 
 export interface MovieVideoRecord {
   id: number;

@@ -11,7 +11,7 @@ interface RouteContext {
   params: { id: string };
 }
 
-const VALID_CATEGORIES: VideoCategory[] = ["trailer", "teaser", "review", "miscellaneous"];
+const VALID_CATEGORIES: VideoCategory[] = ["trailer", "teaser", "song", "review", "miscellaneous"];
 
 export async function GET(_request: Request, { params }: RouteContext) {
   const auth = await requireAdminApiUser(["admin", "editor"]);

@@ -10,6 +10,7 @@ import type { AdminMovieSearchResult } from "@/types/admin";
 const CATEGORIES: { value: VideoCategory; label: string }[] = [
   { value: "trailer", label: "Trailer" },
   { value: "teaser", label: "Teaser" },
+  { value: "song", label: "Song" },
   { value: "review", label: "Review" },
   { value: "miscellaneous", label: "Miscellaneous" },
 ];
@@ -18,6 +19,7 @@ function CategoryBadge({ category }: { category: string }) {
   const colors: Record<string, string> = {
     trailer: "bg-[rgba(194,154,98,0.15)] text-[#c29a62]",
     teaser: "bg-[rgba(100,160,255,0.12)] text-[#80b0ff]",
+    song: "bg-[rgba(255,120,180,0.12)] text-[#ff80b4]",
     review: "bg-[rgba(60,180,100,0.12)] text-[#60c880]",
     miscellaneous: "bg-[rgba(180,140,220,0.12)] text-[#b88cdc]",
   };
