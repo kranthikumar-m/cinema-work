@@ -8,6 +8,7 @@ interface SyncResult {
   ok: boolean;
   processed: number;
   songsAdded: number;
+  songsRemoved: number;
   skipped: number;
   errors: string[];
   timestamp: string;
@@ -76,7 +77,9 @@ export function AdminSongSync() {
       {result && (
         <div className="mt-4 rounded-xl border border-[rgba(60,180,100,0.28)] bg-[rgba(28,80,48,0.28)] px-4 py-3 text-sm text-[#c0f0d0]">
           <p>
-            Sync complete: {result.songsAdded} songs added across {result.processed} movies.
+            Sync complete: {result.songsAdded} songs added
+            {result.songsRemoved > 0 && `, ${result.songsRemoved} irrelevant songs removed`}
+            {" "}across {result.processed} movies.
             {result.skipped > 0 && ` ${result.skipped} movies skipped (already synced recently).`}
           </p>
           {result.errors.length > 0 && (

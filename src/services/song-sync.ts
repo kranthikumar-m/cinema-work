@@ -4,6 +4,7 @@ import {
   hasDatabaseConfiguration,
   listManualMovieRecords,
   insertMovieVideoRecord,
+  deleteMovieVideoRecord,
   getSongSyncRecord,
   upsertSongSyncRecord,
   listMovieVideoRecords,
@@ -186,9 +187,56 @@ function shouldSync(lastSyncedAt: string | null): boolean {
   return diffHours >= MIN_SYNC_INTERVAL_HOURS;
 }
 
-async function syncSongsForMovie(movie: { id: number; title: string; releaseDate: string | null }): Promise<number> {
+async function removeIrrelevantSongs(
+  movieId: number,
+  movieTitle: string
+): Promise<number> {
+  const existingVideos = await listMovieVideoRecords(movieId);
+  const autoSyncedSongs = existingVideos.filter(
+    (v) => v.category === "song" && v.added_by_user_id === null
+  );
+
+  if (!autoSyncedSongs.length) return 0;
+
+  const videoIds = autoSyncedSongs.map((v) => v.youtube_key);
+  const details = await getVideoDetails(videoIds);
+  const detailMap = new Map(details.map((d) => [d.id, d]));
+
+  let removed = 0;
+  for (const song of autoSyncedSongs) {
+    const detail = detailMap.get(song.youtube_key);
+
+    let shouldRemove = false;
+
+    if (!detail) {
+      shouldRemove = isJunkTitle(song.title) || !titleMatchesMovie(song.title, movieTitle);
+    } else {
+      const duration = parseIsoDuration(detail.contentDetails.duration);
+      if (duration < MIN_DURATION_SECONDS || duration > MAX_DURATION_SECONDS) {
+        shouldRemove = true;
+      } else if (isJunkTitle(detail.snippet.title)) {
+        shouldRemove = true;
+      } else if (!titleMatchesMovie(detail.snippet.title, movieTitle)) {
+        shouldRemove = true;
+      }
+    }
+
+    if (shouldRemove) {
+      await deleteMovieVideoRecord(song.id);
+      removed++;
+    }
+  }
+
+  return removed;
+}
+
+async function syncSongsForMovie(
+  movie: { id: number; title: string; releaseDate: string | null }
+): Promise<{ added: number; removed: number }> {
   const syncRecord = await getSongSyncRecord(movie.id);
-  if (!shouldSync(syncRecord?.last_synced_at ?? null)) return 0;
+  if (!shouldSync(syncRecord?.last_synced_at ?? null)) return { added: 0, removed: 0 };
+
+  const removed = await removeIrrelevantSongs(movie.id, movie.title);
 
   const existingVideos = await listMovieVideoRecords(movie.id);
   const existingKeys = new Set(existingVideos.map((v) => v.youtube_key));
@@ -196,7 +244,7 @@ async function syncSongsForMovie(movie: { id: number; title: string; releaseDate
   const searchItems = await searchYouTube(`"${movie.title}" Telugu movie songs`);
   if (!searchItems.length) {
     await upsertSongSyncRecord(movie.id, new Date().toISOString());
-    return 0;
+    return { added: 0, removed };
   }
 
   const videoIds = searchItems
@@ -205,7 +253,7 @@ async function syncSongsForMovie(movie: { id: number; title: string; releaseDate
 
   if (!videoIds.length) {
     await upsertSongSyncRecord(movie.id, new Date().toISOString());
-    return 0;
+    return { added: 0, removed };
   }
 
   const details = await getVideoDetails(videoIds);
@@ -229,26 +277,28 @@ async function syncSongsForMovie(movie: { id: number; title: string; releaseDate
   }
 
   await upsertSongSyncRecord(movie.id, now);
-  return added;
+  return { added, removed };
 }
 
 export async function runSongSync(): Promise<{
   processed: number;
   songsAdded: number;
+  songsRemoved: number;
   skipped: number;
   errors: string[];
 }> {
   if (!hasDatabaseConfiguration()) {
-    return { processed: 0, songsAdded: 0, skipped: 0, errors: ["No database configured."] };
+    return { processed: 0, songsAdded: 0, songsRemoved: 0, skipped: 0, errors: ["No database configured."] };
   }
 
   if (!env.YOUTUBE_API_KEY) {
-    return { processed: 0, songsAdded: 0, skipped: 0, errors: ["YOUTUBE_API_KEY not set."] };
+    return { processed: 0, songsAdded: 0, songsRemoved: 0, skipped: 0, errors: ["YOUTUBE_API_KEY not set."] };
   }
 
   const errors: string[] = [];
   let processed = 0;
   let songsAdded = 0;
+  let songsRemoved = 0;
   let skipped = 0;
 
   const eligibleMovies: { id: number; title: string; releaseDate: string | null }[] = [];
@@ -291,10 +341,11 @@ export async function runSongSync(): Promise<{
 
   for (const movie of eligibleMovies) {
     try {
-      const added = await syncSongsForMovie(movie);
-      if (added > 0) {
+      const result = await syncSongsForMovie(movie);
+      songsRemoved += result.removed;
+      if (result.added > 0 || result.removed > 0) {
         processed++;
-        songsAdded += added;
+        songsAdded += result.added;
       } else {
         skipped++;
       }
@@ -303,5 +354,5 @@ export async function runSongSync(): Promise<{
     }
   }
 
-  return { processed, songsAdded, skipped, errors };
+  return { processed, songsAdded, songsRemoved, skipped, errors };
 }
