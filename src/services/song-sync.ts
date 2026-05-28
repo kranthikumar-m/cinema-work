@@ -50,6 +50,10 @@ function parseIsoDuration(iso: string): number {
 const JUNK_PATTERNS = [
   /jukebox/i,
   /video\s*jukebox/i,
+  /audio\s*jukebox/i,
+  /full\s*album/i,
+  /all\s*songs/i,
+  /songs?\s*jukebox/i,
   /hits\s*(collection|compilation)/i,
   /top\s*\d+\s*(hits|songs)/i,
   /latest\s*(tollywood|telugu|bollywood)\s*(hits|songs)/i,
@@ -60,7 +64,6 @@ const JUNK_PATTERNS = [
   /mashup/i,
   /back\s*to\s*back/i,
   /b2b/i,
-  /full\s*video\s*songs?\s*jukebox/i,
   /mega\s*(hit|mix)/i,
   /dance\s*&?\s*(romance|hits)/i,
   /love\s*hits/i,
@@ -68,6 +71,11 @@ const JUNK_PATTERNS = [
   /party\s*songs/i,
   /workout\s*songs/i,
   /sad\s*songs/i,
+  /interview/i,
+  /press\s*meet/i,
+  /making\s*(of|video)/i,
+  /behind\s*the\s*scenes/i,
+  /bts\b/i,
 ];
 
 function isJunkTitle(title: string): boolean {
@@ -283,10 +291,10 @@ export async function ensureMovieSongsSync(
 ): Promise<void> {
   if (!hasDatabaseConfiguration() || !env.YOUTUBE_API_KEY) return;
 
+  await removeIrrelevantSongs(movieId, movieTitle);
+
   const syncRecord = await getSongSyncRecord(movieId);
   if (!shouldSync(syncRecord?.last_synced_at ?? null)) return;
-
-  await removeIrrelevantSongs(movieId, movieTitle);
 
   const existingVideos = await listMovieVideoRecords(movieId);
   const existingKeys = new Set(existingVideos.map((v) => v.youtube_key));
