@@ -74,24 +74,22 @@ export function VideoSection({ videos }: VideoSectionProps) {
 
   return (
     <>
-      {categorized.length > 1 && (
-        <div className="mb-5 flex flex-wrap gap-2">
-          {allCategories.map((group) => (
-            <button
-              key={group.category}
-              type="button"
-              onClick={() => setActiveTab(group.category)}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                activeTab === group.category
-                  ? "bg-[var(--color-accent)] text-[var(--color-accent-contrast)]"
-                  : "border border-[var(--color-border)] bg-transparent text-[var(--color-muted-strong)] hover:border-[rgba(194,154,98,0.32)] hover:text-[var(--color-text)]"
-              }`}
-            >
-              {group.label} ({group.items.length})
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="mb-5 flex flex-wrap gap-2">
+        {allCategories.map((group) => (
+          <button
+            key={group.category}
+            type="button"
+            onClick={() => setActiveTab(group.category)}
+            className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+              activeTab === group.category
+                ? "bg-[var(--color-accent)] text-[var(--color-accent-contrast)]"
+                : "border border-[var(--color-border)] bg-transparent text-[var(--color-muted-strong)] hover:border-[rgba(194,154,98,0.32)] hover:text-[var(--color-text)]"
+            }`}
+          >
+            {group.label} ({group.items.length})
+          </button>
+        ))}
+      </div>
 
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
         {activeGroup.items.map((video) => (
