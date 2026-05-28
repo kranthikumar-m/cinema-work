@@ -105,7 +105,7 @@ export default async function MovieDetailPage({ params }: Props) {
   const backdropSelection = await resolvePreferredBackdrop(movie, movie.backdrop_path);
 
   try {
-    await ensureMovieSongsSync(id, movie.title);
+    await ensureMovieSongsSync(id, movie.title, movie.release_date);
   } catch {
     // non-critical — page still renders with whatever videos exist
   }

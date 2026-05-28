@@ -32,6 +32,7 @@ interface YouTubeVideoDetail {
   snippet: {
     title: string;
     channelTitle: string;
+    publishedAt: string;
   };
   contentDetails: {
     duration: string;
@@ -95,7 +96,21 @@ function titleMatchesMovie(videoTitle: string, movieTitle: string): boolean {
   return matchCount >= Math.ceil(movieWords.length * 0.6);
 }
 
-async function searchYouTube(query: string): Promise<YouTubeSearchItem[]> {
+function getSearchDateRange(releaseDate: string | null): { after: string; before: string } | null {
+  if (!releaseDate) return null;
+  const release = new Date(releaseDate);
+  if (isNaN(release.getTime())) return null;
+  const after = new Date(release);
+  after.setMonth(after.getMonth() - 6);
+  const before = new Date(release);
+  before.setFullYear(before.getFullYear() + 1);
+  return {
+    after: after.toISOString(),
+    before: before.toISOString(),
+  };
+}
+
+async function searchYouTube(query: string, releaseDate: string | null = null): Promise<YouTubeSearchItem[]> {
   if (!env.YOUTUBE_API_KEY) return [];
 
   const url = new URL("https://www.googleapis.com/youtube/v3/search");
@@ -105,6 +120,12 @@ async function searchYouTube(query: string): Promise<YouTubeSearchItem[]> {
   url.searchParams.set("videoCategoryId", "10");
   url.searchParams.set("maxResults", String(MAX_SEARCH_RESULTS));
   url.searchParams.set("key", env.YOUTUBE_API_KEY);
+
+  const dateRange = getSearchDateRange(releaseDate);
+  if (dateRange) {
+    url.searchParams.set("publishedAfter", dateRange.after);
+    url.searchParams.set("publishedBefore", dateRange.before);
+  }
 
   const res = await fetch(url.toString());
   if (!res.ok) return [];
@@ -128,9 +149,20 @@ async function getVideoDetails(videoIds: string[]): Promise<YouTubeVideoDetail[]
   return data.items ?? [];
 }
 
+function isUploadDateRelevant(publishedAt: string, releaseDate: string | null): boolean {
+  if (!releaseDate) return true;
+  const release = new Date(releaseDate);
+  const uploaded = new Date(publishedAt);
+  if (isNaN(release.getTime()) || isNaN(uploaded.getTime())) return true;
+  const diffMs = uploaded.getTime() - release.getTime();
+  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+  return diffDays >= -180 && diffDays <= 365;
+}
+
 function filterAndRankSongs(
   details: YouTubeVideoDetail[],
-  movieTitle: string
+  movieTitle: string,
+  releaseDate: string | null = null
 ): { videoId: string; title: string }[] {
   const candidates: { videoId: string; title: string; score: number }[] = [];
 
@@ -143,6 +175,8 @@ function filterAndRankSongs(
     if (isJunkTitle(title)) continue;
 
     if (!titleMatchesMovie(title, movieTitle)) continue;
+
+    if (!isUploadDateRelevant(video.snippet.publishedAt, releaseDate)) continue;
 
     let score = 0;
 
@@ -246,7 +280,7 @@ async function syncSongsForMovie(
   const existingVideos = await listMovieVideoRecords(movie.id);
   const existingKeys = new Set(existingVideos.map((v) => v.youtube_key));
 
-  const searchItems = await searchYouTube(`"${movie.title}" Telugu movie songs`);
+  const searchItems = await searchYouTube(`"${movie.title}" Telugu movie songs`, movie.releaseDate);
   if (!searchItems.length) {
     await upsertSongSyncRecord(movie.id, new Date().toISOString());
     return { added: 0, removed };
@@ -262,7 +296,7 @@ async function syncSongsForMovie(
   }
 
   const details = await getVideoDetails(videoIds);
-  const filtered = filterAndRankSongs(details, movie.title);
+  const filtered = filterAndRankSongs(details, movie.title, movie.releaseDate);
 
   let added = 0;
   const now = new Date().toISOString();
@@ -287,7 +321,8 @@ async function syncSongsForMovie(
 
 export async function ensureMovieSongsSync(
   movieId: number,
-  movieTitle: string
+  movieTitle: string,
+  releaseDate: string | null = null
 ): Promise<void> {
   if (!hasDatabaseConfiguration() || !env.YOUTUBE_API_KEY) return;
 
@@ -299,7 +334,7 @@ export async function ensureMovieSongsSync(
   const existingVideos = await listMovieVideoRecords(movieId);
   const existingKeys = new Set(existingVideos.map((v) => v.youtube_key));
 
-  const searchItems = await searchYouTube(`"${movieTitle}" Telugu movie songs`);
+  const searchItems = await searchYouTube(`"${movieTitle}" Telugu movie songs`, releaseDate);
   if (!searchItems.length) {
     await upsertSongSyncRecord(movieId, new Date().toISOString());
     return;
@@ -315,7 +350,7 @@ export async function ensureMovieSongsSync(
   }
 
   const details = await getVideoDetails(videoIds);
-  const filtered = filterAndRankSongs(details, movieTitle);
+  const filtered = filterAndRankSongs(details, movieTitle, releaseDate);
 
   const now = new Date().toISOString();
   for (const result of filtered) {
