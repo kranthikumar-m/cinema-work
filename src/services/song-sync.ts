@@ -233,9 +233,6 @@ async function removeIrrelevantSongs(
 async function syncSongsForMovie(
   movie: { id: number; title: string; releaseDate: string | null }
 ): Promise<{ added: number; removed: number }> {
-  const syncRecord = await getSongSyncRecord(movie.id);
-  if (!shouldSync(syncRecord?.last_synced_at ?? null)) return { added: 0, removed: 0 };
-
   const removed = await removeIrrelevantSongs(movie.id, movie.title);
 
   const existingVideos = await listMovieVideoRecords(movie.id);
