@@ -188,7 +188,8 @@ export function HomeLandingHero({
     if (key) {
       setTrailerModal({ key, title: slide.item.title });
     } else {
-      router.push(slide.item.trailerHref);
+      const moviePageHref = slide.item.watchHref || `/movie/${slide.item.sourceMovieId || slide.item.id}`;
+      router.push(`${moviePageHref}#videos`);
     }
   }, [router]);
 

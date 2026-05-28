@@ -282,7 +282,7 @@ export default async function MovieDetailPage({ params }: Props) {
 
         {/* Videos */}
         {allVideos.length > 0 && (
-          <div className="mt-12">
+          <div id="videos" className="mt-12 scroll-mt-[100px]">
             <SectionHeader title="Videos" />
             <VideoSection videos={allVideos} />
           </div>
