@@ -16,8 +16,8 @@ const SYNC_WINDOW_DAYS = 50;
 const MIN_SYNC_INTERVAL_HOURS = 20;
 const MAX_SEARCH_RESULTS = 25;
 const MAX_SONGS_PER_MOVIE = 10;
-const MAX_DURATION_SECONDS = 8 * 60;
-const MIN_DURATION_SECONDS = 60;
+const MAX_DURATION_SECONDS = 12 * 60;
+const MIN_DURATION_SECONDS = 80;
 
 interface YouTubeSearchItem {
   id: { videoId: string };
@@ -231,7 +231,8 @@ function shouldSync(lastSyncedAt: string | null): boolean {
 
 async function removeIrrelevantSongs(
   movieId: number,
-  movieTitle: string
+  movieTitle: string,
+  releaseDate: string | null = null
 ): Promise<number> {
   const existingVideos = await listMovieVideoRecords(movieId);
   const autoSyncedSongs = existingVideos.filter(
@@ -260,6 +261,8 @@ async function removeIrrelevantSongs(
         shouldRemove = true;
       } else if (!titleMatchesMovie(detail.snippet.title, movieTitle)) {
         shouldRemove = true;
+      } else if (!isUploadDateRelevant(detail.snippet.publishedAt, releaseDate)) {
+        shouldRemove = true;
       }
     }
 
@@ -275,7 +278,7 @@ async function removeIrrelevantSongs(
 async function syncSongsForMovie(
   movie: { id: number; title: string; releaseDate: string | null }
 ): Promise<{ added: number; removed: number }> {
-  const removed = await removeIrrelevantSongs(movie.id, movie.title);
+  const removed = await removeIrrelevantSongs(movie.id, movie.title, movie.releaseDate);
 
   const existingVideos = await listMovieVideoRecords(movie.id);
   const existingKeys = new Set(existingVideos.map((v) => v.youtube_key));
@@ -326,7 +329,7 @@ export async function ensureMovieSongsSync(
 ): Promise<void> {
   if (!hasDatabaseConfiguration() || !env.YOUTUBE_API_KEY) return;
 
-  await removeIrrelevantSongs(movieId, movieTitle);
+  await removeIrrelevantSongs(movieId, movieTitle, releaseDate);
 
   const syncRecord = await getSongSyncRecord(movieId);
   if (!shouldSync(syncRecord?.last_synced_at ?? null)) return;
