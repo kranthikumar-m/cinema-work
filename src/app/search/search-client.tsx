@@ -8,7 +8,6 @@ import { Search, X, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { formatDate, getMoviePosterUrl } from "@/lib/utils";
 import { RatingRing } from "@/components/shared/RatingRing";
-import { SiteLogo } from "@/components/layout/SiteLogo";
 import type { Movie } from "@/types/tmdb";
 
 export function SearchClient() {
@@ -69,12 +68,6 @@ export function SearchClient() {
       className="fixed inset-0 z-50 bg-[rgba(10,13,24,0.95)] backdrop-blur-md"
       onClick={handleBackdropClick}
     >
-      <div className="absolute left-6 top-6 z-10 lg:left-8 lg:top-8">
-        <Link href="/" aria-label="Go to home page">
-          <SiteLogo variant="nav" priority />
-        </Link>
-      </div>
-
       <motion.div
         ref={containerRef}
         initial={{ y: -20, opacity: 0 }}
