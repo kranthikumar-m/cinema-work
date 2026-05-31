@@ -32,6 +32,10 @@ export interface Movie {
     backdrop: MovieAssetSource;
   };
   validation?: MovieValidation;
+  // IMDb rating (0–10) and vote count, sourced from OMDb. `null` means no IMDb
+  // rating is available (e.g. unreleased films) — the UI shows "NR" in that case.
+  imdb_rating?: number | null;
+  imdb_votes?: number | null;
 }
 
 export interface MovieDetails extends Movie {

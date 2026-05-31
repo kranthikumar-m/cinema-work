@@ -2,33 +2,53 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   browseTeluguMovies,
-  type TeluguBrowseSort,
-  type TeluguBrowseStatus,
+  type TeluguBrowseView,
 } from "@/services/telugu-movies";
 import { getGenres } from "@/services/tmdb";
 import { MovieGrid } from "@/components/movie/MovieGrid";
-import { MovieBrowseControls } from "@/components/movie/MovieBrowseControls";
-import { SectionHeader } from "@/components/shared/SectionHeader";
+import { MovieBrowseToolbar } from "@/components/movie/MovieBrowseToolbar";
 import type { Genre } from "@/types/tmdb";
 
 export const metadata = { title: "Telugu Movies - Telugu Cinema Updates" };
 export const dynamic = "force-dynamic";
 
-const VALID_SORTS: TeluguBrowseSort[] = ["popularity", "newest", "oldest", "rating"];
-const VALID_STATUSES: TeluguBrowseStatus[] = ["all", "released", "upcoming"];
+const VALID_VIEWS: TeluguBrowseView[] = [
+  "latest",
+  "popular",
+  "upcoming",
+  "online",
+  "az",
+];
 
 function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-function buildHref(
-  base: { sort: string; status: string; genre: string },
-  page: number
-): string {
+function clampRating(value: string | undefined, fallback: number): number {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return fallback;
+  return Math.max(0, Math.min(10, num));
+}
+
+function parseYear(value: string | undefined): number | undefined {
+  const num = Number(value);
+  return Number.isInteger(num) && num > 1900 && num < 3000 ? num : undefined;
+}
+
+interface BrowseHrefBase {
+  view?: string;
+  genre?: string;
+  minRating?: string;
+  maxRating?: string;
+  minYear?: string;
+  maxYear?: string;
+}
+
+function buildHref(base: BrowseHrefBase, page: number): string {
   const params = new URLSearchParams();
-  if (base.sort !== "popularity") params.set("sort", base.sort);
-  if (base.status !== "all") params.set("status", base.status);
-  if (base.genre) params.set("genre", base.genre);
+  Object.entries(base).forEach(([key, value]) => {
+    if (value) params.set(key, value);
+  });
   if (page > 1) params.set("page", String(page));
   const qs = params.toString();
   return qs ? `/movies?${qs}` : "/movies";
@@ -49,18 +69,18 @@ interface MoviesPageProps {
 }
 
 export default async function MoviesPage({ searchParams }: MoviesPageProps) {
-  const sortParam = firstParam(searchParams.sort);
-  const statusParam = firstParam(searchParams.status);
-  const genreParam = firstParam(searchParams.genre);
-  const pageParam = Number(firstParam(searchParams.page)) || 1;
+  const viewParam = firstParam(searchParams.view) as TeluguBrowseView | undefined;
+  const view: TeluguBrowseView =
+    viewParam && VALID_VIEWS.includes(viewParam) ? viewParam : "latest";
 
-  const sort: TeluguBrowseSort = VALID_SORTS.includes(sortParam as TeluguBrowseSort)
-    ? (sortParam as TeluguBrowseSort)
-    : "popularity";
-  const status: TeluguBrowseStatus = VALID_STATUSES.includes(statusParam as TeluguBrowseStatus)
-    ? (statusParam as TeluguBrowseStatus)
-    : "all";
+  const genreParam = firstParam(searchParams.genre);
   const genreId = genreParam && /^\d+$/.test(genreParam) ? genreParam : "";
+
+  const minRating = clampRating(firstParam(searchParams.minRating), 0);
+  const maxRating = clampRating(firstParam(searchParams.maxRating), 10);
+  const minYearParam = parseYear(firstParam(searchParams.minYear));
+  const maxYearParam = parseYear(firstParam(searchParams.maxYear));
+  const pageParam = Number(firstParam(searchParams.page)) || 1;
 
   let genres: Genre[] = [];
   try {
@@ -70,21 +90,48 @@ export default async function MoviesPage({ searchParams }: MoviesPageProps) {
   }
 
   try {
-    const { results, page, totalPages, totalResults } = await browseTeluguMovies({
-      sort,
-      status,
-      genreId,
-      page: pageParam,
-    });
+    const { results, page, totalPages, totalResults, yearBounds } =
+      await browseTeluguMovies({
+        view,
+        genreId,
+        minRating,
+        maxRating,
+        minYear: minYearParam,
+        maxYear: maxYearParam,
+        page: pageParam,
+      });
 
-    const base = { sort, status, genre: genreId };
+    const effectiveMinYear = minYearParam ?? yearBounds.min;
+    const effectiveMaxYear = maxYearParam ?? yearBounds.max;
+
+    const base: BrowseHrefBase = {
+      view: view === "latest" ? undefined : view,
+      genre: genreId || undefined,
+      minRating: minRating > 0 ? String(minRating) : undefined,
+      maxRating: maxRating < 10 ? String(maxRating) : undefined,
+      minYear:
+        minYearParam && minYearParam > yearBounds.min
+          ? String(minYearParam)
+          : undefined,
+      maxYear:
+        maxYearParam && maxYearParam < yearBounds.max
+          ? String(maxYearParam)
+          : undefined,
+    };
     const pageWindow = getPageWindow(page, totalPages);
 
     return (
-      <div className="app-page-shell py-8">
-        <SectionHeader title="Telugu Movies" />
-
-        <MovieBrowseControls genres={genres} sort={sort} status={status} genreId={genreId} />
+      <div className="app-page-shell py-6">
+        <MovieBrowseToolbar
+          view={view}
+          genres={genres}
+          genreId={genreId}
+          minRating={minRating}
+          maxRating={maxRating}
+          minYear={effectiveMinYear}
+          maxYear={effectiveMaxYear}
+          yearBounds={yearBounds}
+        />
 
         <p className="mb-4 text-sm text-[var(--color-muted-strong)]">
           {totalResults.toLocaleString()} movies · Page {page} of {totalPages}
@@ -93,7 +140,10 @@ export default async function MoviesPage({ searchParams }: MoviesPageProps) {
         <MovieGrid movies={results} />
 
         {totalPages > 1 && (
-          <nav className="mt-8 flex flex-wrap items-center justify-center gap-2" aria-label="Pagination">
+          <nav
+            className="mt-8 flex flex-wrap items-center justify-center gap-2"
+            aria-label="Pagination"
+          >
             <PageLink
               href={buildHref(base, Math.max(1, page - 1))}
               disabled={page <= 1}
@@ -105,7 +155,9 @@ export default async function MoviesPage({ searchParams }: MoviesPageProps) {
             {pageWindow[0] > 1 && (
               <>
                 <PageLink href={buildHref(base, 1)}>1</PageLink>
-                {pageWindow[0] > 2 && <span className="px-1 text-[var(--color-muted)]">…</span>}
+                {pageWindow[0] > 2 && (
+                  <span className="px-1 text-[var(--color-muted)]">…</span>
+                )}
               </>
             )}
 
@@ -137,9 +189,10 @@ export default async function MoviesPage({ searchParams }: MoviesPageProps) {
     );
   } catch {
     return (
-      <div className="app-page-shell py-8">
-        <SectionHeader title="Telugu Movies" />
-        <p className="text-gray-400">Unable to load Telugu movies. Please try again later.</p>
+      <div className="app-page-shell py-6">
+        <p className="text-gray-400">
+          Unable to load Telugu movies. Please try again later.
+        </p>
       </div>
     );
   }

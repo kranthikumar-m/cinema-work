@@ -206,8 +206,13 @@ export function HomeLandingHero({
   const slide = heroSlides[current];
   const heroImage = resolveHeroImage(slide);
   const { leading, accent } = splitTitle(slide.item.title);
-  const ratingOutOfFive = Math.max(0, Math.min(5, slide.rating / 2));
-  const activeStars = Math.max(0, Math.min(5, Math.round(ratingOutOfFive)));
+  const hasRating = typeof slide.rating === "number" && slide.rating > 0;
+  const ratingOutOfFive = hasRating
+    ? Math.max(0, Math.min(5, (slide.rating as number) / 2))
+    : 0;
+  const activeStars = hasRating
+    ? Math.max(0, Math.min(5, Math.round(ratingOutOfFive)))
+    : 0;
   const movieHref = slide.item.watchHref || `/movie/${slide.item.sourceMovieId || slide.item.id}`;
 
   return (
@@ -300,19 +305,27 @@ export function HomeLandingHero({
                   </span>
 
                   <div className="flex items-center gap-1 text-[var(--color-accent)]">
-                    {Array.from({ length: 5 }, (_, index) => (
-                      <Star
-                        key={index}
-                        className={
-                          index < activeStars
-                            ? "h-4 w-4 fill-current"
-                            : "h-4 w-4 text-[rgba(194,154,98,0.32)]"
-                        }
-                      />
-                    ))}
-                    <span className="ml-3 text-[clamp(1rem,1vw,1.08rem)] font-semibold text-[var(--color-text)]">
-                      {ratingOutOfFive.toFixed(1)} / 5.0
-                    </span>
+                    {hasRating ? (
+                      <>
+                        {Array.from({ length: 5 }, (_, index) => (
+                          <Star
+                            key={index}
+                            className={
+                              index < activeStars
+                                ? "h-4 w-4 fill-current"
+                                : "h-4 w-4 text-[rgba(194,154,98,0.32)]"
+                            }
+                          />
+                        ))}
+                        <span className="ml-3 text-[clamp(1rem,1vw,1.08rem)] font-semibold text-[var(--color-text)]">
+                          {ratingOutOfFive.toFixed(1)} / 5.0
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-[clamp(1rem,1vw,1.08rem)] font-semibold text-[var(--color-muted-strong)]">
+                        IMDb: NR
+                      </span>
+                    )}
                   </div>
                 </div>
 

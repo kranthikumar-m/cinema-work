@@ -26,6 +26,7 @@ import { ReviewCard } from "@/components/movie/ReviewCard";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { MovieDetailClient } from "./client";
 import { enrichMovieAssets, getMovieDetailsWithFallback } from "@/services/telugu-movies";
+import { attachImdbRating } from "@/services/omdb";
 import { resolvePreferredBackdrop } from "@/services/movie-backdrops";
 import { getCustomImageRecordsByMovieId, listMovieVideoRecords, hasDatabaseConfiguration } from "@/lib/database";
 import { VideoSection } from "@/components/movie/VideoSection";
@@ -89,6 +90,7 @@ export default async function MovieDetailPage({ params }: Props) {
       ]);
 
     movie = await enrichMovieAssets(movie);
+    movie = await attachImdbRating(movie);
   } catch {
     notFound();
   }
@@ -229,11 +231,15 @@ export default async function MovieDetailPage({ params }: Props) {
                 )}
 
                 <div className="flex flex-wrap items-center gap-3 mb-4">
-                  <RatingRing rating={movie.vote_average} size={56} />
-                  <span className="text-sm text-gray-300">
-                    {movie.vote_count.toLocaleString()} votes
-                  </span>
-                  <span className="text-sm text-gray-500">|</span>
+                  <RatingRing rating={movie.imdb_rating ?? null} size={56} />
+                  {movie.imdb_votes ? (
+                    <>
+                      <span className="text-sm text-gray-300">
+                        {movie.imdb_votes.toLocaleString()} IMDb votes
+                      </span>
+                      <span className="text-sm text-gray-500">|</span>
+                    </>
+                  ) : null}
                   <span className="text-sm text-gray-200">
                     {formatDate(movie.release_date)}
                   </span>

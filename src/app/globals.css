@@ -116,3 +116,42 @@ html {
     opacity: 0.35;
   }
 }
+
+/* Dual-handle range slider (rating / year filters). Two range inputs are
+   stacked; only their thumbs receive pointer events so both stay draggable. */
+.dual-range {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+}
+.dual-range::-webkit-slider-runnable-track {
+  background: transparent;
+  border: none;
+}
+.dual-range::-moz-range-track {
+  background: transparent;
+  border: none;
+}
+.dual-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  height: 16px;
+  width: 16px;
+  border-radius: 9999px;
+  background: var(--color-accent);
+  border: 2px solid var(--color-bg-deep);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+}
+.dual-range::-moz-range-thumb {
+  pointer-events: auto;
+  height: 16px;
+  width: 16px;
+  border-radius: 9999px;
+  background: var(--color-accent);
+  border: 2px solid var(--color-bg-deep);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+}

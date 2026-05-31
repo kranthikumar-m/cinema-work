@@ -31,7 +31,7 @@ export function MovieCard({ movie, priority = false }: MovieCardProps) {
           </div>
         </div>
         <div className="absolute top-2 right-2">
-          <RatingRing rating={movie.vote_average} size={40} />
+          <RatingRing rating={movie.imdb_rating ?? null} size={40} />
         </div>
       </div>
       <div className="mt-2 px-1">

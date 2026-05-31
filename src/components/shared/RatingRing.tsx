@@ -3,7 +3,8 @@
 import { cn } from "@/lib/utils";
 
 interface RatingRingProps {
-  rating: number;
+  /** IMDb rating on a 0–10 scale, or null/undefined when none is available. */
+  rating: number | null | undefined;
   size?: number;
   className?: string;
 }
@@ -11,11 +12,18 @@ interface RatingRingProps {
 export function RatingRing({ rating, size = 48, className }: RatingRingProps) {
   const radius = (size - 6) / 2;
   const circumference = 2 * Math.PI * radius;
-  const progress = (rating / 10) * circumference;
-  const display = rating.toFixed(1);
+  const hasRating = typeof rating === "number" && rating > 0;
+  const value = hasRating ? (rating as number) : 0;
+  const progress = (value / 10) * circumference;
+  const display = hasRating ? value.toFixed(1) : "NR";
 
-  const color =
-    rating >= 7 ? "#c29a62" : rating >= 5 ? "#d9b27f" : "#996d58";
+  const color = !hasRating
+    ? "rgba(123,133,158,0.5)"
+    : value >= 7
+      ? "#c29a62"
+      : value >= 5
+        ? "#d9b27f"
+        : "#996d58";
 
   return (
     <div className={cn("relative inline-flex items-center justify-center", className)}>
@@ -41,8 +49,11 @@ export function RatingRing({ rating, size = 48, className }: RatingRingProps) {
         />
       </svg>
       <span
-        className="absolute text-xs font-bold text-white"
-        style={{ fontSize: size * 0.26 }}
+        className={cn(
+          "absolute font-bold",
+          hasRating ? "text-white" : "text-[var(--color-muted)]"
+        )}
+        style={{ fontSize: size * (hasRating ? 0.26 : 0.24) }}
       >
         {display}
       </span>

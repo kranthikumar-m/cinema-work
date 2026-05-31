@@ -17,6 +17,7 @@ import {
   getUpcomingTeluguMovies,
 } from "@/services/telugu-movies";
 import { getManuallyAddedMovies, mergeUnique } from "@/services/manual-movies";
+import { attachImdbRatings } from "@/services/omdb";
 import { HomeLandingHero } from "@/components/home/HomeLandingHero";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { MovieListWidget } from "@/components/movie/SidebarWidgets";
@@ -160,7 +161,7 @@ async function buildFallbackFeatureBundle(): Promise<HomepageHeroSlide> {
     overview:
       "A high-stakes Telugu feature navigating power, family, and spectacle on a massive canvas.",
     genreLabel: "Drama, Political",
-    rating: 9.6,
+    rating: null,
   } satisfies HomepageHeroSlide;
 }
 
@@ -237,7 +238,7 @@ async function buildFeaturedBundle(movie: Movie | null): Promise<HomepageHeroSli
     genreLabel:
       details?.genres.slice(0, 2).map((genre) => genre.name).join(", ") ||
       "Drama, Political",
-    rating: movie.vote_average || 9.6,
+    rating: movie.imdb_rating ?? null,
   } satisfies HomepageHeroSlide;
 }
 
@@ -258,9 +259,9 @@ async function getData() {
         getManuallyAddedMovies().catch(() => [] as Movie[]),
       ]);
 
-    const latestReleases = latestReleasesResult;
-    const popular = popularResult;
-    const upcoming = upcomingResult;
+    let latestReleases = latestReleasesResult;
+    let popular = popularResult;
+    let upcoming = upcomingResult;
     let topRated = topRatedResult;
 
     if (manualMovies.length) {
@@ -274,6 +275,15 @@ async function getData() {
       topRated.sort((a, b) => b.vote_average - a.vote_average);
       topRated = topRated.slice(0, 10);
     }
+
+    // Attach IMDb ratings so every rating shown on the homepage (grids, hero,
+    // sidebar widgets) reflects IMDb rather than TMDB.
+    [latestReleases, popular, upcoming, topRated] = await Promise.all([
+      attachImdbRatings(latestReleases),
+      attachImdbRatings(popular),
+      attachImdbRatings(upcoming),
+      attachImdbRatings(topRated),
+    ]);
 
     const heroCandidates = selectHeroCandidates({
       latestReleases,

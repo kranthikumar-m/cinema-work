@@ -14,6 +14,7 @@ import { getTitleSimilarityScore, normalizeMovieTitle } from "@/lib/title-matchi
 import { getWikipediaTeluguReleases } from "@/services/wikipedia";
 import { getMovieFallbackAssets } from "@/services/google-images";
 import { getManuallyAddedMovies, mergeUnique } from "@/services/manual-movies";
+import { attachImdbRatings } from "@/services/omdb";
 import {
   appendValidatedYearMovies,
   hasDatabaseConfiguration,
@@ -534,18 +535,32 @@ export async function searchTeluguMovies(
 
   return {
     ...response,
-    results: await withMovieAssetList(ranked),
+    results: await attachImdbRatings(await withMovieAssetList(ranked)),
     total_results: teluguMatches.length ? teluguMatches.length : response.total_results,
   };
 }
 
-export type TeluguBrowseSort = "popularity" | "newest" | "oldest" | "rating";
-export type TeluguBrowseStatus = "all" | "released" | "upcoming";
+// The category tabs on the Movies page. "latest" is the default.
+export type TeluguBrowseView = "latest" | "popular" | "upcoming" | "online" | "az";
+
+// Internal ordering keys chosen per tab (not exposed to callers).
+type BrowseSortKey =
+  | "popularity"
+  | "newest"
+  | "oldest"
+  | "rating"
+  | "az"
+  | "soonest";
 
 export interface TeluguBrowseParams {
-  sort?: TeluguBrowseSort;
-  status?: TeluguBrowseStatus;
+  view?: TeluguBrowseView;
   genreId?: string;
+  /** Inclusive vote-average range (0–10). */
+  minRating?: number;
+  maxRating?: number;
+  /** Inclusive release-year range. */
+  minYear?: number;
+  maxYear?: number;
   page?: number;
 }
 
@@ -554,10 +569,17 @@ export interface TeluguBrowseResult {
   page: number;
   totalPages: number;
   totalResults: number;
+  /** Oldest→newest release year across the catalog, for the year filter slider. */
+  yearBounds: { min: number; max: number };
 }
 
 export const TELUGU_BROWSE_PAGE_SIZE = 30;
 const UPCOMING_BROWSE_LIMIT = 100;
+// "Movies online" = Telugu titles with an Indian streaming/OTT provider.
+const ONLINE_BROWSE_LIMIT = 120;
+const ONLINE_DISCOVER_MAX_PAGES = 6;
+const ONLINE_WATCH_REGION = "IN";
+const ONLINE_MONETIZATION_TYPES = "flatrate|free|ads";
 
 /**
  * Loads whatever validated movies are stored for a past year — whether the year
@@ -708,7 +730,7 @@ function movieGenreIds(movie: Movie): number[] {
   return [];
 }
 
-function sortBrowseMovies(movies: Movie[], sort: TeluguBrowseSort): Movie[] {
+function sortBrowseMovies(movies: Movie[], sort: BrowseSortKey): Movie[] {
   const copy = [...movies];
 
   switch (sort) {
@@ -720,9 +742,18 @@ function sortBrowseMovies(movies: Movie[], sort: TeluguBrowseSort): Movie[] {
       return copy.sort((a, b) =>
         (a.release_date || "").localeCompare(b.release_date || "")
       );
+    case "soonest":
+      // Upcoming tab: nearest release first; undated (TBA) titles sink to the end.
+      return copy.sort((a, b) =>
+        (a.release_date || "9999-12-31").localeCompare(b.release_date || "9999-12-31")
+      );
     case "rating":
       return copy.sort(
         (a, b) => b.vote_average - a.vote_average || b.vote_count - a.vote_count
+      );
+    case "az":
+      return copy.sort((a, b) =>
+        a.title.localeCompare(b.title, undefined, { sensitivity: "base" })
       );
     case "popularity":
     default:
@@ -730,40 +761,131 @@ function sortBrowseMovies(movies: Movie[], sort: TeluguBrowseSort): Movie[] {
   }
 }
 
+function extractReleaseYear(dateString: string): number | null {
+  if (!dateString) return null;
+  const year = Number(dateString.slice(0, 4));
+  return Number.isFinite(year) && year > 1900 ? year : null;
+}
+
+function computeYearBounds(movies: Movie[]): { min: number; max: number } {
+  const years = movies
+    .map((movie) => extractReleaseYear(movie.release_date))
+    .filter((year): year is number => year !== null);
+
+  if (!years.length) {
+    const current = getIndianCurrentYear();
+    return { min: current, max: current };
+  }
+
+  return { min: Math.min(...years), max: Math.max(...years) };
+}
+
 /**
- * Paginated "browse all Telugu movies" feed. Released movies come exclusively
- * from the Wikipedia-validated catalog (plus admin-added movies, which always
- * appear regardless of validation). Upcoming movies come from TMDB discover
- * since unreleased films cannot be validated against a Wikipedia release list.
- * Filtering, sorting, and pagination are applied in memory.
+ * Telugu films currently available to watch online in India — discovered via
+ * TMDB's watch-provider filter (flatrate / free / ad-supported), so we get the
+ * streaming catalogue in one set of paged queries instead of a per-movie
+ * provider lookup. Enriched with fallback artwork like the other feeds.
+ */
+export async function getTeluguMoviesOnline(limit = ONLINE_BROWSE_LIMIT): Promise<Movie[]> {
+  const collected: Movie[] = [];
+  const seen = new Set<number>();
+
+  for (let page = 1; page <= ONLINE_DISCOVER_MAX_PAGES; page += 1) {
+    let response: PaginatedResponse<Movie>;
+    try {
+      response = await discoverMovies(
+        {
+          with_original_language: TELUGU_LANGUAGE,
+          watch_region: ONLINE_WATCH_REGION,
+          with_watch_monetization_types: ONLINE_MONETIZATION_TYPES,
+          sort_by: "popularity.desc",
+          include_adult: "false",
+        },
+        page
+      );
+    } catch {
+      break;
+    }
+
+    for (const movie of response.results) {
+      if (movie.original_language !== TELUGU_LANGUAGE) continue;
+      if (seen.has(movie.id)) continue;
+      seen.add(movie.id);
+      collected.push(movie);
+    }
+
+    if (collected.length >= limit) break;
+    if (page >= (response.total_pages || page)) break;
+  }
+
+  return withMovieAssetList(collected.slice(0, limit));
+}
+
+/**
+ * Paginated, tab-driven "browse Telugu movies" feed backing the Movies page.
+ *
+ * Released movies come exclusively from the Wikipedia-validated catalog (plus
+ * admin-added movies, which always appear regardless of validation); upcoming
+ * movies come from TMDB discover since unreleased films can't be validated; the
+ * "online" tab pulls the Indian streaming catalogue. The active tab (`view`)
+ * picks both the pool and its default ordering. Genre, rating, and year filters
+ * plus pagination are then applied in memory. `yearBounds` reflects the whole
+ * catalogue (released + upcoming) so the year slider stays stable across tabs.
  */
 export async function browseTeluguMovies({
-  sort = "popularity",
-  status = "all",
+  view = "latest",
   genreId,
+  minRating,
+  maxRating,
+  minYear,
+  maxYear,
   page = 1,
 }: TeluguBrowseParams = {}): Promise<TeluguBrowseResult> {
   const safePage = Math.max(1, Math.floor(page) || 1);
   const today = getIndianTodayIsoDate();
 
-  let pool: Movie[] = [];
+  // Building blocks (validated catalog + upcoming are cached upstream).
+  const [validated, manual, upcoming] = await Promise.all([
+    getValidatedTeluguCatalog(),
+    getManuallyAddedMovies().catch(() => [] as Movie[]),
+    getUpcomingTeluguMovies(UPCOMING_BROWSE_LIMIT),
+  ]);
 
-  if (status === "upcoming") {
-    pool = await getUpcomingTeluguMovies(UPCOMING_BROWSE_LIMIT);
-  } else {
-    const [validated, manual] = await Promise.all([
-      getValidatedTeluguCatalog(),
-      getManuallyAddedMovies().catch(() => [] as Movie[]),
-    ]);
-    const manualReleased = manual.filter(
-      (movie) => movie.release_date && movie.release_date <= today
-    );
-    const released = mergeUnique(validated, manualReleased);
+  const manualReleased = manual.filter(
+    (movie) => movie.release_date && movie.release_date <= today
+  );
+  const released = mergeUnique(validated, manualReleased);
+  const everything = mergeUnique(released, upcoming);
 
-    pool =
-      status === "released"
-        ? released
-        : mergeUnique(released, await getUpcomingTeluguMovies(UPCOMING_BROWSE_LIMIT));
+  // Year-slider bounds derive from the whole catalogue, independent of the
+  // active tab/filters, so the control doesn't jump around as you switch tabs.
+  const yearBounds = computeYearBounds(everything);
+
+  // Choose the pool + default ordering for the active tab.
+  let pool: Movie[];
+  let sort: BrowseSortKey;
+  switch (view) {
+    case "popular":
+      pool = everything;
+      sort = "popularity";
+      break;
+    case "upcoming":
+      pool = upcoming;
+      sort = "soonest";
+      break;
+    case "online":
+      pool = await getTeluguMoviesOnline(ONLINE_BROWSE_LIMIT);
+      sort = "popularity";
+      break;
+    case "az":
+      pool = everything;
+      sort = "az";
+      break;
+    case "latest":
+    default:
+      pool = released;
+      sort = "newest";
+      break;
   }
 
   if (genreId && /^\d+$/.test(genreId)) {
@@ -771,14 +893,38 @@ export async function browseTeluguMovies({
     pool = pool.filter((movie) => movieGenreIds(movie).includes(genreIdNum));
   }
 
+  // Rating filter (only when narrowed from the full 0–10 range).
+  const loRating = Math.max(0, Math.min(10, minRating ?? 0));
+  const hiRating = Math.max(0, Math.min(10, maxRating ?? 10));
+  if (loRating > 0 || hiRating < 10) {
+    pool = pool.filter(
+      (movie) => movie.vote_average >= loRating && movie.vote_average <= hiRating
+    );
+  }
+
+  // Year filter (only when narrowed from the catalogue bounds). Undated titles
+  // are kept only while the filter spans the full range.
+  const loYear = minYear ?? yearBounds.min;
+  const hiYear = maxYear ?? yearBounds.max;
+  if (loYear > yearBounds.min || hiYear < yearBounds.max) {
+    pool = pool.filter((movie) => {
+      const year = extractReleaseYear(movie.release_date);
+      return year !== null && year >= loYear && year <= hiYear;
+    });
+  }
+
   const sorted = sortBrowseMovies(pool, sort);
 
   const totalResults = sorted.length;
   const totalPages = Math.max(1, Math.ceil(totalResults / TELUGU_BROWSE_PAGE_SIZE));
   const startIndex = (safePage - 1) * TELUGU_BROWSE_PAGE_SIZE;
-  const results = sorted.slice(startIndex, startIndex + TELUGU_BROWSE_PAGE_SIZE);
+  // Only the visible page is enriched with IMDb ratings (one OMDb lookup per
+  // released title shown), not the whole pool.
+  const results = await attachImdbRatings(
+    sorted.slice(startIndex, startIndex + TELUGU_BROWSE_PAGE_SIZE)
+  );
 
-  return { results, page: safePage, totalPages, totalResults };
+  return { results, page: safePage, totalPages, totalResults, yearBounds };
 }
 
 export async function enrichMovieAssets<T extends Movie>(movie: T) {

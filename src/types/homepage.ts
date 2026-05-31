@@ -24,5 +24,6 @@ export interface HomepageHeroSlide {
   item: HomepageHeroItem;
   overview: string;
   genreLabel: string;
-  rating: number;
+  /** IMDb rating (0–10), or null when none is available ("NR"). */
+  rating: number | null;
 }

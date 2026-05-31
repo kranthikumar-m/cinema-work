@@ -143,7 +143,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                         {formatDate(movie.release_date)}
                       </p>
                     </div>
-                    <RatingRing rating={movie.vote_average} size={36} />
+                    <RatingRing rating={movie.imdb_rating ?? null} size={36} />
                   </button>
                 ))}
               </div>

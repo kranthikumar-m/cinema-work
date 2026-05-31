@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Search, X, Loader2 } from "lucide-react";
@@ -18,6 +18,7 @@ export function SearchClient() {
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const debounceRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
@@ -43,6 +44,17 @@ export function SearchClient() {
       setLoading(false);
       setHasSearched(true);
     }
+  }, []);
+
+  // Seed the search from a ?q= deep link (e.g. the Movies filter panel).
+  useEffect(() => {
+    const initial = searchParams.get("q")?.trim() ?? "";
+    if (initial.length >= 2) {
+      setQuery(initial);
+      doSearch(initial);
+    }
+    // Run once on mount with whatever query the URL carries.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleInput = (value: string) => {
@@ -137,7 +149,7 @@ export function SearchClient() {
                     {formatDate(movie.release_date)}
                   </p>
                 </div>
-                <RatingRing rating={movie.vote_average} size={36} />
+                <RatingRing rating={movie.imdb_rating ?? null} size={36} />
               </Link>
             ))}
           </motion.div>

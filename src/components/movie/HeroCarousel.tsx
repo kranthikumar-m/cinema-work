@@ -73,7 +73,7 @@ export function HeroCarousel({ movies, genres }: HeroCarouselProps) {
           className="max-w-2xl"
         >
           <div className="flex items-center gap-3 mb-4">
-            <RatingRing rating={movie.vote_average} size={52} />
+            <RatingRing rating={movie.imdb_rating ?? null} size={52} />
             <div className="flex flex-wrap gap-2">
               {movieGenres.map((g) => (
                 <span
