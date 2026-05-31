@@ -9,6 +9,7 @@ import {
   getCustomImageRecordsByMovieId,
   hasDatabaseConfiguration,
   listManualMovieRecords,
+  listMovieVideoRecords,
 } from "@/lib/database";
 import { enrichMovieAssets } from "@/services/telugu-movies";
 import {
@@ -189,6 +190,23 @@ async function buildFeaturedBundle(movie: Movie | null): Promise<HomepageHeroSli
   const customBackdrop = customImages.find((r) => r.image_type === "backdrop");
   const useCustomBackdrop = !hasTmdbBackdrops && !!customBackdrop;
 
+  const tmdbTrailerInfo = getTrailerInfo(enhancements.videos, movie.id);
+  let trailerHref = tmdbTrailerInfo.href;
+  let trailerKey = tmdbTrailerInfo.key;
+
+  if (!trailerKey && hasDatabaseConfiguration()) {
+    try {
+      const customVideos = await listMovieVideoRecords(movie.id);
+      const customTrailer = customVideos.find((v) => v.category === "trailer");
+      if (customTrailer) {
+        trailerKey = customTrailer.youtube_key;
+        trailerHref = `https://www.youtube.com/watch?v=${customTrailer.youtube_key}`;
+      }
+    } catch {
+      /* non-critical */
+    }
+  }
+
   return {
     item: {
       id: movie.id,
@@ -203,8 +221,8 @@ async function buildFeaturedBundle(movie: Movie | null): Promise<HomepageHeroSli
       actors: getActors(enhancements.credits),
       releaseLabel: formatReleaseLabel(movie.release_date),
       watchHref: `/movie/${movie.id}`,
-      trailerHref: getTrailerInfo(enhancements.videos, movie.id).href,
-      trailerKey: getTrailerInfo(enhancements.videos, movie.id).key,
+      trailerHref,
+      trailerKey,
       trailerLabel: "TRAILER",
       accentLinks: {
         director: `/movie/${movie.id}`,
