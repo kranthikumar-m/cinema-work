@@ -105,6 +105,13 @@ export interface DatabaseValidatedYearFreezeRow {
   movie_count: number;
 }
 
+export interface DatabaseValidatedYearProgressRow {
+  year: number;
+  quarter: number;
+  movie_count: number;
+  completed_at: string;
+}
+
 interface CreateUserRecordInput {
   name: string | null;
   email: string;
@@ -218,11 +225,23 @@ interface StorageProvider {
   clearAdminTrendingOrder(updatedAt: string): Promise<void>;
   listValidatedYearMovies(year: number): Promise<DatabaseValidatedYearMovieRow[]>;
   getValidatedYearFreeze(year: number): Promise<DatabaseValidatedYearFreezeRow | null>;
-  replaceValidatedYearMovies(input: {
+  appendValidatedYearMovies(input: {
     year: number;
     movies: { movieId: number; payload: string }[];
-    frozenAt: string;
+    createdAt: string;
   }): Promise<void>;
+  listValidatedYearProgress(year: number): Promise<DatabaseValidatedYearProgressRow[]>;
+  markValidatedYearQuarter(
+    year: number,
+    quarter: number,
+    movieCount: number,
+    completedAt: string
+  ): Promise<void>;
+  upsertValidatedYearFreeze(
+    year: number,
+    frozenAt: string,
+    movieCount: number
+  ): Promise<void>;
   clearValidatedYearFreeze(year: number): Promise<void>;
 }
 
@@ -267,6 +286,7 @@ const TRENDING_SIGNAL_SELECT =
   "movie_id,mention_count,mentions_updated_at,admin_order,admin_pinned,updated_at";
 const VALIDATED_YEAR_MOVIE_SELECT = "year,movie_id,payload,created_at";
 const VALIDATED_YEAR_FREEZE_SELECT = "year,frozen_at,movie_count";
+const VALIDATED_YEAR_PROGRESS_SELECT = "year,quarter,movie_count,completed_at";
 
 function hasSupabaseProjectUrl(databaseUrl: string) {
   try {
@@ -425,6 +445,14 @@ function initializeSqliteDatabase(database: BetterSqlite3Database) {
       year INTEGER PRIMARY KEY,
       frozen_at TEXT NOT NULL,
       movie_count INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS validated_year_progress (
+      year INTEGER NOT NULL,
+      quarter INTEGER NOT NULL,
+      movie_count INTEGER NOT NULL,
+      completed_at TEXT NOT NULL,
+      PRIMARY KEY (year, quarter)
     );
   `);
 
@@ -1059,29 +1087,45 @@ function createSqliteStorageProvider(databaseUrl: string): StorageProvider {
           .get<DatabaseValidatedYearFreezeRow>(year) ?? null
       );
     },
-    async replaceValidatedYearMovies(input) {
-      database
-        .prepare("DELETE FROM validated_year_movies WHERE year = ?")
-        .run(input.year);
-
+    async appendValidatedYearMovies(input) {
       const insert = database.prepare(
-        `INSERT OR REPLACE INTO validated_year_movies (year, movie_id, payload, created_at)
-         VALUES (?, ?, ?, ?)`
+        `INSERT INTO validated_year_movies (year, movie_id, payload, created_at)
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT(year, movie_id) DO UPDATE SET payload = excluded.payload`
       );
       for (const movie of input.movies) {
-        insert.run(input.year, movie.movieId, movie.payload, input.frozenAt);
+        insert.run(input.year, movie.movieId, movie.payload, input.createdAt);
       }
-
-      // Write the freeze marker last so a partial failure isn't treated as frozen.
+    },
+    async listValidatedYearProgress(year) {
+      return database
+        .prepare(
+          `SELECT ${VALIDATED_YEAR_PROGRESS_SELECT} FROM validated_year_progress WHERE year = ?`
+        )
+        .all<DatabaseValidatedYearProgressRow>(year);
+    },
+    async markValidatedYearQuarter(year, quarter, movieCount, completedAt) {
+      database
+        .prepare(
+          `INSERT INTO validated_year_progress (year, quarter, movie_count, completed_at)
+           VALUES (?, ?, ?, ?)
+           ON CONFLICT(year, quarter) DO UPDATE SET
+             movie_count = excluded.movie_count,
+             completed_at = excluded.completed_at`
+        )
+        .run(year, quarter, movieCount, completedAt);
+    },
+    async upsertValidatedYearFreeze(year, frozenAt, movieCount) {
       database
         .prepare(
           `INSERT INTO validated_year_freezes (year, frozen_at, movie_count) VALUES (?, ?, ?)
            ON CONFLICT(year) DO UPDATE SET frozen_at = excluded.frozen_at, movie_count = excluded.movie_count`
         )
-        .run(input.year, input.frozenAt, input.movies.length);
+        .run(year, frozenAt, movieCount);
     },
     async clearValidatedYearFreeze(year) {
       database.prepare("DELETE FROM validated_year_freezes WHERE year = ?").run(year);
+      database.prepare("DELETE FROM validated_year_progress WHERE year = ?").run(year);
       database.prepare("DELETE FROM validated_year_movies WHERE year = ?").run(year);
     },
   };
@@ -1610,37 +1654,53 @@ function createSupabaseStorageProvider(databaseUrl: string): StorageProvider {
         year: `eq.${year}`,
       });
     },
-    async replaceValidatedYearMovies(input) {
+    async appendValidatedYearMovies(input) {
+      if (!input.movies.length) return;
       await request("validated_year_movies", {
-        method: "DELETE",
-        query: { year: `eq.${input.year}` },
+        method: "POST",
+        query: { on_conflict: "year,movie_id" },
+        body: input.movies.map((movie) => ({
+          year: input.year,
+          movie_id: movie.movieId,
+          payload: movie.payload,
+          created_at: input.createdAt,
+        })),
+        prefer: ["resolution=merge-duplicates"],
       });
-
-      if (input.movies.length) {
-        await request("validated_year_movies", {
-          method: "POST",
-          body: input.movies.map((movie) => ({
-            year: input.year,
-            movie_id: movie.movieId,
-            payload: movie.payload,
-            created_at: input.frozenAt,
-          })),
-        });
-      }
-
+    },
+    async listValidatedYearProgress(year) {
+      return selectRows<DatabaseValidatedYearProgressRow>("validated_year_progress", {
+        select: VALIDATED_YEAR_PROGRESS_SELECT,
+        year: `eq.${year}`,
+      });
+    },
+    async markValidatedYearQuarter(year, quarter, movieCount, completedAt) {
+      await request("validated_year_progress", {
+        method: "POST",
+        query: { on_conflict: "year,quarter" },
+        body: {
+          year,
+          quarter,
+          movie_count: movieCount,
+          completed_at: completedAt,
+        },
+        prefer: ["resolution=merge-duplicates"],
+      });
+    },
+    async upsertValidatedYearFreeze(year, frozenAt, movieCount) {
       await request("validated_year_freezes", {
         method: "POST",
         query: { on_conflict: "year" },
-        body: {
-          year: input.year,
-          frozen_at: input.frozenAt,
-          movie_count: input.movies.length,
-        },
+        body: { year, frozen_at: frozenAt, movie_count: movieCount },
         prefer: ["resolution=merge-duplicates"],
       });
     },
     async clearValidatedYearFreeze(year) {
       await request("validated_year_freezes", {
+        method: "DELETE",
+        query: { year: `eq.${year}` },
+      });
+      await request("validated_year_progress", {
         method: "DELETE",
         query: { year: `eq.${year}` },
       });
@@ -1882,12 +1942,38 @@ export async function isValidatedYearFrozen(year: number) {
   return Boolean(freeze);
 }
 
-export async function replaceValidatedYearMovies(
+export async function appendValidatedYearMovies(
   year: number,
   movies: { movieId: number; payload: string }[],
-  frozenAt: string
+  createdAt: string
 ) {
-  return requireStorageProvider().replaceValidatedYearMovies({ year, movies, frozenAt });
+  return requireStorageProvider().appendValidatedYearMovies({ year, movies, createdAt });
+}
+
+export async function listValidatedYearProgressRecords(year: number) {
+  return requireStorageProvider().listValidatedYearProgress(year);
+}
+
+export async function markValidatedYearQuarter(
+  year: number,
+  quarter: number,
+  movieCount: number,
+  completedAt: string
+) {
+  return requireStorageProvider().markValidatedYearQuarter(
+    year,
+    quarter,
+    movieCount,
+    completedAt
+  );
+}
+
+export async function upsertValidatedYearFreeze(
+  year: number,
+  frozenAt: string,
+  movieCount: number
+) {
+  return requireStorageProvider().upsertValidatedYearFreeze(year, frozenAt, movieCount);
 }
 
 export async function clearValidatedYearFreeze(year: number) {

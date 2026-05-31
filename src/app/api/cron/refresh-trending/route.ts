@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { env } from "@/lib/env";
 import {
   getLatestTeluguReleases,
   getUpcomingTeluguMovies,
-  getValidatedTeluguCatalog,
+  runValidationBackfill,
+  VALIDATED_CATALOG_CACHE_TAG,
 } from "@/services/telugu-movies";
 import { getRecentMentionCount } from "@/services/twitter-mentions";
 import { upsertTrendingMentionCount, hasDatabaseConfiguration } from "@/lib/database";
@@ -45,9 +47,17 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Warm the expensive validated-catalog cache so the /movies browse page
-    // stays fast for users (best-effort; ignore failures).
-    await getValidatedTeluguCatalog().catch(() => undefined);
+    // Advance the resumable past-year backfill by up to one year's worth of
+    // quarters (the only place the multi-year validation runs — bounded and
+    // throttled, off the user request path).
+    const backfill = await runValidationBackfill().catch(() => ({
+      processedQuarters: [] as { year: number; quarter: number; count: number }[],
+      frozenYears: [] as number[],
+    }));
+    if (backfill.processedQuarters.length) {
+      // Newly validated quarters are available — rebuild the cached catalog.
+      revalidateTag(VALIDATED_CATALOG_CACHE_TAG);
+    }
 
     // Released + upcoming pools already include admin-added movies.
     const [released, upcoming] = await Promise.all([
@@ -87,6 +97,10 @@ export async function GET(request: Request) {
       ok: true,
       processed,
       dropped,
+      validation: {
+        processedQuarters: backfill.processedQuarters,
+        frozenYears: backfill.frozenYears,
+      },
       updatedAt,
     });
   } catch (error) {

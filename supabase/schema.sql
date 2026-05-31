@@ -60,6 +60,14 @@ create table if not exists public.validated_year_freezes (
   movie_count integer not null
 );
 
+create table if not exists public.validated_year_progress (
+  year integer not null,
+  quarter integer not null,
+  movie_count integer not null,
+  completed_at text not null,
+  primary key (year, quarter)
+);
+
 create index if not exists idx_sessions_token_hash on public.sessions(token_hash);
 create index if not exists idx_sessions_user_id on public.sessions(user_id);
 create index if not exists idx_users_role on public.users(role);
@@ -75,3 +83,4 @@ alter table public.password_reset_tokens enable row level security;
 alter table public.movie_trending_signals enable row level security;
 alter table public.validated_year_movies enable row level security;
 alter table public.validated_year_freezes enable row level security;
+alter table public.validated_year_progress enable row level security;
