@@ -46,6 +46,20 @@ create table if not exists public.movie_trending_signals (
   updated_at text not null
 );
 
+create table if not exists public.validated_year_movies (
+  year integer not null,
+  movie_id bigint not null,
+  payload text not null,
+  created_at text not null,
+  primary key (year, movie_id)
+);
+
+create table if not exists public.validated_year_freezes (
+  year integer primary key,
+  frozen_at text not null,
+  movie_count integer not null
+);
+
 create index if not exists idx_sessions_token_hash on public.sessions(token_hash);
 create index if not exists idx_sessions_user_id on public.sessions(user_id);
 create index if not exists idx_users_role on public.users(role);
@@ -59,3 +73,5 @@ alter table public.sessions enable row level security;
 alter table public.movie_backdrop_overrides enable row level security;
 alter table public.password_reset_tokens enable row level security;
 alter table public.movie_trending_signals enable row level security;
+alter table public.validated_year_movies enable row level security;
+alter table public.validated_year_freezes enable row level security;

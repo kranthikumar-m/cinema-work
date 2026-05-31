@@ -47,3 +47,18 @@ export function isIsoDateOnOrBefore(date: string, otherDate: string) {
 export function isIsoDateOnOrAfter(date: string, otherDate: string) {
   return date.localeCompare(otherDate) >= 0;
 }
+
+/**
+ * Absolute number of whole days between two ISO (YYYY-MM-DD) dates.
+ * Returns null if either date is missing/unparseable.
+ */
+export function daysBetweenIsoDates(a: string | null, b: string | null) {
+  if (!a || !b) return null;
+
+  const aMs = Date.parse(`${a}T00:00:00Z`);
+  const bMs = Date.parse(`${b}T00:00:00Z`);
+
+  if (!Number.isFinite(aMs) || !Number.isFinite(bMs)) return null;
+
+  return Math.round(Math.abs(aMs - bMs) / 86_400_000);
+}

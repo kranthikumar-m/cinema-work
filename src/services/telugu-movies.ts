@@ -2,19 +2,27 @@ import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import {
   discoverMovies,
-  getMovieDetails,
   searchMovies,
 } from "@/services/tmdb";
-import { getIndianCurrentYear, getIndianTodayIsoDate } from "@/lib/date";
+import {
+  daysBetweenIsoDates,
+  getIndianCurrentYear,
+  getIndianTodayIsoDate,
+} from "@/lib/date";
 import { getTitleSimilarityScore, normalizeMovieTitle } from "@/lib/title-matching";
 import { getWikipediaTeluguReleases } from "@/services/wikipedia";
 import { getMovieFallbackAssets } from "@/services/google-images";
 import { getManuallyAddedMovies, mergeUnique } from "@/services/manual-movies";
-import { listTrendingSignalRecords } from "@/lib/database";
+import {
+  hasDatabaseConfiguration,
+  isValidatedYearFrozen,
+  listTrendingSignalRecords,
+  listValidatedYearMovieRecords,
+  replaceValidatedYearMovies,
+} from "@/lib/database";
 import type { DatabaseTrendingSignalRow } from "@/lib/database";
 import type {
   Movie,
-  MovieDetails,
   MovieValidation,
   PaginatedResponse,
 } from "@/types/tmdb";
@@ -24,6 +32,19 @@ const INDIA_REGION = "IN";
 const MAX_DISCOVER_PAGES = 5;
 const DEFAULT_COLLECTION_LIMIT = 24;
 const VALIDATED_RELEASE_LOOKBACK_YEARS = 8;
+
+// Title-based Wikipedia matching thresholds (date is a confidence signal, not a gate).
+const WIKI_MATCH_STRONG_SCORE = 0.85;
+const WIKI_MATCH_DATED_SCORE = 0.72;
+const WIKI_MATCH_DATE_WINDOW_DAYS = 45;
+// Per-year validation reaches for a whole year's worth of candidates.
+const VALIDATION_DISCOVER_MAX_PAGES = 20;
+const VALIDATION_DISCOVER_MIN_RESULTS = 400;
+// Bound the TMDB-search backfill for Wikipedia titles discover never returned.
+const VALIDATION_BACKFILL_SEARCH_CAP = 200;
+
+// Cache tag for the validated catalog, so the admin refresh can purge it.
+export const VALIDATED_CATALOG_CACHE_TAG = "validated-telugu-catalog";
 
 export interface ExcludedMovieRecord {
   title: string;
@@ -118,88 +139,81 @@ async function withMovieAssetList(movies: Movie[]) {
   return enriched;
 }
 
-function hasStrongTeluguSignals(movie: Movie, details: MovieDetails | null) {
-  const originalLanguage =
-    (details?.original_language || movie.original_language) === TELUGU_LANGUAGE;
-  const spokenLanguage =
-    details?.spoken_languages.some(
-      (language) =>
-        language.iso_639_1 === TELUGU_LANGUAGE ||
-        /telugu/i.test(language.english_name || language.name)
-    ) ?? false;
-  const productionInIndia =
-    details?.production_countries.some((country) => country.iso_3166_1 === INDIA_REGION) ??
-    true;
-
-  return {
-    originalLanguage,
-    spokenLanguage,
-    productionInIndia,
-    isStrongTelugu: originalLanguage && (spokenLanguage || productionInIndia),
-  };
-}
+type WikipediaReleaseEntry =
+  Awaited<ReturnType<typeof getWikipediaTeluguReleases>>["releases"][number];
 
 type WikipediaMatchResult =
   | {
       status: "validated";
       matchedBy: MovieValidation["matchedBy"];
-      entry: Awaited<ReturnType<typeof getWikipediaTeluguReleases>>["releases"][number];
-      score: number;
-    }
-  | {
-      status: "release_date_mismatch";
-      matchedBy: MovieValidation["matchedBy"];
-      entry: Awaited<ReturnType<typeof getWikipediaTeluguReleases>>["releases"][number];
+      entry: WikipediaReleaseEntry;
       score: number;
     }
   | {
       status: "not_found";
     };
 
+/**
+ * Validates a movie against a year's Wikipedia release list by TITLE similarity.
+ * The release date is only a confidence signal (postponements routinely make
+ * TMDB and Wikipedia dates disagree), never a hard gate: a strong title match
+ * validates on its own, and a moderate title match validates when the dates are
+ * close.
+ */
 function findWikipediaMatch(
   movie: Movie,
-  entries: Awaited<ReturnType<typeof getWikipediaTeluguReleases>>["releases"]
+  entries: WikipediaReleaseEntry[]
 ): WikipediaMatchResult {
   const normalizedTitle = normalizeMovieTitle(movie.title);
-  const exactDateMatches = entries
-    .filter((entry) => entry.releaseDate === movie.release_date)
-    .map((entry) => ({
-      entry,
-      score: getTitleSimilarityScore(movie.title, entry.title),
-    }))
-    .sort((a, b) => b.score - a.score);
 
-  if (exactDateMatches[0] && exactDateMatches[0].score >= 0.74) {
-    const matchedBy =
-      normalizedTitle === exactDateMatches[0].entry.normalizedTitle ? "exact" : "fuzzy";
-
-    return {
-      status: "validated",
-      entry: exactDateMatches[0].entry,
-      matchedBy,
-      score: exactDateMatches[0].score,
-    };
+  let best: { entry: WikipediaReleaseEntry; score: number } | null = null;
+  for (const entry of entries) {
+    const score = getTitleSimilarityScore(movie.title, entry.title);
+    if (!best || score > best.score) {
+      best = { entry, score };
+    }
   }
 
-  const titleMatches = entries
-    .map((entry) => ({
-      entry,
-      score: getTitleSimilarityScore(movie.title, entry.title),
-    }))
-    .filter((candidate) => candidate.score >= 0.88)
-    .sort((a, b) => b.score - a.score);
+  if (!best) {
+    return { status: "not_found" };
+  }
 
-  if (titleMatches[0]) {
+  const dateDiff = daysBetweenIsoDates(movie.release_date, best.entry.releaseDate);
+  const datesClose = dateDiff !== null && dateDiff <= WIKI_MATCH_DATE_WINDOW_DAYS;
+
+  if (
+    best.score >= WIKI_MATCH_STRONG_SCORE ||
+    (best.score >= WIKI_MATCH_DATED_SCORE && datesClose)
+  ) {
     return {
-      status: "release_date_mismatch",
-      entry: titleMatches[0].entry,
-      matchedBy:
-        normalizedTitle === titleMatches[0].entry.normalizedTitle ? "exact" : "fuzzy",
-      score: titleMatches[0].score,
+      status: "validated",
+      entry: best.entry,
+      matchedBy: normalizedTitle === best.entry.normalizedTitle ? "exact" : "fuzzy",
+      score: best.score,
     };
   }
 
   return { status: "not_found" };
+}
+
+/**
+ * Backfill helper: finds the best Telugu-language TMDB movie for a Wikipedia
+ * title that discover never surfaced. Returns null if nothing matches strongly.
+ */
+async function findTeluguMovieByTitle(title: string): Promise<Movie | null> {
+  const response = await searchMovies(title).catch(() => null);
+  if (!response) return null;
+
+  let best: { movie: Movie; score: number } | null = null;
+  for (const movie of response.results) {
+    if (movie.original_language !== TELUGU_LANGUAGE) continue;
+    const score = getTitleSimilarityScore(title, movie.title);
+    if (!best || score > best.score) {
+      best = { movie, score };
+    }
+  }
+
+  return best && best.score >= WIKI_MATCH_STRONG_SCORE ? best.movie : null;
 }
 
 async function collectDiscoveredTeluguMovies(
@@ -239,20 +253,29 @@ async function collectDiscoveredTeluguMovies(
 export const getValidatedTeluguReleasesThisYear = cache(
   async (year = getIndianCurrentYear()): Promise<TeluguReleaseValidationResult> => {
     const today = getIndianTodayIsoDate();
+    // Completed years use the whole year; the in-progress year stops at today.
+    const upperBound = year >= getIndianCurrentYear() ? today : `${year}-12-31`;
+
     const wikipediaDataset = await getWikipediaTeluguReleases(year);
     const tmdbCandidates = await collectDiscoveredTeluguMovies(
       {
         sort_by: "primary_release_date.desc",
         "primary_release_date.gte": `${year}-01-01`,
-        "primary_release_date.lte": today,
+        "primary_release_date.lte": upperBound,
       },
-      { minResults: 100, maxPages: MAX_DISCOVER_PAGES }
+      {
+        minResults: VALIDATION_DISCOVER_MIN_RESULTS,
+        maxPages: VALIDATION_DISCOVER_MAX_PAGES,
+      }
     );
 
     const confirmedMovies: Movie[] = [];
     const excludedMovies: ExcludedMovieRecord[] = [];
     const matchedWikipediaKeys = new Set<string>();
+    const confirmedIds = new Set<number>();
 
+    // Pass 1: validate discovered candidates by title against the Wikipedia list.
+    // discover already filters to original_language=te, so that's trusted here.
     for (const candidate of tmdbCandidates) {
       if (!candidate.release_date) {
         excludedMovies.push({
@@ -278,34 +301,10 @@ export const getValidatedTeluguReleasesThisYear = cache(
         continue;
       }
 
-      if (wikipediaMatch.status === "release_date_mismatch") {
-        excludedMovies.push({
-          title: candidate.title,
-          releaseDate: candidate.release_date,
-          reason: `release_date_mismatch_vs_wikipedia:${wikipediaMatch.entry.releaseDate}`,
-          tmdbId: candidate.id,
-          source: "tmdb",
-        });
-        continue;
-      }
-
-      const details = await getMovieDetails(candidate.id).catch(() => null);
-      const teluguSignals = hasStrongTeluguSignals(candidate, details);
-
-      if (!teluguSignals.isStrongTelugu) {
-        excludedMovies.push({
-          title: candidate.title,
-          releaseDate: candidate.release_date,
-          reason: "weak_telugu_signals_in_tmdb",
-          tmdbId: candidate.id,
-          source: "tmdb",
-        });
-        continue;
-      }
-
       matchedWikipediaKeys.add(
         `${wikipediaMatch.entry.normalizedTitle}::${wikipediaMatch.entry.releaseDate}`
       );
+      confirmedIds.add(candidate.id);
 
       confirmedMovies.push(
         await withMovieAssets({
@@ -322,21 +321,61 @@ export const getValidatedTeluguReleasesThisYear = cache(
       );
     }
 
-    wikipediaDataset.releases.forEach((entry) => {
-      const key = `${entry.normalizedTitle}::${entry.releaseDate}`;
+    // Pass 2: backfill Wikipedia titles that discover never returned via search.
+    const unmatchedEntries = wikipediaDataset.releases.filter(
+      (entry) =>
+        !matchedWikipediaKeys.has(`${entry.normalizedTitle}::${entry.releaseDate}`)
+    );
 
-      if (!matchedWikipediaKeys.has(key)) {
+    let backfillSearches = 0;
+    for (const entry of unmatchedEntries) {
+      if (backfillSearches >= VALIDATION_BACKFILL_SEARCH_CAP) {
+        console.warn(
+          `[telugu-validation] backfill search cap (${VALIDATION_BACKFILL_SEARCH_CAP}) reached for ${year}; ${
+            unmatchedEntries.length - backfillSearches
+          } Wikipedia entries left unsearched.`
+        );
+        break;
+      }
+      backfillSearches += 1;
+
+      const found = await findTeluguMovieByTitle(entry.title);
+
+      if (!found) {
         excludedMovies.push({
           title: entry.title,
           releaseDate: entry.releaseDate,
-          reason: "wikipedia_release_not_confirmed_in_tmdb",
+          reason: "wikipedia_release_not_found_in_tmdb",
           source: "wikipedia",
         });
+        continue;
       }
-    });
+
+      if (confirmedIds.has(found.id)) {
+        continue;
+      }
+
+      confirmedIds.add(found.id);
+      matchedWikipediaKeys.add(`${entry.normalizedTitle}::${entry.releaseDate}`);
+
+      confirmedMovies.push(
+        await withMovieAssets({
+          ...found,
+          release_date: found.release_date || entry.releaseDate,
+          validation: buildValidation(
+            "validated",
+            undefined,
+            "fuzzy",
+            entry.title,
+            entry.pageTitle,
+            entry.releaseDate
+          ),
+        })
+      );
+    }
 
     return {
-      confirmedMovies: sortByReleaseDateDescAndPopularity(confirmedMovies),
+      confirmedMovies: sortByReleaseDateDescAndPopularity(dedupeMovies(confirmedMovies)),
       excludedMovies,
       wikipediaPages: wikipediaDataset.sourcePages,
     };
@@ -496,27 +535,21 @@ export async function getUpcomingTeluguMovies(limit = DEFAULT_COLLECTION_LIMIT) 
 }
 
 export async function getLatestTeluguReleases(limit = DEFAULT_COLLECTION_LIMIT) {
-  const currentYear = getIndianCurrentYear();
   const today = getIndianTodayIsoDate();
-  const releases: Movie[] = [];
 
-  for (
-    let year = currentYear;
-    year >= currentYear - VALIDATED_RELEASE_LOOKBACK_YEARS && releases.length < limit;
-    year -= 1
-  ) {
-    const validated = await getValidatedTeluguReleasesThisYear(year);
-    releases.push(...validated.confirmedMovies);
-  }
+  // Same validated catalog that powers /movies, so the two stay consistent.
+  const [validated, manual] = await Promise.all([
+    getValidatedTeluguCatalog(),
+    getManuallyAddedMovies().catch(() => [] as Movie[]),
+  ]);
 
   // Fold in admin-added movies that have already released.
-  const manual = await getManuallyAddedMovies().catch(() => [] as Movie[]);
   const manualReleased = manual.filter(
     (movie) => movie.release_date && movie.release_date <= today
   );
 
   const merged = sortByReleaseDateDescAndPopularity(
-    dedupeMovies(mergeUnique(releases, manualReleased))
+    dedupeMovies(mergeUnique(validated, manualReleased))
   );
 
   return merged.slice(0, limit);
@@ -576,30 +609,73 @@ export const TELUGU_BROWSE_PAGE_SIZE = 30;
 const UPCOMING_BROWSE_LIMIT = 100;
 
 /**
+ * Returns a completed year's validated movies. Once a year is over its set is
+ * final, so we validate it against Wikipedia exactly once and persist it to the
+ * DB ("freeze"); subsequent calls read straight from the DB with no Wikipedia
+ * or TMDB validation. Falls back to live validation when no DB is configured.
+ */
+async function getFrozenOrFreezeValidatedYear(year: number): Promise<Movie[]> {
+  if (!hasDatabaseConfiguration()) {
+    return (await getValidatedTeluguReleasesThisYear(year)).confirmedMovies;
+  }
+
+  try {
+    if (await isValidatedYearFrozen(year)) {
+      const rows = await listValidatedYearMovieRecords(year);
+      return rows
+        .map((row) => {
+          try {
+            return JSON.parse(row.payload) as Movie;
+          } catch {
+            return null;
+          }
+        })
+        .filter((movie): movie is Movie => Boolean(movie));
+    }
+
+    const movies = (await getValidatedTeluguReleasesThisYear(year)).confirmedMovies;
+    await replaceValidatedYearMovies(
+      year,
+      movies.map((movie) => ({ movieId: movie.id, payload: JSON.stringify(movie) })),
+      new Date().toISOString()
+    );
+    return movies;
+  } catch (error) {
+    console.warn(
+      `[telugu-validation] freeze/load failed for ${year}; using live validation.`,
+      error instanceof Error ? error.message : error
+    );
+    return (await getValidatedTeluguReleasesThisYear(year)).confirmedMovies;
+  }
+}
+
+/**
  * Full Wikipedia-validated released-movie catalog across the lookback window.
- * This is the SAME validation gate used by the curated "Recent Releases" feed
- * (a movie only appears if its title is present in that year's
- * "List of Telugu films of <year>" Wikipedia page), so Movies and Recent
- * Releases stay consistent. The build is expensive, so the result is cached
- * (revalidated every 6h); the current year is part of the cache key.
+ * Same validation gate as the curated "Recent Releases" feed (a movie appears
+ * only if its title is in that year's "List of Telugu films of <year>"), so
+ * Movies and Recent Releases stay consistent. Completed years are served from
+ * the DB freeze; only the current year is validated live. The whole assembled
+ * catalog is cached for 6h so per-request work (and Supabase round-trips for
+ * the frozen years) is amortised; the current year is part of the cache key.
  */
 const getCachedValidatedTeluguCatalog = unstable_cache(
   async (currentYear: number): Promise<Movie[]> => {
     const releases: Movie[] = [];
 
+    releases.push(...(await getValidatedTeluguReleasesThisYear(currentYear)).confirmedMovies);
+
     for (
-      let year = currentYear;
+      let year = currentYear - 1;
       year >= currentYear - VALIDATED_RELEASE_LOOKBACK_YEARS;
       year -= 1
     ) {
-      const validated = await getValidatedTeluguReleasesThisYear(year);
-      releases.push(...validated.confirmedMovies);
+      releases.push(...(await getFrozenOrFreezeValidatedYear(year)));
     }
 
     return sortByReleaseDateDescAndPopularity(dedupeMovies(releases));
   },
-  ["validated-telugu-catalog-v1"],
-  { revalidate: 21600 }
+  ["validated-telugu-catalog-v2"],
+  { revalidate: 21600, tags: [VALIDATED_CATALOG_CACHE_TAG] }
 );
 
 export function getValidatedTeluguCatalog(): Promise<Movie[]> {
