@@ -153,7 +153,7 @@ async function buildFallbackFeatureBundle(): Promise<HomepageHeroSlide> {
       ...featuredHomepageHeroSeed,
       backdropPath: null,
       imageUrl: "/placeholder-backdrop.svg",
-      watchHref: "/movies/now-playing",
+      watchHref: "/movies",
       trailerHref: "/videos",
       sourceMovieId: undefined,
     } satisfies HomepageHeroItem,
@@ -335,7 +335,7 @@ export default async function HomePage() {
               >
                 <SectionHeader
                   title="Recent Releases"
-                  href="/movies/now-playing"
+                  href="/movies"
                 />
                 <MovieGrid
                   movies={latestReleases}
@@ -392,7 +392,7 @@ export default async function HomePage() {
               <MovieListWidget
                 title="Recent Releases"
                 movies={latestReleases.slice(0, 5)}
-                href="/movies/now-playing"
+                href="/movies"
               />
             </div>
           </div>

@@ -1,25 +1,7 @@
-import { getLatestTeluguReleases } from "@/services/telugu-movies";
-import { MovieGrid } from "@/components/movie/MovieGrid";
-import { SectionHeader } from "@/components/shared/SectionHeader";
+import { redirect } from "next/navigation";
 
-export const metadata = { title: "Latest Telugu Releases - Telugu Cinema Updates" };
-export const dynamic = "force-dynamic";
-
-export default async function NowPlayingPage() {
-  try {
-    const movies = await getLatestTeluguReleases(30);
-    return (
-      <div className="app-page-shell py-8">
-        <SectionHeader title="Telugu Movies" />
-        <MovieGrid movies={movies} />
-      </div>
-    );
-  } catch {
-    return (
-      <div className="app-page-shell py-8">
-        <SectionHeader title="Telugu Movies" />
-        <p className="text-gray-400">Unable to load the latest Telugu releases. Please try again later.</p>
-      </div>
-    );
-  }
+// The validated releases catalog now lives on /movies (with filters and
+// pagination). Keep this route as a permanent redirect for old links/bookmarks.
+export default function NowPlayingPage() {
+  redirect("/movies");
 }

@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
-import { getLatestTeluguReleases, getUpcomingTeluguMovies } from "@/services/telugu-movies";
+import {
+  getLatestTeluguReleases,
+  getUpcomingTeluguMovies,
+  getValidatedTeluguCatalog,
+} from "@/services/telugu-movies";
 import { getRecentMentionCount } from "@/services/twitter-mentions";
 import { upsertTrendingMentionCount, hasDatabaseConfiguration } from "@/lib/database";
 import type { Movie } from "@/types/tmdb";
@@ -41,6 +45,10 @@ export async function GET(request: Request) {
   }
 
   try {
+    // Warm the expensive validated-catalog cache so the /movies browse page
+    // stays fast for users (best-effort; ignore failures).
+    await getValidatedTeluguCatalog().catch(() => undefined);
+
     // Released + upcoming pools already include admin-added movies.
     const [released, upcoming] = await Promise.all([
       getLatestTeluguReleases(CANDIDATE_CAP).catch(() => [] as Movie[]),

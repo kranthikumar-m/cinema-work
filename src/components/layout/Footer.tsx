@@ -38,7 +38,7 @@ export function Footer({
               Explore
             </h3>
             <ul className="space-y-3 text-sm text-[var(--color-muted-strong)]">
-              <li><Link href="/movies/now-playing" className="transition-colors hover:text-[var(--color-text)]">Validated Releases</Link></li>
+              <li><Link href="/movies" className="transition-colors hover:text-[var(--color-text)]">Validated Releases</Link></li>
               <li><Link href="/movies/popular" className="transition-colors hover:text-[var(--color-text)]">Popular Telugu</Link></li>
               <li><Link href="/movies/upcoming" className="transition-colors hover:text-[var(--color-text)]">Upcoming Telugu</Link></li>
               <li><Link href="/movies/top-rated" className="transition-colors hover:text-[var(--color-text)]">Top Rated Telugu</Link></li>

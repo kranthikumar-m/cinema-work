@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import {
   discoverMovies,
   getMovieDetails,
@@ -572,21 +573,79 @@ export interface TeluguBrowseResult {
 }
 
 export const TELUGU_BROWSE_PAGE_SIZE = 30;
-const TMDB_PAGE_SIZE = 20;
-// TMDB caps discover at 500 pages (~10,000 results).
-const TMDB_MAX_RESULTS = TMDB_PAGE_SIZE * 500;
-
-const BROWSE_SORT_MAP: Record<TeluguBrowseSort, string> = {
-  popularity: "popularity.desc",
-  newest: "primary_release_date.desc",
-  oldest: "primary_release_date.asc",
-  rating: "vote_average.desc",
-};
+const UPCOMING_BROWSE_LIMIT = 100;
 
 /**
- * Paginated "browse all Telugu movies" feed backed by TMDB discover. Serves a
- * fixed {@link TELUGU_BROWSE_PAGE_SIZE} per page by fetching the underlying
- * TMDB pages (20 each) that cover the requested window and slicing.
+ * Full Wikipedia-validated released-movie catalog across the lookback window.
+ * This is the SAME validation gate used by the curated "Recent Releases" feed
+ * (a movie only appears if its title is present in that year's
+ * "List of Telugu films of <year>" Wikipedia page), so Movies and Recent
+ * Releases stay consistent. The build is expensive, so the result is cached
+ * (revalidated every 6h); the current year is part of the cache key.
+ */
+const getCachedValidatedTeluguCatalog = unstable_cache(
+  async (currentYear: number): Promise<Movie[]> => {
+    const releases: Movie[] = [];
+
+    for (
+      let year = currentYear;
+      year >= currentYear - VALIDATED_RELEASE_LOOKBACK_YEARS;
+      year -= 1
+    ) {
+      const validated = await getValidatedTeluguReleasesThisYear(year);
+      releases.push(...validated.confirmedMovies);
+    }
+
+    return sortByReleaseDateDescAndPopularity(dedupeMovies(releases));
+  },
+  ["validated-telugu-catalog-v1"],
+  { revalidate: 21600 }
+);
+
+export function getValidatedTeluguCatalog(): Promise<Movie[]> {
+  return getCachedValidatedTeluguCatalog(getIndianCurrentYear());
+}
+
+function movieGenreIds(movie: Movie): number[] {
+  if (Array.isArray(movie.genre_ids) && movie.genre_ids.length) {
+    return movie.genre_ids;
+  }
+  // Admin-added movies come from TMDB movie details, which expose `genres`.
+  const details = movie as unknown as { genres?: { id: number }[] };
+  if (Array.isArray(details.genres)) {
+    return details.genres.map((genre) => genre.id);
+  }
+  return [];
+}
+
+function sortBrowseMovies(movies: Movie[], sort: TeluguBrowseSort): Movie[] {
+  const copy = [...movies];
+
+  switch (sort) {
+    case "newest":
+      return copy.sort((a, b) =>
+        (b.release_date || "").localeCompare(a.release_date || "")
+      );
+    case "oldest":
+      return copy.sort((a, b) =>
+        (a.release_date || "").localeCompare(b.release_date || "")
+      );
+    case "rating":
+      return copy.sort(
+        (a, b) => b.vote_average - a.vote_average || b.vote_count - a.vote_count
+      );
+    case "popularity":
+    default:
+      return copy.sort((a, b) => b.popularity - a.popularity);
+  }
+}
+
+/**
+ * Paginated "browse all Telugu movies" feed. Released movies come exclusively
+ * from the Wikipedia-validated catalog (plus admin-added movies, which always
+ * appear regardless of validation). Upcoming movies come from TMDB discover
+ * since unreleased films cannot be validated against a Wikipedia release list.
+ * Filtering, sorting, and pagination are applied in memory.
  */
 export async function browseTeluguMovies({
   sort = "popularity",
@@ -597,60 +656,39 @@ export async function browseTeluguMovies({
   const safePage = Math.max(1, Math.floor(page) || 1);
   const today = getIndianTodayIsoDate();
 
-  const params: Record<string, string> = {
-    include_adult: "false",
-    include_video: "false",
-    region: INDIA_REGION,
-    with_original_language: TELUGU_LANGUAGE,
-    sort_by: BROWSE_SORT_MAP[sort] ?? BROWSE_SORT_MAP.popularity,
-  };
+  let pool: Movie[] = [];
 
-  if (status === "released") {
-    params["primary_release_date.lte"] = today;
-  } else if (status === "upcoming") {
-    params["primary_release_date.gte"] = today;
-  }
+  if (status === "upcoming") {
+    pool = await getUpcomingTeluguMovies(UPCOMING_BROWSE_LIMIT);
+  } else {
+    const [validated, manual] = await Promise.all([
+      getValidatedTeluguCatalog(),
+      getManuallyAddedMovies().catch(() => [] as Movie[]),
+    ]);
+    const manualReleased = manual.filter(
+      (movie) => movie.release_date && movie.release_date <= today
+    );
+    const released = mergeUnique(validated, manualReleased);
 
-  // Avoid a single high-rated vote dominating the "rating" sort.
-  if (sort === "rating") {
-    params["vote_count.gte"] = "20";
+    pool =
+      status === "released"
+        ? released
+        : mergeUnique(released, await getUpcomingTeluguMovies(UPCOMING_BROWSE_LIMIT));
   }
 
   if (genreId && /^\d+$/.test(genreId)) {
-    params.with_genres = genreId;
+    const genreIdNum = Number(genreId);
+    pool = pool.filter((movie) => movieGenreIds(movie).includes(genreIdNum));
   }
 
+  const sorted = sortBrowseMovies(pool, sort);
+
+  const totalResults = sorted.length;
+  const totalPages = Math.max(1, Math.ceil(totalResults / TELUGU_BROWSE_PAGE_SIZE));
   const startIndex = (safePage - 1) * TELUGU_BROWSE_PAGE_SIZE;
-  const endIndex = startIndex + TELUGU_BROWSE_PAGE_SIZE;
-  const startTmdbPage = Math.floor(startIndex / TMDB_PAGE_SIZE) + 1;
-  const endTmdbPage = Math.floor((endIndex - 1) / TMDB_PAGE_SIZE) + 1;
+  const results = sorted.slice(startIndex, startIndex + TELUGU_BROWSE_PAGE_SIZE);
 
-  const collected: Movie[] = [];
-  let totalResults = 0;
-
-  for (let tmdbPage = startTmdbPage; tmdbPage <= endTmdbPage; tmdbPage += 1) {
-    const response = await discoverMovies(params, tmdbPage);
-    totalResults = response.total_results;
-    collected.push(...response.results);
-
-    if (tmdbPage >= response.total_pages) break;
-  }
-
-  const offsetWithinFirstPage = startIndex - (startTmdbPage - 1) * TMDB_PAGE_SIZE;
-  const windowResults = dedupeMovies(collected).slice(
-    offsetWithinFirstPage,
-    offsetWithinFirstPage + TELUGU_BROWSE_PAGE_SIZE
-  );
-
-  const cappedResults = Math.min(totalResults, TMDB_MAX_RESULTS);
-  const totalPages = Math.max(1, Math.ceil(cappedResults / TELUGU_BROWSE_PAGE_SIZE));
-
-  return {
-    results: await withMovieAssetList(windowResults),
-    page: safePage,
-    totalPages,
-    totalResults: cappedResults,
-  };
+  return { results, page: safePage, totalPages, totalResults };
 }
 
 export async function enrichMovieAssets<T extends Movie>(movie: T) {
