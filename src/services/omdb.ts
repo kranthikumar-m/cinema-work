@@ -1,21 +1,32 @@
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { env } from "@/lib/env";
-import { getIndianTodayIsoDate } from "@/lib/date";
 import type { Movie } from "@/types/tmdb";
 
 /**
- * IMDb ratings via the OMDb API (omdbapi.com). IMDb has no free official API, so
- * OMDb is the source of truth for the IMDb score/vote count shown across the UI.
+ * IMDb ratings shown across the UI, sourced with a hybrid strategy:
  *
- * Lookups are cached for 24h (fetch revalidate) and deduped within a request
- * (React `cache`). Only RELEASED films are queried — unreleased titles have no
- * IMDb rating, so we skip the call and let the UI show "NR". Without an
- * OMDB_API_KEY everything resolves to "no rating" (NR) and no calls are made.
+ *  1. OMDb API (omdbapi.com, OMDB_API_KEY) — the sanctioned source. Also used to
+ *     resolve an IMDb id for list items that don't carry one.
+ *  2. IMDb GraphQL — a FALLBACK used only when OMDb has no rating yet. OMDb
+ *     mirrors IMDb on a lag, so freshly-rated titles return N/A from OMDb even
+ *     though IMDb already shows a score. Note: IMDb's API response states its
+ *     data is not licensed for public/commercial use; this fallback is enabled
+ *     per the project owner's decision and should be revisited before any
+ *     commercial deployment.
+ *
+ * Lookups are cached 24h and deduped within a request. Year is intentionally NOT
+ * sent to OMDb — TMDB and IMDb frequently disagree on a Telugu film's year, and
+ * a hard year filter produces false "not found" misses. Without an OMDB_API_KEY,
+ * OMDb calls no-op (no network); the IMDb fallback still works when an id exists.
  */
 
 const OMDB_BASE_URL = "https://www.omdbapi.com/";
-const OMDB_CACHE_SECONDS = 86400; // 24h
+const IMDB_GRAPHQL_URL = "https://api.graphql.imdb.com/";
+const RATING_CACHE_SECONDS = 86400; // 24h
 const IMDB_LOOKUP_CONCURRENCY = 8;
+const BROWSER_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
 
 export interface ImdbRating {
   rating: number | null;
@@ -23,6 +34,12 @@ export interface ImdbRating {
 }
 
 const NO_RATING: ImdbRating = { rating: null, votes: null };
+
+interface OmdbLookup extends ImdbRating {
+  imdbId: string | null;
+}
+
+const NO_OMDB: OmdbLookup = { rating: null, votes: null, imdbId: null };
 
 function parseRating(value: unknown): number | null {
   if (typeof value !== "string") return null;
@@ -36,82 +53,113 @@ function parseVotes(value: unknown): number | null {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
-function releaseYear(dateString: string | undefined): string | undefined {
-  const year = dateString?.slice(0, 4);
-  return year && /^\d{4}$/.test(year) ? year : undefined;
-}
-
-async function omdbFetch(params: Record<string, string>): Promise<ImdbRating> {
+async function omdbRequest(params: Record<string, string>): Promise<OmdbLookup> {
   const apiKey = env.OMDB_API_KEY;
-  if (!apiKey) return NO_RATING;
+  if (!apiKey) return NO_OMDB;
 
   const url = new URL(OMDB_BASE_URL);
   url.searchParams.set("apikey", apiKey);
-  url.searchParams.set("type", "movie");
   url.searchParams.set("r", "json");
   Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
 
   try {
-    const res = await fetch(url.toString(), { next: { revalidate: OMDB_CACHE_SECONDS } });
-    if (!res.ok) return NO_RATING;
+    const res = await fetch(url.toString(), { next: { revalidate: RATING_CACHE_SECONDS } });
+    if (!res.ok) return NO_OMDB;
 
     const data = (await res.json()) as {
       Response?: string;
       imdbRating?: string;
       imdbVotes?: string;
+      imdbID?: string;
     };
-    if (data?.Response === "False") return NO_RATING;
+    if (data?.Response === "False") return NO_OMDB;
 
-    return { rating: parseRating(data?.imdbRating), votes: parseVotes(data?.imdbVotes) };
+    return {
+      rating: parseRating(data?.imdbRating),
+      votes: parseVotes(data?.imdbVotes),
+      imdbId: typeof data?.imdbID === "string" ? data.imdbID : null,
+    };
   } catch {
-    return NO_RATING;
+    return NO_OMDB;
   }
 }
 
-/** IMDb rating by IMDb ID (most accurate — use when `imdb_id` is known). */
-export const getImdbRatingByImdbId = cache(
+// OMDb by IMDb id (exact) / by title (no year — see header note).
+const omdbByImdbId = cache((imdbId: string) => omdbRequest({ i: imdbId }));
+const omdbByTitle = cache((title: string) => omdbRequest({ t: title, type: "movie" }));
+
+// IMDb live rating, used only as a fallback. Cached across requests.
+const fetchImdbGraphqlRating = unstable_cache(
   async (imdbId: string): Promise<ImdbRating> => {
     if (!imdbId) return NO_RATING;
-    return omdbFetch({ i: imdbId });
-  }
+
+    const query = `query{title(id:"${imdbId}"){ratingsSummary{aggregateRating voteCount}}}`;
+    try {
+      const res = await fetch(IMDB_GRAPHQL_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "User-Agent": BROWSER_USER_AGENT,
+        },
+        body: JSON.stringify({ query }),
+      });
+      if (!res.ok) return NO_RATING;
+
+      const data = (await res.json()) as {
+        data?: {
+          title?: { ratingsSummary?: { aggregateRating?: number; voteCount?: number } };
+        };
+      };
+      const summary = data?.data?.title?.ratingsSummary;
+      const rating =
+        typeof summary?.aggregateRating === "number" && summary.aggregateRating > 0
+          ? summary.aggregateRating
+          : null;
+      const votes = typeof summary?.voteCount === "number" ? summary.voteCount : null;
+      return { rating, votes: rating ? votes : null };
+    } catch {
+      return NO_RATING;
+    }
+  },
+  ["imdb-graphql-rating"],
+  { revalidate: RATING_CACHE_SECONDS }
 );
 
-/** IMDb rating by title (+ release year to disambiguate). */
-export const getImdbRatingByTitle = cache(
-  async (title: string, year?: string): Promise<ImdbRating> => {
-    if (!title) return NO_RATING;
-    return omdbFetch(year ? { t: title, y: year } : { t: title });
+async function resolveImdbRating(movie: Movie): Promise<ImdbRating> {
+  const title = movie.title?.trim();
+  let imdbId = (movie as { imdb_id?: string | null }).imdb_id ?? null;
+
+  // OMDb first. For list items without an id, OMDb-by-title also resolves the id
+  // we need for the IMDb fallback.
+  let omdb: OmdbLookup = NO_OMDB;
+  if (imdbId) {
+    omdb = await omdbByImdbId(imdbId);
+  } else if (title) {
+    omdb = await omdbByTitle(title);
+    imdbId = omdb.imdbId;
   }
-);
+  if (omdb.rating) return { rating: omdb.rating, votes: omdb.votes };
 
-function isReleased(movie: Movie, today: string): boolean {
-  return Boolean(movie.release_date && movie.release_date <= today);
-}
+  // OMDb has no rating yet → use IMDb's live figure when we have an id.
+  if (imdbId) {
+    const live = await fetchImdbGraphqlRating(imdbId);
+    if (live.rating) return live;
+  }
 
-async function resolveImdbRating(movie: Movie, today: string): Promise<ImdbRating> {
-  // Unreleased films have no IMDb rating — skip the lookup (shows "NR").
-  if (!isReleased(movie, today)) return NO_RATING;
-
-  const imdbId = (movie as { imdb_id?: string | null }).imdb_id ?? null;
-  if (imdbId) return getImdbRatingByImdbId(imdbId);
-  return getImdbRatingByTitle(movie.title, releaseYear(movie.release_date));
+  return NO_RATING;
 }
 
 /** Attaches the IMDb rating/votes to a single movie. */
 export async function attachImdbRating<T extends Movie>(movie: T): Promise<T> {
-  if (!env.OMDB_API_KEY) return movie;
-  const { rating, votes } = await resolveImdbRating(movie, getIndianTodayIsoDate());
+  const { rating, votes } = await resolveImdbRating(movie);
   return { ...movie, imdb_rating: rating, imdb_votes: votes } as T;
 }
 
-/**
- * Attaches IMDb ratings to a list of movies with bounded concurrency. Returns
- * the list unchanged when no API key is configured (all "NR").
- */
+/** Attaches IMDb ratings to a list of movies with bounded concurrency. */
 export async function attachImdbRatings<T extends Movie>(movies: T[]): Promise<T[]> {
-  if (!env.OMDB_API_KEY || !movies.length) return movies;
+  if (!movies.length) return movies;
 
-  const today = getIndianTodayIsoDate();
   const out: T[] = new Array(movies.length);
   let cursor = 0;
 
@@ -119,9 +167,8 @@ export async function attachImdbRatings<T extends Movie>(movies: T[]): Promise<T
     while (cursor < movies.length) {
       const index = cursor;
       cursor += 1;
-      const movie = movies[index];
-      const { rating, votes } = await resolveImdbRating(movie, today);
-      out[index] = { ...movie, imdb_rating: rating, imdb_votes: votes } as T;
+      const { rating, votes } = await resolveImdbRating(movies[index]);
+      out[index] = { ...movies[index], imdb_rating: rating, imdb_votes: votes } as T;
     }
   }
 
