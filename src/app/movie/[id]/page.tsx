@@ -25,7 +25,7 @@ import type { GalleryImage } from "@/components/movie/PhotoGallery";
 import { ReviewCard } from "@/components/movie/ReviewCard";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { MovieDetailClient } from "./client";
-import { enrichMovieAssets } from "@/services/telugu-movies";
+import { enrichMovieAssets, getMovieDetailsWithFallback } from "@/services/telugu-movies";
 import { resolvePreferredBackdrop } from "@/services/movie-backdrops";
 import { getCustomImageRecordsByMovieId, listMovieVideoRecords, hasDatabaseConfiguration } from "@/lib/database";
 import { VideoSection } from "@/components/movie/VideoSection";
@@ -79,7 +79,7 @@ export default async function MovieDetailPage({ params }: Props) {
   try {
     [movie, credits, videos, images, reviews, similar, providers] =
       await Promise.all([
-        getMovieDetails(id),
+        getMovieDetailsWithFallback(id),
         getMovieCredits(id),
         getMovieVideos(id),
         getMovieImages(id),

@@ -2,6 +2,7 @@ import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import {
   discoverMovies,
+  getMovieDetails,
   searchMovies,
 } from "@/services/tmdb";
 import {
@@ -26,6 +27,7 @@ import {
 import type { DatabaseTrendingSignalRow } from "@/lib/database";
 import type {
   Movie,
+  MovieDetails,
   MovieValidation,
   PaginatedResponse,
 } from "@/types/tmdb";
@@ -781,4 +783,72 @@ export async function browseTeluguMovies({
 
 export async function enrichMovieAssets<T extends Movie>(movie: T) {
   return withMovieAssets(movie);
+}
+
+// A detail record missing its poster or release date is treated as sparse.
+const DETAIL_FALLBACK_TITLE_SCORE = 0.6;
+
+/**
+ * Fetches full movie details, repairing sparse TMDB detail records. Some titles
+ * (often brand-new ones) return a near-empty `/movie/{id}` payload — no poster,
+ * no release date, language defaulted to "en" — even though TMDB's search index
+ * already has the richer Telugu data that fed the card the user clicked. When
+ * the detail record is missing its poster or release date, we search by title
+ * and merge the best match's fields back in so the detail page renders like the
+ * card that linked to it. Falls back to the raw details on any problem.
+ */
+export async function getMovieDetailsWithFallback(
+  id: number
+): Promise<MovieDetails> {
+  const details = await getMovieDetails(id);
+
+  const isSparse = !details.poster_path || !details.release_date;
+  if (!isSparse || !details.title?.trim()) {
+    return details;
+  }
+
+  try {
+    const search = await searchMovies(details.title);
+    const candidates = search.results;
+    if (!candidates.length) return details;
+
+    // Prefer the exact same movie id (the search index row for this title);
+    // otherwise fall back to the closest title match above a safety threshold.
+    let match: Movie | undefined = candidates.find((m) => m.id === id);
+    if (!match) {
+      const best = candidates
+        .map((m) => ({
+          movie: m,
+          score: getTitleSimilarityScore(details.title, m.title),
+        }))
+        .sort((a, b) => b.score - a.score)[0];
+      if (best && best.score >= DETAIL_FALLBACK_TITLE_SCORE) {
+        match = best.movie;
+      }
+    }
+    if (!match) return details;
+
+    return {
+      ...details,
+      poster_path: details.poster_path ?? match.poster_path,
+      backdrop_path: details.backdrop_path ?? match.backdrop_path,
+      release_date: details.release_date || match.release_date,
+      overview: details.overview || match.overview,
+      // The details endpoint often defaults language to "en"; trust the search
+      // row's language when ours is empty or that suspicious default.
+      original_language:
+        details.original_language && details.original_language !== "en"
+          ? details.original_language
+          : match.original_language || details.original_language,
+      vote_average: details.vote_average || match.vote_average,
+      vote_count: details.vote_count || match.vote_count,
+      popularity: details.popularity || match.popularity,
+    };
+  } catch (error) {
+    console.warn(
+      `[telugu-movies] detail fallback search failed for ${id}.`,
+      error instanceof Error ? error.message : error
+    );
+    return details;
+  }
 }
