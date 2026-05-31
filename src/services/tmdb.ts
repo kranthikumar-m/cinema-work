@@ -59,6 +59,12 @@ export async function getMovieDetails(id: number): Promise<MovieDetails> {
   return tmdbFetch(`/movie/${id}`);
 }
 
+export async function getMovieExternalIds(
+  id: number
+): Promise<{ imdb_id: string | null }> {
+  return tmdbFetch(`/movie/${id}/external_ids`);
+}
+
 export async function getMovieCredits(id: number): Promise<Credits> {
   return tmdbFetch(`/movie/${id}/credits`);
 }

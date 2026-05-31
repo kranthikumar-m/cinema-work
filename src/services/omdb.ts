@@ -1,14 +1,16 @@
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import { env } from "@/lib/env";
+import { getMovieExternalIds } from "@/services/tmdb";
 import { getTitleSimilarityScore } from "@/lib/title-matching";
 import type { Movie } from "@/types/tmdb";
 
 /**
  * IMDb ratings shown across the UI, sourced with a hybrid strategy:
  *
- *  1. OMDb API (omdbapi.com, OMDB_API_KEY) — the sanctioned source. Also used to
- *     resolve an IMDb id for list items that don't carry one.
+ *  1. OMDb API (omdbapi.com, OMDB_API_KEY) — the sanctioned source for the score.
+ *     IMDb ids for list items (which carry only a TMDB id) come from TMDB's
+ *     external_ids, so cards resolve the same id the detail page uses.
  *  2. IMDb (FALLBACK, only when OMDb has no rating). OMDb mirrors IMDb on a lag,
  *     so freshly-rated titles return N/A from OMDb even though IMDb shows a
  *     score. When TMDB and OMDb both lack the IMDb id, IMDb's suggestion (search)
@@ -136,6 +138,18 @@ function extractYear(dateString: string | undefined): number | null {
   return Number.isFinite(year) && year > 1900 ? year : null;
 }
 
+// List/card movies carry a TMDB id but no imdb_id. Fetching the id from TMDB's
+// external_ids gives the SAME accurate id the detail page uses, avoiding wrong
+// matches for ambiguous titles (e.g. the many films named "Biker").
+const getTmdbImdbId = cache(async (tmdbId: number): Promise<string | null> => {
+  try {
+    const external = await getMovieExternalIds(tmdbId);
+    return external?.imdb_id || null;
+  } catch {
+    return null;
+  }
+});
+
 // Resolve an IMDb id from a title using IMDb's own suggestion (search) API —
 // the last resort when both TMDB and OMDb lack the id. Picks the closest title
 // match (year used as a tie-breaker) above SUGGESTION_MIN_SCORE.
@@ -186,8 +200,13 @@ async function resolveImdbRating(movie: Movie): Promise<ImdbRating> {
   const title = movie.title?.trim();
   let imdbId = (movie as { imdb_id?: string | null }).imdb_id ?? null;
 
-  // OMDb first. For list items without an id, OMDb-by-title also resolves the id
-  // we need for the IMDb fallback.
+  // No imdb_id on the object (list/card items) → get the accurate one from TMDB.
+  if (!imdbId && movie.id) {
+    imdbId = await getTmdbImdbId(movie.id);
+  }
+
+  // OMDb first. For items still without an id, OMDb-by-title also resolves the
+  // id we need for the IMDb fallback.
   let omdb: OmdbLookup = NO_OMDB;
   if (imdbId) {
     omdb = await omdbByImdbId(imdbId);
