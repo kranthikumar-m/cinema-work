@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import { env } from "@/lib/env";
+import { getTitleSimilarityScore } from "@/lib/title-matching";
 import type { Movie } from "@/types/tmdb";
 
 /**
@@ -8,12 +9,13 @@ import type { Movie } from "@/types/tmdb";
  *
  *  1. OMDb API (omdbapi.com, OMDB_API_KEY) — the sanctioned source. Also used to
  *     resolve an IMDb id for list items that don't carry one.
- *  2. IMDb GraphQL — a FALLBACK used only when OMDb has no rating yet. OMDb
- *     mirrors IMDb on a lag, so freshly-rated titles return N/A from OMDb even
- *     though IMDb already shows a score. Note: IMDb's API response states its
- *     data is not licensed for public/commercial use; this fallback is enabled
- *     per the project owner's decision and should be revisited before any
- *     commercial deployment.
+ *  2. IMDb (FALLBACK, only when OMDb has no rating). OMDb mirrors IMDb on a lag,
+ *     so freshly-rated titles return N/A from OMDb even though IMDb shows a
+ *     score. When TMDB and OMDb both lack the IMDb id, IMDb's suggestion (search)
+ *     API resolves it from the title, then IMDb's GraphQL returns the live
+ *     aggregateRating. Note: IMDb's API response states its data is not licensed
+ *     for public/commercial use; this fallback is enabled per the project
+ *     owner's decision and should be revisited before any commercial deployment.
  *
  * Lookups are cached 24h and deduped within a request. Year is intentionally NOT
  * sent to OMDb — TMDB and IMDb frequently disagree on a Telugu film's year, and
@@ -23,8 +25,11 @@ import type { Movie } from "@/types/tmdb";
 
 const OMDB_BASE_URL = "https://www.omdbapi.com/";
 const IMDB_GRAPHQL_URL = "https://api.graphql.imdb.com/";
+const IMDB_SUGGESTION_URL = "https://v3.sg.media-imdb.com/suggestion/x/";
 const RATING_CACHE_SECONDS = 86400; // 24h
 const IMDB_LOOKUP_CONCURRENCY = 8;
+// Min title similarity to trust a suggestion-API id match (avoids wrong films).
+const SUGGESTION_MIN_SCORE = 0.7;
 const BROWSER_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
 
@@ -126,6 +131,57 @@ const fetchImdbGraphqlRating = unstable_cache(
   { revalidate: RATING_CACHE_SECONDS }
 );
 
+function extractYear(dateString: string | undefined): number | null {
+  const year = Number.parseInt((dateString ?? "").slice(0, 4), 10);
+  return Number.isFinite(year) && year > 1900 ? year : null;
+}
+
+// Resolve an IMDb id from a title using IMDb's own suggestion (search) API —
+// the last resort when both TMDB and OMDb lack the id. Picks the closest title
+// match (year used as a tie-breaker) above SUGGESTION_MIN_SCORE.
+const resolveImdbIdViaSuggestion = unstable_cache(
+  async (title: string, year: number | null): Promise<string | null> => {
+    if (!title) return null;
+
+    try {
+      const res = await fetch(
+        `${IMDB_SUGGESTION_URL}${encodeURIComponent(title)}.json?includeVideos=0`,
+        { headers: { "User-Agent": BROWSER_USER_AGENT } }
+      );
+      if (!res.ok) return null;
+
+      const data = (await res.json()) as {
+        d?: Array<{ id?: string; l?: string; y?: number }>;
+      };
+      const items = Array.isArray(data?.d) ? data.d : [];
+
+      let bestId: string | null = null;
+      let bestScore = 0;
+      for (const item of items) {
+        const id = item?.id;
+        const label = item?.l;
+        if (typeof id !== "string" || !id.startsWith("tt")) continue;
+        if (typeof label !== "string" || !label) continue;
+
+        let score = getTitleSimilarityScore(title, label);
+        if (year && typeof item?.y === "number" && Math.abs(item.y - year) <= 1) {
+          score += 0.1;
+        }
+        if (score > bestScore) {
+          bestScore = score;
+          bestId = id;
+        }
+      }
+
+      return bestScore >= SUGGESTION_MIN_SCORE ? bestId : null;
+    } catch {
+      return null;
+    }
+  },
+  ["imdb-suggestion-id"],
+  { revalidate: RATING_CACHE_SECONDS }
+);
+
 async function resolveImdbRating(movie: Movie): Promise<ImdbRating> {
   const title = movie.title?.trim();
   let imdbId = (movie as { imdb_id?: string | null }).imdb_id ?? null;
@@ -140,6 +196,11 @@ async function resolveImdbRating(movie: Movie): Promise<ImdbRating> {
     imdbId = omdb.imdbId;
   }
   if (omdb.rating) return { rating: omdb.rating, votes: omdb.votes };
+
+  // Neither TMDB nor OMDb knew the IMDb id — resolve it via IMDb's own search.
+  if (!imdbId && title) {
+    imdbId = await resolveImdbIdViaSuggestion(title, extractYear(movie.release_date));
+  }
 
   // OMDb has no rating yet → use IMDb's live figure when we have an id.
   if (imdbId) {
