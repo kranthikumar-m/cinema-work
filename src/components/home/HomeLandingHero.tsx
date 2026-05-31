@@ -354,7 +354,7 @@ export function HomeLandingHero({
 
               <div className="mt-auto flex flex-wrap gap-4 pt-[clamp(1.5rem,3.6vh,2.75rem)]">
                 <TrailerButton onClick={() => handleTrailerClick(slide)} />
-                <HeroButton href="/features" label="Audio" icon={Music4} />
+                <HeroButton href={`${movieHref}?videos=song#videos`} label="Audio" icon={Music4} />
                 <HeroButton href="/photos" label="Images" icon={ImageIcon} />
               </div>
             </motion.div>

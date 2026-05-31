@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Play } from "lucide-react";
 import { VideoPlayerModal } from "@/components/movie/VideoPlayerModal";
@@ -63,7 +64,20 @@ export function VideoSection({ videos }: VideoSectionProps) {
     .filter((group) => group.items.length > 0);
 
   const allCategories = [{ category: "all", label: "All", items: videos }, ...categorized];
-  const [activeTab, setActiveTab] = useState("all");
+
+  // Default to Trailers (when any exist). A `?videos=<category>` deep link (e.g.
+  // the home hero's Audio button → `?videos=song`) opens that category instead.
+  const searchParams = useSearchParams();
+  const defaultTab = allCategories.some((g) => g.category === "trailer")
+    ? "trailer"
+    : "all";
+  const requestedTab = searchParams.get("videos");
+  const initialTab =
+    requestedTab && allCategories.some((g) => g.category === requestedTab)
+      ? requestedTab
+      : defaultTab;
+
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [playingVideo, setPlayingVideo] = useState<VideoItem | null>(null);
 
   const activeGroup = allCategories.find((g) => g.category === activeTab) ?? allCategories[0];

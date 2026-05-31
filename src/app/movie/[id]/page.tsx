@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import {
@@ -290,7 +291,9 @@ export default async function MovieDetailPage({ params }: Props) {
         {allVideos.length > 0 && (
           <div id="videos" className="mt-12 scroll-mt-[100px]">
             <SectionHeader title="Videos" />
-            <VideoSection videos={allVideos} />
+            <Suspense fallback={null}>
+              <VideoSection videos={allVideos} />
+            </Suspense>
           </div>
         )}
 
