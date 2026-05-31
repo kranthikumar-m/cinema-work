@@ -83,6 +83,15 @@ export interface DatabaseSongSyncRow {
   last_synced_at: string;
 }
 
+export interface DatabaseTrendingSignalRow {
+  movie_id: number;
+  mention_count: number;
+  mentions_updated_at: string | null;
+  admin_order: number | null;
+  admin_pinned: number;
+  updated_at: string;
+}
+
 interface CreateUserRecordInput {
   name: string | null;
   email: string;
@@ -190,6 +199,10 @@ interface StorageProvider {
   deleteMovieVideo(id: number): Promise<void>;
   getSongSync(movieId: number): Promise<DatabaseSongSyncRow | null>;
   upsertSongSync(movieId: number, syncedAt: string): Promise<void>;
+  listTrendingSignals(): Promise<DatabaseTrendingSignalRow[]>;
+  upsertMentionCount(movieId: number, mentionCount: number, updatedAt: string): Promise<void>;
+  setAdminTrendingOrder(orderedMovieIds: number[], updatedAt: string): Promise<void>;
+  clearAdminTrendingOrder(updatedAt: string): Promise<void>;
 }
 
 interface TableColumnInfo {
@@ -229,6 +242,8 @@ const MANUAL_MOVIE_SELECT =
   "movie_id,tmdb_title,release_date,added_by_user_id,created_at";
 const MOVIE_VIDEO_SELECT =
   "id,movie_id,youtube_key,title,category,added_by_user_id,created_at";
+const TRENDING_SIGNAL_SELECT =
+  "movie_id,mention_count,mentions_updated_at,admin_order,admin_pinned,updated_at";
 
 function hasSupabaseProjectUrl(databaseUrl: string) {
   try {
@@ -362,6 +377,15 @@ function initializeSqliteDatabase(database: BetterSqlite3Database) {
     CREATE TABLE IF NOT EXISTS movie_song_syncs (
       movie_id INTEGER PRIMARY KEY,
       last_synced_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS movie_trending_signals (
+      movie_id INTEGER PRIMARY KEY,
+      mention_count INTEGER NOT NULL DEFAULT 0,
+      mentions_updated_at TEXT,
+      admin_order INTEGER,
+      admin_pinned INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL
     );
   `);
 
@@ -934,6 +958,52 @@ function createSqliteStorageProvider(databaseUrl: string): StorageProvider {
         )
         .run(movieId, syncedAt);
     },
+    async listTrendingSignals() {
+      return database
+        .prepare(`SELECT ${TRENDING_SIGNAL_SELECT} FROM movie_trending_signals`)
+        .all<DatabaseTrendingSignalRow>();
+    },
+    async upsertMentionCount(movieId, mentionCount, updatedAt) {
+      database
+        .prepare(
+          `INSERT INTO movie_trending_signals (movie_id, mention_count, mentions_updated_at, updated_at)
+           VALUES (?, ?, ?, ?)
+           ON CONFLICT(movie_id) DO UPDATE SET
+             mention_count = excluded.mention_count,
+             mentions_updated_at = excluded.mentions_updated_at,
+             updated_at = excluded.updated_at`
+        )
+        .run(movieId, mentionCount, updatedAt, updatedAt);
+    },
+    async setAdminTrendingOrder(orderedMovieIds, updatedAt) {
+      database
+        .prepare(
+          `UPDATE movie_trending_signals SET admin_order = NULL, admin_pinned = 0, updated_at = ?
+           WHERE admin_pinned = 1`
+        )
+        .run(updatedAt);
+
+      orderedMovieIds.forEach((movieId, index) => {
+        database
+          .prepare(
+            `INSERT INTO movie_trending_signals (movie_id, admin_order, admin_pinned, updated_at)
+             VALUES (?, ?, 1, ?)
+             ON CONFLICT(movie_id) DO UPDATE SET
+               admin_order = excluded.admin_order,
+               admin_pinned = 1,
+               updated_at = excluded.updated_at`
+          )
+          .run(movieId, index, updatedAt);
+      });
+    },
+    async clearAdminTrendingOrder(updatedAt) {
+      database
+        .prepare(
+          `UPDATE movie_trending_signals SET admin_order = NULL, admin_pinned = 0, updated_at = ?
+           WHERE admin_pinned = 1`
+        )
+        .run(updatedAt);
+    },
   };
 }
 
@@ -1400,6 +1470,53 @@ function createSupabaseStorageProvider(databaseUrl: string): StorageProvider {
         prefer: ["resolution=merge-duplicates"],
       });
     },
+    async listTrendingSignals() {
+      return selectRows<DatabaseTrendingSignalRow>("movie_trending_signals", {
+        select: TRENDING_SIGNAL_SELECT,
+      });
+    },
+    async upsertMentionCount(movieId, mentionCount, updatedAt) {
+      await request("movie_trending_signals", {
+        method: "POST",
+        query: { on_conflict: "movie_id" },
+        body: {
+          movie_id: movieId,
+          mention_count: mentionCount,
+          mentions_updated_at: updatedAt,
+          updated_at: updatedAt,
+        },
+        prefer: ["resolution=merge-duplicates"],
+      });
+    },
+    async setAdminTrendingOrder(orderedMovieIds, updatedAt) {
+      // Clear any existing pins first so removed movies revert to automatic order.
+      await request("movie_trending_signals", {
+        method: "PATCH",
+        query: { admin_pinned: "eq.1" },
+        body: { admin_order: null, admin_pinned: 0, updated_at: updatedAt },
+      });
+
+      for (let index = 0; index < orderedMovieIds.length; index += 1) {
+        await request("movie_trending_signals", {
+          method: "POST",
+          query: { on_conflict: "movie_id" },
+          body: {
+            movie_id: orderedMovieIds[index],
+            admin_order: index,
+            admin_pinned: 1,
+            updated_at: updatedAt,
+          },
+          prefer: ["resolution=merge-duplicates"],
+        });
+      }
+    },
+    async clearAdminTrendingOrder(updatedAt) {
+      await request("movie_trending_signals", {
+        method: "PATCH",
+        query: { admin_pinned: "eq.1" },
+        body: { admin_order: null, admin_pinned: 0, updated_at: updatedAt },
+      });
+    },
   };
 }
 
@@ -1599,4 +1716,27 @@ export async function getSongSyncRecord(movieId: number) {
 
 export async function upsertSongSyncRecord(movieId: number, syncedAt: string) {
   return requireStorageProvider().upsertSongSync(movieId, syncedAt);
+}
+
+export async function listTrendingSignalRecords() {
+  return requireStorageProvider().listTrendingSignals();
+}
+
+export async function upsertTrendingMentionCount(
+  movieId: number,
+  mentionCount: number,
+  updatedAt: string
+) {
+  return requireStorageProvider().upsertMentionCount(movieId, mentionCount, updatedAt);
+}
+
+export async function setAdminTrendingOrderRecords(
+  orderedMovieIds: number[],
+  updatedAt: string
+) {
+  return requireStorageProvider().setAdminTrendingOrder(orderedMovieIds, updatedAt);
+}
+
+export async function clearAdminTrendingOrderRecords(updatedAt: string) {
+  return requireStorageProvider().clearAdminTrendingOrder(updatedAt);
 }

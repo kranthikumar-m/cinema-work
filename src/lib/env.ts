@@ -46,6 +46,11 @@ export const env = {
   ADMIN_BOOTSTRAP_PASSWORD: getOptionalEnvVar("ADMIN_BOOTSTRAP_PASSWORD"),
   YOUTUBE_API_KEY: getOptionalEnvVar("YOUTUBE_API_KEY"),
   CRON_SECRET: getOptionalEnvVar("CRON_SECRET"),
+  TWITTER_MENTIONS_API_KEY: getOptionalEnvVar("TWITTER_MENTIONS_API_KEY"),
+  TWITTER_MENTIONS_API_URL: getOptionalEnvVar(
+    "TWITTER_MENTIONS_API_URL",
+    "https://api.twitterapi.io/twitter/tweet/advanced_search"
+  ),
   TMDB_BASE_URL:
     getOptionalEnvVar("TMDB_BASE_URL", "https://api.themoviedb.org/3") ||
     "https://api.themoviedb.org/3",

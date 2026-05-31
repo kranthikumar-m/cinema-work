@@ -8,16 +8,15 @@ import { resolvePreferredBackdrop } from "@/services/movie-backdrops";
 import {
   getCustomImageRecordsByMovieId,
   hasDatabaseConfiguration,
-  listManualMovieRecords,
   listMovieVideoRecords,
 } from "@/lib/database";
-import { enrichMovieAssets } from "@/services/telugu-movies";
 import {
   getLatestTeluguReleases,
   getPopularTeluguMovies,
   getTopRatedTeluguMovies,
   getUpcomingTeluguMovies,
 } from "@/services/telugu-movies";
+import { getManuallyAddedMovies, mergeUnique } from "@/services/manual-movies";
 import { HomeLandingHero } from "@/components/home/HomeLandingHero";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { MovieListWidget } from "@/components/movie/SidebarWidgets";
@@ -154,7 +153,7 @@ async function buildFallbackFeatureBundle(): Promise<HomepageHeroSlide> {
       ...featuredHomepageHeroSeed,
       backdropPath: null,
       imageUrl: "/placeholder-backdrop.svg",
-      watchHref: "/movies/trending",
+      watchHref: "/movies/now-playing",
       trailerHref: "/videos",
       sourceMovieId: undefined,
     } satisfies HomepageHeroItem,
@@ -245,87 +244,31 @@ async function buildFeaturedBundle(movie: Movie | null): Promise<HomepageHeroSli
 const TOP_RATED_MIN_VOTE_AVG = 7.0;
 const TOP_RATED_MIN_VOTE_COUNT = 50;
 
-async function getManuallyAddedMovies() {
-  if (!hasDatabaseConfiguration()) return [];
-
-  const rows = await listManualMovieRecords().catch(() => []);
-  if (!rows.length) return [];
-
-  const results = await Promise.allSettled(
-    rows.map((row) =>
-      getMovieDetails(row.movie_id).then((details) =>
-        enrichMovieAssets(details as unknown as Movie)
-      )
-    )
-  );
-
-  return results
-    .filter(
-      (r): r is PromiseFulfilledResult<Movie> => r.status === "fulfilled"
-    )
-    .map((r) => r.value);
-}
-
-function mergeUnique(base: Movie[], additions: Movie[]) {
-  const ids = new Set(base.map((m) => m.id));
-  const merged = [...base];
-  for (const movie of additions) {
-    if (!ids.has(movie.id)) {
-      merged.push(movie);
-      ids.add(movie.id);
-    }
-  }
-  return merged;
-}
-
 async function getData() {
   try {
+    // Latest releases and upcoming already fold in admin-added movies at the
+    // service layer; only the top-rated section needs a homepage-local merge
+    // because it applies its own vote-average / vote-count thresholds.
     const [latestReleasesResult, popularResult, upcomingResult, topRatedResult, manualMovies] =
       await Promise.all([
         getLatestTeluguReleases(10).catch(() => [] as Movie[]),
         getPopularTeluguMovies(10).catch(() => [] as Movie[]),
         getUpcomingTeluguMovies(10).catch(() => [] as Movie[]),
         getTopRatedTeluguMovies(10).catch(() => [] as Movie[]),
-        getManuallyAddedMovies(),
+        getManuallyAddedMovies().catch(() => [] as Movie[]),
       ]);
 
-    let latestReleases = latestReleasesResult;
+    const latestReleases = latestReleasesResult;
     const popular = popularResult;
-    let upcoming = upcomingResult;
+    const upcoming = upcomingResult;
     let topRated = topRatedResult;
 
     if (manualMovies.length) {
-      const today = new Date().toISOString().slice(0, 10);
-      const recentAdditions = manualMovies.filter(
-        (m) => m.release_date && m.release_date <= today
-      );
-      const upcomingAdditions = manualMovies.filter(
-        (m) => !m.release_date || m.release_date > today
-      );
       const topRatedAdditions = manualMovies.filter(
         (m) =>
           m.vote_average >= TOP_RATED_MIN_VOTE_AVG &&
           m.vote_count >= TOP_RATED_MIN_VOTE_COUNT
       );
-
-      const oldestOnHomepage = latestReleases.length
-        ? latestReleases[latestReleases.length - 1].release_date || ""
-        : "";
-      const recentForHomepage = recentAdditions.filter(
-        (m) => !oldestOnHomepage || (m.release_date || "") >= oldestOnHomepage
-      );
-
-      latestReleases = mergeUnique(latestReleases, recentForHomepage);
-      latestReleases.sort((a, b) =>
-        (b.release_date || "").localeCompare(a.release_date || "")
-      );
-      latestReleases = latestReleases.slice(0, 10);
-
-      upcoming = mergeUnique(upcoming, upcomingAdditions);
-      upcoming.sort((a, b) =>
-        (a.release_date || "").localeCompare(b.release_date || "")
-      );
-      upcoming = upcoming.slice(0, 10);
 
       topRated = mergeUnique(topRated, topRatedAdditions);
       topRated.sort((a, b) => b.vote_average - a.vote_average);
@@ -392,7 +335,7 @@ export default async function HomePage() {
               >
                 <SectionHeader
                   title="Recent Releases"
-                  href="/movies/trending"
+                  href="/movies/now-playing"
                 />
                 <MovieGrid
                   movies={latestReleases}
@@ -449,7 +392,7 @@ export default async function HomePage() {
               <MovieListWidget
                 title="Recent Releases"
                 movies={latestReleases.slice(0, 5)}
-                href="/movies/trending"
+                href="/movies/now-playing"
               />
             </div>
           </div>

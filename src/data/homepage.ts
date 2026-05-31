@@ -14,7 +14,7 @@ export const featuredHomepageHeroSeed: Omit<
   accentLinks: {
     director: "/news",
     cast: "/movies/popular",
-    release: "/movies/trending",
+    release: "/movies/now-playing",
   },
 };
 

@@ -37,14 +37,25 @@ create table if not exists public.password_reset_tokens (
   created_at text not null
 );
 
+create table if not exists public.movie_trending_signals (
+  movie_id bigint primary key,
+  mention_count integer not null default 0,
+  mentions_updated_at text,
+  admin_order integer,
+  admin_pinned integer not null default 0 check (admin_pinned in (0, 1)),
+  updated_at text not null
+);
+
 create index if not exists idx_sessions_token_hash on public.sessions(token_hash);
 create index if not exists idx_sessions_user_id on public.sessions(user_id);
 create index if not exists idx_users_role on public.users(role);
 create index if not exists idx_users_email on public.users(email);
 create index if not exists idx_password_reset_tokens_hash on public.password_reset_tokens(token_hash);
 create index if not exists idx_password_reset_tokens_user_id on public.password_reset_tokens(user_id);
+create index if not exists idx_trending_signals_admin_pinned on public.movie_trending_signals(admin_pinned);
 
 alter table public.users enable row level security;
 alter table public.sessions enable row level security;
 alter table public.movie_backdrop_overrides enable row level security;
 alter table public.password_reset_tokens enable row level security;
+alter table public.movie_trending_signals enable row level security;

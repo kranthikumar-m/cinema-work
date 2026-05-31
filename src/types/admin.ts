@@ -67,6 +67,26 @@ export interface ManualMovieRecord {
   createdAt: string;
 }
 
+export interface MovieTrendingSignalRecord {
+  movieId: number;
+  mentionCount: number;
+  mentionsUpdatedAt: string | null;
+  adminOrder: number | null;
+  adminPinned: boolean;
+  updatedAt: string;
+}
+
+export interface AdminTrendingMovie {
+  id: number;
+  title: string;
+  posterUrl: string | null;
+  releaseDate: string | null;
+  releaseStatus: "released" | "upcoming";
+  mentionCount: number;
+  mentionsUpdatedAt: string | null;
+  adminOrder: number | null;
+}
+
 export interface MovieCustomImagesPayload {
   movieId: number;
   title: string;
