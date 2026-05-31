@@ -21,7 +21,7 @@ export const APP_SIDEBAR_DRAWER_WIDTH_CLASS = "w-[var(--app-sidebar-width)]";
 
 export const APP_SIDEBAR_ITEMS: AppSidebarItem[] = [
   { icon: Rss, label: "FEEDS", href: "/" },
-  { icon: Clapperboard, label: "MOVIES", href: "/movies/trending" },
+  { icon: Clapperboard, label: "MOVIES", href: "/movies" },
   { icon: UsersRound, label: "CAST & CREW", href: "/movies/popular" },
   { icon: Music4, label: "MUSIC", href: "/features" },
   { icon: ImageIcon, label: "GALLERY", href: "/photos" },

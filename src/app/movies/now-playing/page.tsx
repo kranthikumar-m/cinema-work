@@ -10,14 +10,14 @@ export default async function NowPlayingPage() {
     const movies = await getLatestTeluguReleases(30);
     return (
       <div className="app-page-shell py-8">
-        <SectionHeader title="Latest Confirmed Telugu Releases" />
+        <SectionHeader title="Telugu Movies" />
         <MovieGrid movies={movies} />
       </div>
     );
   } catch {
     return (
       <div className="app-page-shell py-8">
-        <SectionHeader title="Latest Confirmed Telugu Releases" />
+        <SectionHeader title="Telugu Movies" />
         <p className="text-gray-400">Unable to load the latest Telugu releases. Please try again later.</p>
       </div>
     );

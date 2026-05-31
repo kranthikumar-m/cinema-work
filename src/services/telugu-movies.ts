@@ -554,6 +554,105 @@ export async function searchTeluguMovies(
   };
 }
 
+export type TeluguBrowseSort = "popularity" | "newest" | "oldest" | "rating";
+export type TeluguBrowseStatus = "all" | "released" | "upcoming";
+
+export interface TeluguBrowseParams {
+  sort?: TeluguBrowseSort;
+  status?: TeluguBrowseStatus;
+  genreId?: string;
+  page?: number;
+}
+
+export interface TeluguBrowseResult {
+  results: Movie[];
+  page: number;
+  totalPages: number;
+  totalResults: number;
+}
+
+export const TELUGU_BROWSE_PAGE_SIZE = 30;
+const TMDB_PAGE_SIZE = 20;
+// TMDB caps discover at 500 pages (~10,000 results).
+const TMDB_MAX_RESULTS = TMDB_PAGE_SIZE * 500;
+
+const BROWSE_SORT_MAP: Record<TeluguBrowseSort, string> = {
+  popularity: "popularity.desc",
+  newest: "primary_release_date.desc",
+  oldest: "primary_release_date.asc",
+  rating: "vote_average.desc",
+};
+
+/**
+ * Paginated "browse all Telugu movies" feed backed by TMDB discover. Serves a
+ * fixed {@link TELUGU_BROWSE_PAGE_SIZE} per page by fetching the underlying
+ * TMDB pages (20 each) that cover the requested window and slicing.
+ */
+export async function browseTeluguMovies({
+  sort = "popularity",
+  status = "all",
+  genreId,
+  page = 1,
+}: TeluguBrowseParams = {}): Promise<TeluguBrowseResult> {
+  const safePage = Math.max(1, Math.floor(page) || 1);
+  const today = getIndianTodayIsoDate();
+
+  const params: Record<string, string> = {
+    include_adult: "false",
+    include_video: "false",
+    region: INDIA_REGION,
+    with_original_language: TELUGU_LANGUAGE,
+    sort_by: BROWSE_SORT_MAP[sort] ?? BROWSE_SORT_MAP.popularity,
+  };
+
+  if (status === "released") {
+    params["primary_release_date.lte"] = today;
+  } else if (status === "upcoming") {
+    params["primary_release_date.gte"] = today;
+  }
+
+  // Avoid a single high-rated vote dominating the "rating" sort.
+  if (sort === "rating") {
+    params["vote_count.gte"] = "20";
+  }
+
+  if (genreId && /^\d+$/.test(genreId)) {
+    params.with_genres = genreId;
+  }
+
+  const startIndex = (safePage - 1) * TELUGU_BROWSE_PAGE_SIZE;
+  const endIndex = startIndex + TELUGU_BROWSE_PAGE_SIZE;
+  const startTmdbPage = Math.floor(startIndex / TMDB_PAGE_SIZE) + 1;
+  const endTmdbPage = Math.floor((endIndex - 1) / TMDB_PAGE_SIZE) + 1;
+
+  const collected: Movie[] = [];
+  let totalResults = 0;
+
+  for (let tmdbPage = startTmdbPage; tmdbPage <= endTmdbPage; tmdbPage += 1) {
+    const response = await discoverMovies(params, tmdbPage);
+    totalResults = response.total_results;
+    collected.push(...response.results);
+
+    if (tmdbPage >= response.total_pages) break;
+  }
+
+  const offsetWithinFirstPage = startIndex - (startTmdbPage - 1) * TMDB_PAGE_SIZE;
+  const windowResults = dedupeMovies(collected).slice(
+    offsetWithinFirstPage,
+    offsetWithinFirstPage + TELUGU_BROWSE_PAGE_SIZE
+  );
+
+  const cappedResults = Math.min(totalResults, TMDB_MAX_RESULTS);
+  const totalPages = Math.max(1, Math.ceil(cappedResults / TELUGU_BROWSE_PAGE_SIZE));
+
+  return {
+    results: await withMovieAssetList(windowResults),
+    page: safePage,
+    totalPages,
+    totalResults: cappedResults,
+  };
+}
+
 export async function enrichMovieAssets<T extends Movie>(movie: T) {
   return withMovieAssets(movie);
 }
