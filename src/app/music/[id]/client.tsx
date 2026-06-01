@@ -147,9 +147,9 @@ export function MusicPlayerClient({
               </button>
             </div>
 
-            <div className="mt-8 max-w-3xl">
+            <div className="mt-8">
               {selected.youtubeKey ? (
-                <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] shadow-[0_18px_48px_rgba(7,10,18,0.4)]">
+                <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] shadow-[0_24px_70px_rgba(7,10,18,0.5)]">
                   <iframe
                     key={selected.youtubeKey}
                     src={`https://www.youtube.com/embed/${selected.youtubeKey}`}
@@ -160,7 +160,7 @@ export function MusicPlayerClient({
                   />
                 </div>
               ) : (
-                <p className="rounded-2xl border border-[var(--color-border)] px-4 py-12 text-center text-sm text-[var(--color-muted)]">
+                <p className="rounded-2xl border border-[var(--color-border)] px-4 py-16 text-center text-sm text-[var(--color-muted)]">
                   No video found for this song.
                 </p>
               )}
