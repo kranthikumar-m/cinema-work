@@ -20,7 +20,7 @@ import {
  */
 
 const MUSIC_CACHE_SECONDS = 604800; // 7 days
-const YOUTUBE_MATCH_MIN_SCORE = 0.55;
+const YOUTUBE_MATCH_MIN_SCORE = 0.7;
 
 export interface MovieSong {
   spotifyId: string;
@@ -58,28 +58,62 @@ function normalize(value: string): string {
     .trim();
 }
 
+// Excluded entirely (compilations, not a single song).
+const EXCLUDE_TIER = 99;
+
+/**
+ * Ranks a candidate's video TYPE for a track. Lower is preferred:
+ *   1 = full Video Song, 2 = lyrical/lyric video, 3 = other single video.
+ * Jukeboxes / compilations are excluded outright. Type preference dominates
+ * view count, so the official video song wins over a higher-viewed lyric video.
+ */
+function videoTypeTier(title: string): number {
+  const t = title.toLowerCase();
+  if (
+    /jukebox|full\s*songs|all\s*songs|full\s*album|mashup|non[\s-]?stop|back\s*to\s*back/.test(t)
+  ) {
+    return EXCLUDE_TIER;
+  }
+  const hasLyric = /lyric/.test(t);
+  const hasVideoSong = /video\s*song/.test(t);
+  if (hasVideoSong && !hasLyric) return 1;
+  if (hasLyric) return 2;
+  return 3;
+}
+
+function isTrackMatch(trackTitle: string, normTrack: string, candidate: SongSearchResult): boolean {
+  if (normTrack.length >= 4 && normalize(candidate.title).includes(normTrack)) return true;
+  return getTitleSimilarityScore(trackTitle, candidate.title) >= YOUTUBE_MATCH_MIN_SCORE;
+}
+
+/**
+ * Picks the best YouTube video for a Spotify track: among candidates that match
+ * the track title (and aren't already used), prefer Video Song → Lyrical →
+ * other, breaking ties by view count. Returns null if nothing matches.
+ */
 function matchYouTube(
   trackTitle: string,
-  candidates: SongSearchResult[]
+  candidates: SongSearchResult[],
+  excludeIds: Set<string>
 ): SongSearchResult | null {
   const normTrack = normalize(trackTitle);
   if (!normTrack) return null;
 
-  let best: SongSearchResult | null = null;
-  let bestScore = 0;
-  for (const candidate of candidates) {
-    let score = getTitleSimilarityScore(trackTitle, candidate.title);
-    // A YouTube title that contains the exact track name is a strong match,
-    // e.g. "College Papa Video Song | MAD | Bheems…".
-    if (normTrack.length >= 4 && normalize(candidate.title).includes(normTrack)) {
-      score = Math.max(score, 0.9);
-    }
-    if (score > bestScore) {
-      bestScore = score;
-      best = candidate;
-    }
-  }
-  return bestScore >= YOUTUBE_MATCH_MIN_SCORE ? best : null;
+  const matches = candidates.filter(
+    (candidate) =>
+      !excludeIds.has(candidate.videoId) &&
+      videoTypeTier(candidate.title) !== EXCLUDE_TIER &&
+      isTrackMatch(trackTitle, normTrack, candidate)
+  );
+  if (!matches.length) return null;
+
+  matches.sort((a, b) => {
+    const tierDiff = videoTypeTier(a.title) - videoTypeTier(b.title);
+    if (tierDiff !== 0) return tierDiff;
+    return (b.viewCount ?? 0) - (a.viewCount ?? 0);
+  });
+
+  return matches[0];
 }
 
 // Adds matched YouTube songs to the movie's videos (category "song"), so they
@@ -134,8 +168,8 @@ async function buildMovieMusic(
 
   const usedVideoIds = new Set<string>();
   const songs: MovieSong[] = album.tracks.map((track, index) => {
-    const match = matchYouTube(track.title, youtubeCandidates);
-    const videoId = match && !usedVideoIds.has(match.videoId) ? match.videoId : null;
+    const match = matchYouTube(track.title, youtubeCandidates, usedVideoIds);
+    const videoId = match?.videoId ?? null;
     if (videoId) usedVideoIds.add(videoId);
     const lyrics = lyricsResults[index];
 

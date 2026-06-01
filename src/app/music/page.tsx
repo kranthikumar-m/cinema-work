@@ -4,22 +4,53 @@ import {
   browseTeluguMovies,
   type TeluguBrowseView,
 } from "@/services/telugu-movies";
+import { getGenres } from "@/services/tmdb";
 import { MovieGrid } from "@/components/movie/MovieGrid";
-import { MusicBrowseTabs } from "@/components/music/MusicBrowseTabs";
+import {
+  MovieBrowseToolbar,
+  type BrowseTab,
+} from "@/components/movie/MovieBrowseToolbar";
+import type { Genre } from "@/types/tmdb";
 
 export const metadata = { title: "Music - Telugu Cinema Updates" };
 export const dynamic = "force-dynamic";
 
-// Music landing offers a subset of the browse views.
+const MUSIC_TABS: BrowseTab[] = [
+  { value: "popular", label: "POPULAR" },
+  { value: "latest", label: "NEW RELEASES" },
+  { value: "az", label: "A-Z" },
+];
 const VALID_VIEWS: TeluguBrowseView[] = ["popular", "latest", "az"];
 
 function firstParam(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-function buildHref(view: string, page: number): string {
+function clampRating(value: string | undefined, fallback: number): number {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return fallback;
+  return Math.max(0, Math.min(10, num));
+}
+
+function parseYear(value: string | undefined): number | undefined {
+  const num = Number(value);
+  return Number.isInteger(num) && num > 1900 && num < 3000 ? num : undefined;
+}
+
+interface BrowseHrefBase {
+  view?: string;
+  genre?: string;
+  minRating?: string;
+  maxRating?: string;
+  minYear?: string;
+  maxYear?: string;
+}
+
+function buildHref(base: BrowseHrefBase, page: number): string {
   const params = new URLSearchParams();
-  if (view !== "popular") params.set("view", view);
+  Object.entries(base).forEach(([key, value]) => {
+    if (value) params.set(key, value);
+  });
   if (page > 1) params.set("page", String(page));
   const qs = params.toString();
   return qs ? `/music?${qs}` : "/music";
@@ -43,18 +74,63 @@ export default async function MusicPage({ searchParams }: MusicPageProps) {
   const viewParam = firstParam(searchParams.view) as TeluguBrowseView | undefined;
   const view: TeluguBrowseView =
     viewParam && VALID_VIEWS.includes(viewParam) ? viewParam : "popular";
+
+  const genreParam = firstParam(searchParams.genre);
+  const genreId = genreParam && /^\d+$/.test(genreParam) ? genreParam : "";
+  const minRating = clampRating(firstParam(searchParams.minRating), 0);
+  const maxRating = clampRating(firstParam(searchParams.maxRating), 10);
+  const minYearParam = parseYear(firstParam(searchParams.minYear));
+  const maxYearParam = parseYear(firstParam(searchParams.maxYear));
   const pageParam = Number(firstParam(searchParams.page)) || 1;
 
+  let genres: Genre[] = [];
   try {
-    const { results, page, totalPages, totalResults } = await browseTeluguMovies({
-      view,
-      page: pageParam,
-    });
+    genres = (await getGenres()).genres ?? [];
+  } catch {
+    genres = [];
+  }
+
+  try {
+    const { results, page, totalPages, totalResults, yearBounds } =
+      await browseTeluguMovies({
+        view,
+        genreId,
+        minRating,
+        maxRating,
+        minYear: minYearParam,
+        maxYear: maxYearParam,
+        page: pageParam,
+      });
+
+    const effectiveMinYear = minYearParam ?? yearBounds.min;
+    const effectiveMaxYear = maxYearParam ?? yearBounds.max;
+
+    const base: BrowseHrefBase = {
+      view: view === "popular" ? undefined : view,
+      genre: genreId || undefined,
+      minRating: minRating > 0 ? String(minRating) : undefined,
+      maxRating: maxRating < 10 ? String(maxRating) : undefined,
+      minYear:
+        minYearParam && minYearParam > yearBounds.min ? String(minYearParam) : undefined,
+      maxYear:
+        maxYearParam && maxYearParam < yearBounds.max ? String(maxYearParam) : undefined,
+    };
     const pageWindow = getPageWindow(page, totalPages);
 
     return (
       <div className="app-page-shell py-6">
-        <MusicBrowseTabs view={view} />
+        <MovieBrowseToolbar
+          view={view}
+          tabs={MUSIC_TABS}
+          defaultView="popular"
+          genres={genres}
+          genreId={genreId}
+          minRating={minRating}
+          maxRating={maxRating}
+          minYear={effectiveMinYear}
+          maxYear={effectiveMaxYear}
+          yearBounds={yearBounds}
+        />
 
         <p className="mb-4 text-sm text-[var(--color-muted-strong)]">
           {totalResults.toLocaleString()} movies · Page {page} of {totalPages}
@@ -67,19 +143,19 @@ export default async function MusicPage({ searchParams }: MusicPageProps) {
             className="mt-8 flex flex-wrap items-center justify-center gap-2"
             aria-label="Pagination"
           >
-            <PageLink href={buildHref(view, Math.max(1, page - 1))} disabled={page <= 1} aria-label="Previous page">
+            <PageLink href={buildHref(base, Math.max(1, page - 1))} disabled={page <= 1} aria-label="Previous page">
               <ChevronLeft className="h-4 w-4" />
             </PageLink>
 
             {pageWindow[0] > 1 && (
               <>
-                <PageLink href={buildHref(view, 1)}>1</PageLink>
+                <PageLink href={buildHref(base, 1)}>1</PageLink>
                 {pageWindow[0] > 2 && <span className="px-1 text-[var(--color-muted)]">…</span>}
               </>
             )}
 
             {pageWindow.map((p) => (
-              <PageLink key={p} href={buildHref(view, p)} active={p === page}>
+              <PageLink key={p} href={buildHref(base, p)} active={p === page}>
                 {p}
               </PageLink>
             ))}
@@ -89,11 +165,11 @@ export default async function MusicPage({ searchParams }: MusicPageProps) {
                 {pageWindow[pageWindow.length - 1] < totalPages - 1 && (
                   <span className="px-1 text-[var(--color-muted)]">…</span>
                 )}
-                <PageLink href={buildHref(view, totalPages)}>{totalPages}</PageLink>
+                <PageLink href={buildHref(base, totalPages)}>{totalPages}</PageLink>
               </>
             )}
 
-            <PageLink href={buildHref(view, Math.min(totalPages, page + 1))} disabled={page >= totalPages} aria-label="Next page">
+            <PageLink href={buildHref(base, Math.min(totalPages, page + 1))} disabled={page >= totalPages} aria-label="Next page">
               <ChevronRight className="h-4 w-4" />
             </PageLink>
           </nav>
@@ -103,7 +179,6 @@ export default async function MusicPage({ searchParams }: MusicPageProps) {
   } catch {
     return (
       <div className="app-page-shell py-6">
-        <MusicBrowseTabs view={view} />
         <p className="text-gray-400">Unable to load music. Please try again later.</p>
       </div>
     );

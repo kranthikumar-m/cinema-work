@@ -8,7 +8,12 @@ import { DualRangeSlider } from "./DualRangeSlider";
 import type { Genre } from "@/types/tmdb";
 import type { TeluguBrowseView } from "@/services/telugu-movies";
 
-const TABS: { value: TeluguBrowseView; label: string }[] = [
+export interface BrowseTab {
+  value: TeluguBrowseView;
+  label: string;
+}
+
+const DEFAULT_TABS: BrowseTab[] = [
   { value: "popular", label: "POPULAR" },
   { value: "latest", label: "LATEST" },
   { value: "upcoming", label: "UPCOMING RELEASES" },
@@ -25,6 +30,9 @@ interface MovieBrowseToolbarProps {
   minYear: number;
   maxYear: number;
   yearBounds: { min: number; max: number };
+  /** Custom tab set + the tab whose URL omits the `view` param. */
+  tabs?: BrowseTab[];
+  defaultView?: TeluguBrowseView;
 }
 
 export function MovieBrowseToolbar({
@@ -36,6 +44,8 @@ export function MovieBrowseToolbar({
   minYear,
   maxYear,
   yearBounds,
+  tabs = DEFAULT_TABS,
+  defaultView = "latest",
 }: MovieBrowseToolbarProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -75,13 +85,13 @@ export function MovieBrowseToolbar({
   const tabHref = useCallback(
     (value: TeluguBrowseView) => {
       const params = new URLSearchParams(searchParams.toString());
-      if (value === "latest") params.delete("view");
+      if (value === defaultView) params.delete("view");
       else params.set("view", value);
       params.delete("page");
       const qs = params.toString();
       return qs ? `${pathname}?${qs}` : pathname;
     },
-    [pathname, searchParams]
+    [pathname, searchParams, defaultView]
   );
 
   function applyFilters() {
@@ -110,7 +120,7 @@ export function MovieBrowseToolbar({
     setRating([0, 10]);
     setYears([yearBounds.min, yearBounds.max]);
     const params = new URLSearchParams();
-    if (view !== "latest") params.set("view", view);
+    if (view !== defaultView) params.set("view", view);
     setOpen(false);
     router.push(params.toString() ? `${pathname}?${params.toString()}` : pathname);
   }
@@ -133,7 +143,7 @@ export function MovieBrowseToolbar({
     <div className="sticky top-[84px] z-20 -mx-[var(--app-page-gutter)] mb-6 border-b border-[var(--color-border)] bg-[rgba(26,30,46,0.92)] px-[var(--app-page-gutter)] py-3 backdrop-blur-xl">
       <div className="flex items-center justify-between gap-4">
         <nav className="scrollbar-hide flex items-center gap-5 overflow-x-auto sm:gap-7">
-          {TABS.map((tab) => {
+          {tabs.map((tab) => {
             const active = view === tab.value;
             return (
               <Link
