@@ -24,6 +24,16 @@ interface YouTubeVideoDetail {
   contentDetails: {
     duration: string;
   };
+  statistics?: {
+    viewCount?: string;
+    likeCount?: string;
+  };
+}
+
+function parseStat(value: string | undefined): number | null {
+  if (!value) return null;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
 }
 
 function parseIsoDuration(iso: string): number {
@@ -125,7 +135,7 @@ async function getVideoDetails(videoIds: string[]): Promise<YouTubeVideoDetail[]
   if (!env.YOUTUBE_API_KEY || !videoIds.length) return [];
 
   const url = new URL("https://www.googleapis.com/youtube/v3/videos");
-  url.searchParams.set("part", "snippet,contentDetails");
+  url.searchParams.set("part", "snippet,contentDetails,statistics");
   url.searchParams.set("id", videoIds.join(","));
   url.searchParams.set("key", env.YOUTUBE_API_KEY);
 
@@ -151,6 +161,9 @@ export interface SongSearchResult {
   title: string;
   channelTitle: string;
   thumbnailUrl: string;
+  durationSeconds?: number;
+  viewCount?: number | null;
+  likeCount?: number | null;
 }
 
 export async function searchSongsForMovie(
@@ -203,6 +216,9 @@ export async function searchSongsForMovie(
       title,
       channelTitle: video.snippet.channelTitle,
       thumbnailUrl: `https://img.youtube.com/vi/${video.id}/mqdefault.jpg`,
+      durationSeconds: duration,
+      viewCount: parseStat(video.statistics?.viewCount),
+      likeCount: parseStat(video.statistics?.likeCount),
       score,
     });
   }
@@ -213,5 +229,8 @@ export async function searchSongsForMovie(
     title: c.title,
     channelTitle: c.channelTitle,
     thumbnailUrl: c.thumbnailUrl,
+    durationSeconds: c.durationSeconds,
+    viewCount: c.viewCount,
+    likeCount: c.likeCount,
   }));
 }
