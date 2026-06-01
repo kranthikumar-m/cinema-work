@@ -147,10 +147,23 @@ export function MusicPlayerClient({
               </button>
             </div>
 
-            <div className="mt-8 max-w-2xl whitespace-pre-line text-[15px] leading-[2] text-[var(--color-muted-strong)]">
-              {selected.lyrics
-                ? selected.lyrics
-                : "Lyrics are not available for this song yet."}
+            <div className="mt-8 max-w-3xl">
+              {selected.youtubeKey ? (
+                <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] shadow-[0_18px_48px_rgba(7,10,18,0.4)]">
+                  <iframe
+                    key={selected.youtubeKey}
+                    src={`https://www.youtube.com/embed/${selected.youtubeKey}`}
+                    title={selected.title}
+                    className="aspect-video w-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              ) : (
+                <p className="rounded-2xl border border-[var(--color-border)] px-4 py-12 text-center text-sm text-[var(--color-muted)]">
+                  No video found for this song.
+                </p>
+              )}
             </div>
           </section>
 
@@ -202,23 +215,6 @@ export function MusicPlayerClient({
                 })}
               </ul>
             </div>
-
-            {selected.youtubeKey ? (
-              <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] shadow-[0_18px_48px_rgba(7,10,18,0.4)]">
-                <iframe
-                  key={selected.youtubeKey}
-                  src={`https://www.youtube.com/embed/${selected.youtubeKey}`}
-                  title={selected.title}
-                  className="aspect-video w-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
-            ) : (
-              <p className="rounded-2xl border border-[var(--color-border)] px-4 py-6 text-center text-xs text-[var(--color-muted)]">
-                No video found for this song.
-              </p>
-            )}
           </aside>
         </div>
       </div>
