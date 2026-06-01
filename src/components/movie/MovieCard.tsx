@@ -7,11 +7,12 @@ import type { Movie } from "@/types/tmdb";
 interface MovieCardProps {
   movie: Movie;
   priority?: boolean;
+  linkBase?: string;
 }
 
-export function MovieCard({ movie, priority = false }: MovieCardProps) {
+export function MovieCard({ movie, priority = false, linkBase = "/movie" }: MovieCardProps) {
   return (
-    <Link href={`/movie/${movie.id}`} className="group block">
+    <Link href={`${linkBase}/${movie.id}`} className="group block">
       <div className="relative overflow-hidden rounded-[22px] border border-[var(--color-border)] bg-[var(--color-bg-deep)] transition-transform duration-300 group-hover:scale-[1.01] group-hover:shadow-[0_18px_48px_rgba(7,10,18,0.22)]">
         <div className="aspect-[2/3] relative">
           <Image

@@ -4,11 +4,13 @@ import type { Movie } from "@/types/tmdb";
 interface MovieGridProps {
   movies: Movie[];
   columns?: string;
+  linkBase?: string;
 }
 
 export function MovieGrid({
   movies,
   columns = "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6",
+  linkBase,
 }: MovieGridProps) {
   if (!movies.length) {
     return (
@@ -21,7 +23,7 @@ export function MovieGrid({
   return (
     <div className={`grid ${columns} gap-4`}>
       {movies.map((movie, i) => (
-        <MovieCard key={movie.id} movie={movie} priority={i < 6} />
+        <MovieCard key={movie.id} movie={movie} priority={i < 6} linkBase={linkBase} />
       ))}
     </div>
   );

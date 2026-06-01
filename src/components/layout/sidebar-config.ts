@@ -23,7 +23,7 @@ export const APP_SIDEBAR_ITEMS: AppSidebarItem[] = [
   { icon: Rss, label: "FEEDS", href: "/" },
   { icon: Clapperboard, label: "MOVIES", href: "/movies" },
   { icon: UsersRound, label: "CAST & CREW", href: "/movies/popular" },
-  { icon: Music4, label: "MUSIC", href: "/features" },
+  { icon: Music4, label: "MUSIC", href: "/music" },
   { icon: ImageIcon, label: "GALLERY", href: "/photos" },
   { icon: PlayCircle, label: "VIDEOS", href: "/videos" },
   { icon: Info, label: "ABOUT", href: "/news" },
