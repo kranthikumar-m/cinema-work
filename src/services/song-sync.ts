@@ -110,7 +110,10 @@ function getSearchDateRange(releaseDate: string | null): { after: string; before
 async function searchYouTube(
   query: string,
   releaseDate: string | null = null,
-  maxResults: number = MAX_SEARCH_RESULTS
+  maxResults: number = MAX_SEARCH_RESULTS,
+  // Defaults to the Music category (10). Pass null to search all categories —
+  // needed for trailers/teasers, which aren't music-category videos.
+  videoCategoryId: string | null = "10"
 ): Promise<YouTubeSearchItem[]> {
   if (!env.YOUTUBE_API_KEY) return [];
 
@@ -118,7 +121,7 @@ async function searchYouTube(
   url.searchParams.set("part", "snippet");
   url.searchParams.set("q", query);
   url.searchParams.set("type", "video");
-  url.searchParams.set("videoCategoryId", "10");
+  if (videoCategoryId) url.searchParams.set("videoCategoryId", videoCategoryId);
   url.searchParams.set("maxResults", String(maxResults));
   url.searchParams.set("key", env.YOUTUBE_API_KEY);
 
@@ -259,6 +262,41 @@ export async function searchYouTubeSongCandidates(
   for (const video of details) {
     const duration = parseIsoDuration(video.contentDetails.duration);
     if (duration < minDurationSeconds || duration > MAX_DURATION_SECONDS) continue;
+    if (isJunkTitle(video.snippet.title)) continue;
+
+    out.push({
+      videoId: video.id,
+      title: video.snippet.title,
+      channelTitle: video.snippet.channelTitle,
+      thumbnailUrl: `https://img.youtube.com/vi/${video.id}/mqdefault.jpg`,
+      durationSeconds: duration,
+      viewCount: parseStat(video.statistics?.viewCount),
+      likeCount: parseStat(video.statistics?.likeCount),
+    });
+  }
+
+  return out;
+}
+
+/**
+ * Raw trailer/teaser candidates for a query, searched across ALL YouTube
+ * categories (not just Music) so promos surface. Filtered only by a loose
+ * duration window and junk patterns; callers score/match against the movie
+ * title. Includes view/like stats.
+ */
+export async function searchYouTubeTrailerCandidates(
+  query: string
+): Promise<SongSearchResult[]> {
+  const items = await searchYouTube(query, null, 25, null);
+  if (!items.length) return [];
+
+  const details = await getVideoDetails(items.map((item) => item.id.videoId));
+  const out: SongSearchResult[] = [];
+
+  for (const video of details) {
+    const duration = parseIsoDuration(video.contentDetails.duration);
+    // Trailers/teasers run ~15s–6min; longer is usually a full film/interview.
+    if (duration < 15 || duration > 6 * 60) continue;
     if (isJunkTitle(video.snippet.title)) continue;
 
     out.push({

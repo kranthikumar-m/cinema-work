@@ -9,7 +9,9 @@ import {
   getCustomImageRecordsByMovieId,
   hasDatabaseConfiguration,
   listMovieVideoRecords,
+  listHiddenVideoKeys,
 } from "@/lib/database";
+import { getMovieTrailers } from "@/services/movie-trailers";
 import {
   getLatestTeluguReleases,
   getPopularTeluguMovies,
@@ -73,17 +75,15 @@ function getActors(credits: Credits | null) {
 }
 
 function getTrailerInfo(videos: { results: Video[] } | null, movieId?: number) {
+  // Only ever surface an actual Trailer/Teaser — never an arbitrary YouTube
+  // video, which is how songs (e.g. a movie with no TMDB trailer) used to leak
+  // into the hero "Trailers" button.
+  const youtube = (videos?.results ?? []).filter((v) => v.site === "YouTube" && v.key);
   const trailer =
-    videos?.results.find(
-      (video) =>
-        video.site === "YouTube" &&
-        video.type === "Trailer" &&
-        video.official
-    ) ||
-    videos?.results.find(
-      (video) => video.site === "YouTube" && video.type === "Trailer"
-    ) ||
-    videos?.results.find((video) => video.site === "YouTube");
+    youtube.find((v) => v.type === "Trailer" && v.official) ||
+    youtube.find((v) => v.type === "Trailer") ||
+    youtube.find((v) => v.type === "Teaser" && v.official) ||
+    youtube.find((v) => v.type === "Teaser");
 
   if (trailer) {
     return { href: `https://www.youtube.com/watch?v=${trailer.key}`, key: trailer.key };
@@ -190,17 +190,54 @@ async function buildFeaturedBundle(movie: Movie | null): Promise<HomepageHeroSli
   const customBackdrop = customImages.find((r) => r.image_type === "backdrop");
   const useCustomBackdrop = !hasTmdbBackdrops && !!customBackdrop;
 
-  const tmdbTrailerInfo = getTrailerInfo(enhancements.videos, movie.id);
-  let trailerHref = tmdbTrailerInfo.href;
-  let trailerKey = tmdbTrailerInfo.key;
-
-  if (!trailerKey && hasDatabaseConfiguration()) {
+  // Resolve the hero trailer in priority order:
+  //   admin-curated trailer/teaser → TMDB trailer/teaser → auto-fetched promo.
+  // Hidden keys (admin "Remove") are skipped at every step.
+  const ytWatch = (key: string) => `https://www.youtube.com/watch?v=${key}`;
+  let hiddenKeys = new Set<string>();
+  let customVideos: Awaited<ReturnType<typeof listMovieVideoRecords>> = [];
+  if (hasDatabaseConfiguration()) {
     try {
-      const customVideos = await listMovieVideoRecords(movie.id);
-      const customTrailer = customVideos.find((v) => v.category === "trailer");
-      if (customTrailer) {
-        trailerKey = customTrailer.youtube_key;
-        trailerHref = `https://www.youtube.com/watch?v=${customTrailer.youtube_key}`;
+      [customVideos, hiddenKeys] = await Promise.all([
+        listMovieVideoRecords(movie.id),
+        listHiddenVideoKeys(movie.id).then((keys) => new Set(keys)),
+      ]);
+    } catch {
+      /* non-critical */
+    }
+  }
+
+  let trailerKey: string | null = null;
+  let trailerHref = `/movie/${movie.id}`;
+
+  const adminTrailer = customVideos.find(
+    (v) =>
+      (v.category === "trailer" || v.category === "teaser") &&
+      v.added_by_user_id != null &&
+      !hiddenKeys.has(v.youtube_key)
+  );
+  if (adminTrailer) {
+    trailerKey = adminTrailer.youtube_key;
+    trailerHref = ytWatch(adminTrailer.youtube_key);
+  }
+
+  if (!trailerKey) {
+    const tmdbTrailerInfo = getTrailerInfo(enhancements.videos, movie.id);
+    if (tmdbTrailerInfo.key && !hiddenKeys.has(tmdbTrailerInfo.key)) {
+      trailerKey = tmdbTrailerInfo.key;
+      trailerHref = tmdbTrailerInfo.href;
+    }
+  }
+
+  if (!trailerKey) {
+    try {
+      const autoTrailers = await getMovieTrailers(movie.id, movie.title);
+      const best =
+        autoTrailers.find((t) => t.category === "trailer" && !hiddenKeys.has(t.youtubeKey)) ??
+        autoTrailers.find((t) => !hiddenKeys.has(t.youtubeKey));
+      if (best) {
+        trailerKey = best.youtubeKey;
+        trailerHref = ytWatch(best.youtubeKey);
       }
     } catch {
       /* non-critical */

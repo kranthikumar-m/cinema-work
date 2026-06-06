@@ -29,7 +29,14 @@ import { MovieDetailClient } from "./client";
 import { enrichMovieAssets, getMovieDetailsWithFallback } from "@/services/telugu-movies";
 import { attachImdbRating } from "@/services/omdb";
 import { resolvePreferredBackdrop } from "@/services/movie-backdrops";
-import { getCustomImageRecordsByMovieId, listMovieVideoRecords, hasDatabaseConfiguration } from "@/lib/database";
+import { getMovieMusic, type MovieMusic } from "@/services/movie-music";
+import { getMovieTrailers, type MovieTrailerVideo } from "@/services/movie-trailers";
+import {
+  getCustomImageRecordsByMovieId,
+  listMovieVideoRecords,
+  listHiddenVideoKeys,
+  hasDatabaseConfiguration,
+} from "@/lib/database";
 import { VideoSection } from "@/components/movie/VideoSection";
 import type { VideoItem } from "@/components/movie/VideoSection";
 import type { MovieImage } from "@/types/tmdb";
@@ -96,23 +103,29 @@ export default async function MovieDetailPage({ params }: Props) {
     notFound();
   }
 
-  const tmdbTrailer = videos.results.find(
-    (v) => v.type === "Trailer" && v.site === "YouTube"
-  );
   const director = credits.crew.find((c) => c.job === "Director");
   const usProviders = providers.results?.US;
   const similarTeluguMovies = similar.results
     .filter((item) => item.original_language === "te")
     .slice(0, 6);
   const backdropSelection = await resolvePreferredBackdrop(movie, movie.backdrop_path);
-  const [customImages, customVideoRows] = await Promise.all([
-    hasDatabaseConfiguration()
-      ? getCustomImageRecordsByMovieId(id)
-      : Promise.resolve([]),
-    hasDatabaseConfiguration()
-      ? listMovieVideoRecords(id)
-      : Promise.resolve([]),
-  ]);
+  const [customImages, customVideoRows, music, autoTrailers, hiddenKeyList] =
+    await Promise.all([
+      hasDatabaseConfiguration()
+        ? getCustomImageRecordsByMovieId(id)
+        : Promise.resolve([]),
+      hasDatabaseConfiguration()
+        ? listMovieVideoRecords(id)
+        : Promise.resolve([]),
+      getMovieMusic(id, movie.title, movie.release_date || null).catch(
+        (): MovieMusic => ({ album: null, songs: [] })
+      ),
+      getMovieTrailers(id, movie.title).catch((): MovieTrailerVideo[] => []),
+      hasDatabaseConfiguration()
+        ? listHiddenVideoKeys(id)
+        : Promise.resolve([] as string[]),
+    ]);
+  const hiddenKeys = new Set(hiddenKeyList);
   const customBackdrop = customImages.find((r) => r.image_type === "backdrop");
   const customPoster = customImages.find((r) => r.image_type === "poster");
 
@@ -147,9 +160,6 @@ export default async function MovieDetailPage({ params }: Props) {
   }
   const hasPhotos = images.backdrops.length > 0 || images.posters.length > 0 || customGalleryImages.length > 0;
 
-  const customTrailer = customVideoRows.find((r) => r.category === "trailer");
-  const trailerKey = tmdbTrailer?.key ?? customTrailer?.youtube_key ?? null;
-
   const tmdbVideoTypeToCategory = (type: string, name: string): string => {
     const lower = type.toLowerCase();
     if (lower === "trailer") return "trailer";
@@ -159,27 +169,62 @@ export default async function MovieDetailPage({ params }: Props) {
     return "miscellaneous";
   };
 
-  const tmdbVideoItems: VideoItem[] = videos.results
+  // Assemble the detail-page videos from authoritative sources, deduped by key:
+  //   • Trailers/teasers  → getMovieTrailers (TMDB, else auto-fetched)
+  //   • Songs             → getMovieMusic (mirrors the /music page exactly, so
+  //                          stale TMDB / service-persisted song rows never show)
+  //   • Reviews / misc    → TMDB
+  //   • Admin-curated     → movie_videos rows an admin explicitly added/fixed
+  //                          (added_by_user_id set); these win and carry a
+  //                          recordId so admins can manage them.
+  // Hidden keys (admin "Remove") are filtered out everywhere.
+  const adminCustomItems: VideoItem[] = customVideoRows
+    .filter((r) => r.added_by_user_id != null)
+    .map((r) => ({
+      key: r.youtube_key,
+      title: r.title,
+      category: r.category,
+      source: "custom" as const,
+      recordId: r.id,
+    }));
+
+  const trailerItems: VideoItem[] = autoTrailers.map((t) => ({
+    key: t.youtubeKey,
+    title: t.title,
+    category: t.category,
+    source: "tmdb" as const,
+  }));
+
+  const songItems: VideoItem[] = music.songs
+    .filter((s) => s.youtubeKey)
+    .map((s) => ({
+      key: s.youtubeKey as string,
+      title: s.title,
+      category: "song",
+      source: "tmdb" as const,
+    }));
+
+  const otherTmdbItems: VideoItem[] = videos.results
     .filter((v) => v.site === "YouTube" && v.key)
     .map((v) => ({
       key: v.key,
       title: v.name,
       category: tmdbVideoTypeToCategory(v.type, v.name),
       source: "tmdb" as const,
-    }));
+    }))
+    .filter((v) => v.category === "review" || v.category === "miscellaneous");
 
-  const customVideoItems: VideoItem[] = customVideoRows.map((r) => ({
-    key: r.youtube_key,
-    title: r.title,
-    category: r.category,
-    source: "custom" as const,
-  }));
+  const videosByKey = new Map<string, VideoItem>();
+  for (const item of [...adminCustomItems, ...trailerItems, ...songItems, ...otherTmdbItems]) {
+    if (hiddenKeys.has(item.key)) continue;
+    if (!videosByKey.has(item.key)) videosByKey.set(item.key, item);
+  }
+  const allVideos = Array.from(videosByKey.values());
 
-  const existingKeys = new Set(tmdbVideoItems.map((v) => v.key));
-  const allVideos = [
-    ...tmdbVideoItems,
-    ...customVideoItems.filter((v) => !existingKeys.has(v.key)),
-  ];
+  const firstTrailer =
+    allVideos.find((v) => v.category === "trailer") ??
+    allVideos.find((v) => v.category === "teaser");
+  const trailerKey = firstTrailer?.key ?? null;
 
   return (
     <div>
@@ -292,7 +337,7 @@ export default async function MovieDetailPage({ params }: Props) {
           <div id="videos" className="mt-12 scroll-mt-[100px]">
             <SectionHeader title="Videos" />
             <Suspense fallback={null}>
-              <VideoSection videos={allVideos} />
+              <VideoSection videos={allVideos} movieId={id} movieTitle={movie.title} />
             </Suspense>
           </div>
         )}

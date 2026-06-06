@@ -5,16 +5,22 @@ import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Play } from "lucide-react";
 import { VideoPlayerModal } from "@/components/movie/VideoPlayerModal";
+import { VideoAdminMenu } from "@/components/movie/VideoAdminControls";
+import { useOptionalAuthUser } from "@/components/auth/AuthUserProvider";
 
 export interface VideoItem {
   key: string;
   title: string;
   category: string;
   source: "tmdb" | "custom";
+  /** Set when backed by an admin-added custom row (enables in-place delete). */
+  recordId?: number | null;
 }
 
 interface VideoSectionProps {
   videos: VideoItem[];
+  movieId: number;
+  movieTitle: string;
 }
 
 const CATEGORY_ORDER = ["trailer", "teaser", "song", "review", "miscellaneous"];
@@ -54,7 +60,10 @@ function VideoCard({ video, onPlay }: { video: VideoItem; onPlay: () => void }) 
   );
 }
 
-export function VideoSection({ videos }: VideoSectionProps) {
+export function VideoSection({ videos, movieId, movieTitle }: VideoSectionProps) {
+  const auth = useOptionalAuthUser();
+  const isAdmin = auth?.user?.role === "admin";
+
   const categorized = CATEGORY_ORDER
     .map((cat) => ({
       category: cat,
@@ -107,11 +116,19 @@ export function VideoSection({ videos }: VideoSectionProps) {
 
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
         {activeGroup.items.map((video) => (
-          <VideoCard
-            key={video.key}
-            video={video}
-            onPlay={() => setPlayingVideo(video)}
-          />
+          <div key={video.key} className="group relative">
+            <VideoCard video={video} onPlay={() => setPlayingVideo(video)} />
+            {isAdmin && (
+              <VideoAdminMenu
+                movieId={movieId}
+                movieTitle={movieTitle}
+                videoKey={video.key}
+                videoTitle={video.title}
+                category={video.category}
+                recordId={video.recordId}
+              />
+            )}
+          </div>
         ))}
       </div>
 
