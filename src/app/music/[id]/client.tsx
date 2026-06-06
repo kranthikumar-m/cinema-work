@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Eye, ThumbsUp, Youtube, Share2, Check, AudioLines } from "lucide-react";
 import type { MovieAlbumInfo, MovieSong } from "@/services/movie-music";
 
@@ -20,6 +21,7 @@ function formatCount(value: number | null): string | null {
 }
 
 interface MusicPlayerClientProps {
+  movieId: number;
   movieTitle: string;
   albumImage: string;
   album: MovieAlbumInfo | null;
@@ -28,19 +30,23 @@ interface MusicPlayerClientProps {
 }
 
 export function MusicPlayerClient({
+  movieId,
   movieTitle,
   albumImage,
   album,
   songs,
   cast,
 }: MusicPlayerClientProps) {
+  const moviePageHref = `/movie/${movieId}`;
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [copied, setCopied] = useState(false);
 
   if (!songs.length) {
     return (
       <div className="app-page-shell py-20 text-center">
-        <h1 className="text-2xl font-bold text-[var(--color-text)]">{movieTitle}</h1>
+        <Link href={moviePageHref} className="text-2xl font-bold text-[var(--color-text)] transition hover:text-[var(--color-accent)]">
+          {movieTitle}
+        </Link>
         <p className="mt-4 text-[var(--color-muted-strong)]">
           No soundtrack was found for this title yet.
         </p>
@@ -89,17 +95,21 @@ export function MusicPlayerClient({
         <div className="grid gap-10 lg:grid-cols-[280px_minmax(0,1fr)_380px]">
           {/* Left — album art + credits */}
           <aside className="space-y-7">
-            <div className="mx-auto aspect-square w-52 overflow-hidden rounded-full shadow-[0_24px_70px_rgba(7,10,18,0.55)] ring-2 ring-[rgba(194,154,98,0.4)] lg:mx-0">
+            <Link
+              href={moviePageHref}
+              aria-label={`Go to ${movieTitle}`}
+              className="group mx-auto block aspect-square w-52 overflow-hidden rounded-full shadow-[0_24px_70px_rgba(7,10,18,0.55)] ring-2 ring-[rgba(194,154,98,0.4)] transition hover:ring-[rgba(194,154,98,0.8)] focus-visible:outline-none focus-visible:ring-[rgba(194,154,98,0.8)] lg:mx-0"
+            >
               <Image
                 src={albumImage}
                 alt={movieTitle}
                 width={208}
                 height={208}
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                 unoptimized={isRemoteImage}
                 priority
               />
-            </div>
+            </Link>
             <dl className="space-y-4">
               <MetaRow label="Album" value={album?.name ?? movieTitle} />
               <MetaRow label="Singers" value={selected.artists.join(", ")} />
@@ -117,7 +127,15 @@ export function MusicPlayerClient({
             </p>
             <h1 className="mt-1.5 font-[family-name:var(--font-heading)] text-2xl font-bold text-[var(--color-text)] md:text-[2rem] md:leading-tight">
               {selected.title}
-              <span className="font-normal text-[var(--color-muted)]"> — {movieTitle}</span>
+              <span className="font-normal text-[var(--color-muted)]">
+                {" "}—{" "}
+                <Link
+                  href={moviePageHref}
+                  className="transition hover:text-[var(--color-accent)] hover:underline"
+                >
+                  {movieTitle}
+                </Link>
+              </span>
             </h1>
 
             <div className="mt-4 flex flex-wrap items-center gap-5 text-sm text-[var(--color-muted-strong)]">

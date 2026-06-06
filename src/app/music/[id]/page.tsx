@@ -50,6 +50,7 @@ export default async function MusicPlayerPage({ params }: Props) {
 
   return (
     <MusicPlayerClient
+      movieId={id}
       movieTitle={movieTitle}
       albumImage={albumImage}
       album={music.album}
