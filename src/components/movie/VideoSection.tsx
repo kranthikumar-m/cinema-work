@@ -115,7 +115,7 @@ export function VideoSection({ videos, movieId, movieTitle }: VideoSectionProps)
           </button>
         ))}
 
-        {hasSongs && (
+        {activeTab === "song" && hasSongs && (
           <Link
             href={`/music/${movieId}`}
             className="group ml-auto inline-flex items-center gap-1.5 rounded-full border border-[rgba(194,154,98,0.32)] px-4 py-2 text-sm font-medium text-[var(--color-accent)] transition hover:border-[rgba(194,154,98,0.6)] hover:bg-[var(--color-accent-soft)]"
