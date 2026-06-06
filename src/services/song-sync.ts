@@ -234,3 +234,37 @@ export async function searchSongsForMovie(
     likeCount: c.likeCount,
   }));
 }
+
+/**
+ * Raw song-video candidates for an arbitrary query (movie-level or per-track),
+ * filtered ONLY by duration and junk patterns — not by movie title or date — so
+ * callers that match against a known track list (the music feature) aren't
+ * blocked by movie-name mismatches. Includes view/like stats.
+ */
+export async function searchYouTubeSongCandidates(
+  query: string
+): Promise<SongSearchResult[]> {
+  const items = await searchYouTube(query, null);
+  if (!items.length) return [];
+
+  const details = await getVideoDetails(items.map((item) => item.id.videoId));
+  const out: SongSearchResult[] = [];
+
+  for (const video of details) {
+    const duration = parseIsoDuration(video.contentDetails.duration);
+    if (duration < MIN_DURATION_SECONDS || duration > MAX_DURATION_SECONDS) continue;
+    if (isJunkTitle(video.snippet.title)) continue;
+
+    out.push({
+      videoId: video.id,
+      title: video.snippet.title,
+      channelTitle: video.snippet.channelTitle,
+      thumbnailUrl: `https://img.youtube.com/vi/${video.id}/mqdefault.jpg`,
+      durationSeconds: duration,
+      viewCount: parseStat(video.statistics?.viewCount),
+      likeCount: parseStat(video.statistics?.likeCount),
+    });
+  }
+
+  return out;
+}

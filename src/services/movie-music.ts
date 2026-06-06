@@ -1,7 +1,7 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
-import { findMovieAlbum } from "@/services/spotify";
-import { searchSongsForMovie, type SongSearchResult } from "@/services/song-sync";
+import { findMovieAlbum, type SpotifyTrack } from "@/services/spotify";
+import { searchYouTubeSongCandidates, type SongSearchResult } from "@/services/song-sync";
 import { getTitleSimilarityScore } from "@/lib/title-matching";
 import {
   hasDatabaseConfiguration,
@@ -11,15 +11,18 @@ import {
 
 /**
  * On-demand soundtrack for a movie: Spotify album/track list → a YouTube video
- * per track (one quota-friendly search, matched by title) → Genius lyrics.
- * Cached 7 days per movie (so the external calls run once), and matched songs
- * are written into `movie_videos` (category "song") so they also surface in the
- * detail page's Videos → Songs tab. Degrades gracefully when any key/source is
- * missing (album null, no YouTube key, no lyrics → null fields).
+ * per track. One movie-level search covers the popular songs; tracks it misses
+ * fall back to a bounded number of per-track searches. Each track is matched by
+ * title (qualifiers like "(Telugu)" stripped) preferring Video Song → Lyrical →
+ * other, never jukeboxes. Cached 7 days per movie, and matched songs are written
+ * into `movie_videos` (category "song") so they also surface in the detail
+ * page's Videos → Songs tab. Degrades gracefully when a key/source is missing.
  */
 
 const MUSIC_CACHE_SECONDS = 604800; // 7 days
 const YOUTUBE_MATCH_MIN_SCORE = 0.7;
+// Max extra per-track YouTube searches per movie (bounds quota for big albums).
+const MAX_TRACK_SEARCHES = 6;
 
 export interface MovieSong {
   spotifyId: string;
@@ -147,6 +150,28 @@ async function persistSongsToVideos(movieId: number, songs: MovieSong[]): Promis
   }
 }
 
+function cleanForQuery(value: string): string {
+  return value
+    .replace(/[^\w\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function toSong(track: SpotifyTrack, match: SongSearchResult | null): MovieSong {
+  return {
+    spotifyId: track.spotifyId,
+    trackNumber: track.trackNumber,
+    title: track.title,
+    artists: track.artists,
+    durationMs: track.durationMs,
+    youtubeKey: match?.videoId ?? null,
+    youtubeViews: match?.viewCount ?? null,
+    youtubeLikes: match?.likeCount ?? null,
+    lyrics: null,
+    geniusUrl: null,
+  };
+}
+
 async function buildMovieMusic(
   movieId: number,
   movieTitle: string,
@@ -159,32 +184,37 @@ async function buildMovieMusic(
   );
   if (!album || !album.tracks.length) return EMPTY_MUSIC;
 
-  // One YouTube search for the whole movie (quota-friendly). Release date is
-  // intentionally NOT passed — song uploads often fall outside a movie's
-  // release window, and we match candidates by Spotify track title anyway.
-  const youtubeCandidates = await searchSongsForMovie(movieTitle, null).catch(
-    () => [] as SongSearchResult[]
-  );
-
+  const cleanTitle = cleanForQuery(movieTitle);
   const usedVideoIds = new Set<string>();
-  const songs: MovieSong[] = album.tracks.map((track) => {
-    const match = matchYouTube(track.title, youtubeCandidates, usedVideoIds);
-    const videoId = match?.videoId ?? null;
-    if (videoId) usedVideoIds.add(videoId);
 
-    return {
-      spotifyId: track.spotifyId,
-      trackNumber: track.trackNumber,
-      title: track.title,
-      artists: track.artists,
-      durationMs: track.durationMs,
-      youtubeKey: videoId,
-      youtubeViews: videoId ? match?.viewCount ?? null : null,
-      youtubeLikes: videoId ? match?.likeCount ?? null : null,
-      lyrics: null,
-      geniusUrl: null,
-    };
+  // 1) One movie-level search covers the popular songs (quota-friendly). No
+  // movie-title or date filtering — we match candidates by Spotify track title.
+  const movieCandidates = await searchYouTubeSongCandidates(
+    `"${cleanTitle}" Telugu movie songs`
+  ).catch(() => [] as SongSearchResult[]);
+
+  const songs: MovieSong[] = album.tracks.map((track) => {
+    const match = matchYouTube(track.title, movieCandidates, usedVideoIds);
+    if (match) usedVideoIds.add(match.videoId);
+    return toSong(track, match);
   });
+
+  // 2) Per-track fallback for songs the movie-level search missed (bounded to
+  // keep YouTube quota in check). Sequential to respect rate limits.
+  let budget = MAX_TRACK_SEARCHES;
+  for (let i = 0; i < songs.length && budget > 0; i += 1) {
+    if (songs[i].youtubeKey) continue;
+    budget -= 1;
+    const track = album.tracks[i];
+    const candidates = await searchYouTubeSongCandidates(
+      `${coreTitle(track.title)} ${cleanTitle} song`
+    ).catch(() => [] as SongSearchResult[]);
+    const match = matchYouTube(track.title, candidates, usedVideoIds);
+    if (match) {
+      usedVideoIds.add(match.videoId);
+      songs[i] = toSong(track, match);
+    }
+  }
 
   await persistSongsToVideos(movieId, songs);
 
@@ -207,7 +237,7 @@ export function getMovieMusic(
 ): Promise<MovieMusic> {
   return unstable_cache(
     () => buildMovieMusic(movieId, movieTitle, releaseDate),
-    ["movie-music-v2", String(movieId)],
+    ["movie-music-v3", String(movieId)],
     { revalidate: MUSIC_CACHE_SECONDS, tags: [`movie-music-${movieId}`] }
   )();
 }
