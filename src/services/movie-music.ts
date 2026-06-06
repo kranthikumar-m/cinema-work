@@ -1,7 +1,6 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
 import { findMovieAlbum } from "@/services/spotify";
-import { getLyricsForTrack } from "@/services/genius";
 import { searchSongsForMovie, type SongSearchResult } from "@/services/song-sync";
 import { getTitleSimilarityScore } from "@/lib/title-matching";
 import {
@@ -58,6 +57,12 @@ function normalize(value: string): string {
     .trim();
 }
 
+// Track title without parenthetical/bracketed qualifiers like "(Telugu)" or
+// "(Complex Song)" — these rarely appear verbatim in YouTube song titles.
+function coreTitle(value: string): string {
+  return normalize(value.replace(/[([][^)\]]*[)\]]/g, " "));
+}
+
 // Excluded entirely (compilations, not a single song).
 const EXCLUDE_TIER = 99;
 
@@ -96,7 +101,7 @@ function matchYouTube(
   candidates: SongSearchResult[],
   excludeIds: Set<string>
 ): SongSearchResult | null {
-  const normTrack = normalize(trackTitle);
+  const normTrack = coreTitle(trackTitle);
   if (!normTrack) return null;
 
   const matches = candidates.filter(
@@ -154,24 +159,18 @@ async function buildMovieMusic(
   );
   if (!album || !album.tracks.length) return EMPTY_MUSIC;
 
-  // One YouTube search for the whole movie (quota-friendly).
-  const youtubeCandidates = await searchSongsForMovie(movieTitle, releaseDate).catch(
+  // One YouTube search for the whole movie (quota-friendly). Release date is
+  // intentionally NOT passed — song uploads often fall outside a movie's
+  // release window, and we match candidates by Spotify track title anyway.
+  const youtubeCandidates = await searchSongsForMovie(movieTitle, null).catch(
     () => [] as SongSearchResult[]
   );
 
-  // Lyrics in parallel (per track), best-effort.
-  const lyricsResults = await Promise.all(
-    album.tracks.map((track) =>
-      getLyricsForTrack(track.title, track.artists[0]).catch(() => null)
-    )
-  );
-
   const usedVideoIds = new Set<string>();
-  const songs: MovieSong[] = album.tracks.map((track, index) => {
+  const songs: MovieSong[] = album.tracks.map((track) => {
     const match = matchYouTube(track.title, youtubeCandidates, usedVideoIds);
     const videoId = match?.videoId ?? null;
     if (videoId) usedVideoIds.add(videoId);
-    const lyrics = lyricsResults[index];
 
     return {
       spotifyId: track.spotifyId,
@@ -182,8 +181,8 @@ async function buildMovieMusic(
       youtubeKey: videoId,
       youtubeViews: videoId ? match?.viewCount ?? null : null,
       youtubeLikes: videoId ? match?.likeCount ?? null : null,
-      lyrics: lyrics?.lyrics ?? null,
-      geniusUrl: lyrics?.url ?? null,
+      lyrics: null,
+      geniusUrl: null,
     };
   });
 
@@ -208,7 +207,7 @@ export function getMovieMusic(
 ): Promise<MovieMusic> {
   return unstable_cache(
     () => buildMovieMusic(movieId, movieTitle, releaseDate),
-    ["movie-music", String(movieId)],
+    ["movie-music-v2", String(movieId)],
     { revalidate: MUSIC_CACHE_SECONDS, tags: [`movie-music-${movieId}`] }
   )();
 }
