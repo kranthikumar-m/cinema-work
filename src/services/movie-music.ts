@@ -22,7 +22,7 @@ import {
 const MUSIC_CACHE_SECONDS = 604800; // 7 days
 const YOUTUBE_MATCH_MIN_SCORE = 0.7;
 // Max extra per-track YouTube searches per movie (bounds quota for big albums).
-const MAX_TRACK_SEARCHES = 6;
+const MAX_TRACK_SEARCHES = 8;
 
 export interface MovieSong {
   spotifyId: string;
@@ -94,33 +94,71 @@ function isTrackMatch(trackTitle: string, normTrack: string, candidate: SongSear
   return getTitleSimilarityScore(trackTitle, candidate.title) >= YOUTUBE_MATCH_MIN_SCORE;
 }
 
+// Known music-label / official uploaders — strongly preferred over fan channels.
+const OFFICIAL_CHANNEL_HINTS = [
+  "saregama", "sony music", "aditya music", "lahari", "mango music", "t-series",
+  "tseries", "anand audio", "think music", "divo", "muzik247", "junglee music",
+  "zee music", "speed records", "madhura audio", "amrutha", "geetha arts",
+];
+const OTHER_LANGUAGE_RE = /\b(tamil|hindi|kannada|malayalam|bengali|marathi)\b/;
+
+function isOfficialChannel(channel: string): boolean {
+  const c = channel.toLowerCase();
+  return OFFICIAL_CHANNEL_HINTS.some((hint) => c.includes(hint));
+}
+
 /**
- * Picks the best YouTube video for a Spotify track: among candidates that match
- * the track title (and aren't already used), prefer Video Song → Lyrical →
- * other, breaking ties by view count. Returns null if nothing matches.
+ * Scores a candidate for a track. Correctness signals (official uploader, a
+ * duration close to the Spotify track, the Telugu cut) dominate, with the
+ * Video Song > Lyrical > other type preference and view count as lighter
+ * signals. This keeps an official "audio"/theme above a higher-viewed fan
+ * "lyrical" tribute, and the Telugu version above other-language cuts.
+ */
+function scoreCandidate(trackDurationSec: number, candidate: SongSearchResult): number {
+  let score = 0;
+  const title = candidate.title.toLowerCase();
+
+  if (isOfficialChannel(candidate.channelTitle)) score += 100;
+
+  if (/telugu/.test(title)) score += 10;
+  else if (OTHER_LANGUAGE_RE.test(title)) score -= 60;
+
+  const delta = Math.abs((candidate.durationSeconds ?? 0) - trackDurationSec);
+  if (delta <= 15) score += 50;
+  else if (delta <= 40) score += 25;
+  else if (delta >= 90) score -= 40;
+
+  score += (4 - videoTypeTier(candidate.title)) * 12;
+  score += Math.min(8, Math.log10((candidate.viewCount ?? 0) + 1));
+
+  return score;
+}
+
+/**
+ * Picks the best YouTube video for a Spotify track: among candidates whose
+ * title matches the track (and aren't already used), the highest-scoring one
+ * (see scoreCandidate). Returns null if nothing matches.
  */
 function matchYouTube(
-  trackTitle: string,
+  track: { title: string; durationMs: number },
   candidates: SongSearchResult[],
   excludeIds: Set<string>
 ): SongSearchResult | null {
-  const normTrack = coreTitle(trackTitle);
+  const normTrack = coreTitle(track.title);
   if (!normTrack) return null;
+  const trackDurationSec = track.durationMs / 1000;
 
   const matches = candidates.filter(
     (candidate) =>
       !excludeIds.has(candidate.videoId) &&
       videoTypeTier(candidate.title) !== EXCLUDE_TIER &&
-      isTrackMatch(trackTitle, normTrack, candidate)
+      isTrackMatch(track.title, normTrack, candidate)
   );
   if (!matches.length) return null;
 
-  matches.sort((a, b) => {
-    const tierDiff = videoTypeTier(a.title) - videoTypeTier(b.title);
-    if (tierDiff !== 0) return tierDiff;
-    return (b.viewCount ?? 0) - (a.viewCount ?? 0);
-  });
-
+  matches.sort(
+    (a, b) => scoreCandidate(trackDurationSec, b) - scoreCandidate(trackDurationSec, a)
+  );
   return matches[0];
 }
 
@@ -194,7 +232,7 @@ async function buildMovieMusic(
   ).catch(() => [] as SongSearchResult[]);
 
   const songs: MovieSong[] = album.tracks.map((track) => {
-    const match = matchYouTube(track.title, movieCandidates, usedVideoIds);
+    const match = matchYouTube(track, movieCandidates, usedVideoIds);
     if (match) usedVideoIds.add(match.videoId);
     return toSong(track, match);
   });
@@ -209,7 +247,7 @@ async function buildMovieMusic(
     const candidates = await searchYouTubeSongCandidates(
       `${coreTitle(track.title)} ${cleanTitle} song`
     ).catch(() => [] as SongSearchResult[]);
-    const match = matchYouTube(track.title, candidates, usedVideoIds);
+    const match = matchYouTube(track, candidates, usedVideoIds);
     if (match) {
       usedVideoIds.add(match.videoId);
       songs[i] = toSong(track, match);
@@ -237,7 +275,7 @@ export function getMovieMusic(
 ): Promise<MovieMusic> {
   return unstable_cache(
     () => buildMovieMusic(movieId, movieTitle, releaseDate),
-    ["movie-music-v3", String(movieId)],
+    ["movie-music-v4", String(movieId)],
     { revalidate: MUSIC_CACHE_SECONDS, tags: [`movie-music-${movieId}`] }
   )();
 }

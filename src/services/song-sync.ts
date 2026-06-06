@@ -107,7 +107,11 @@ function getSearchDateRange(releaseDate: string | null): { after: string; before
   };
 }
 
-async function searchYouTube(query: string, releaseDate: string | null = null): Promise<YouTubeSearchItem[]> {
+async function searchYouTube(
+  query: string,
+  releaseDate: string | null = null,
+  maxResults: number = MAX_SEARCH_RESULTS
+): Promise<YouTubeSearchItem[]> {
   if (!env.YOUTUBE_API_KEY) return [];
 
   const url = new URL("https://www.googleapis.com/youtube/v3/search");
@@ -115,7 +119,7 @@ async function searchYouTube(query: string, releaseDate: string | null = null): 
   url.searchParams.set("q", query);
   url.searchParams.set("type", "video");
   url.searchParams.set("videoCategoryId", "10");
-  url.searchParams.set("maxResults", String(MAX_SEARCH_RESULTS));
+  url.searchParams.set("maxResults", String(maxResults));
   url.searchParams.set("key", env.YOUTUBE_API_KEY);
 
   const dateRange = getSearchDateRange(releaseDate);
@@ -242,9 +246,11 @@ export async function searchSongsForMovie(
  * blocked by movie-name mismatches. Includes view/like stats.
  */
 export async function searchYouTubeSongCandidates(
-  query: string
+  query: string,
+  minDurationSeconds = 30
 ): Promise<SongSearchResult[]> {
-  const items = await searchYouTube(query, null);
+  // 50 results (same quota as 25) for better coverage of large albums.
+  const items = await searchYouTube(query, null, 50);
   if (!items.length) return [];
 
   const details = await getVideoDetails(items.map((item) => item.id.videoId));
@@ -252,7 +258,7 @@ export async function searchYouTubeSongCandidates(
 
   for (const video of details) {
     const duration = parseIsoDuration(video.contentDetails.duration);
-    if (duration < MIN_DURATION_SECONDS || duration > MAX_DURATION_SECONDS) continue;
+    if (duration < minDurationSeconds || duration > MAX_DURATION_SECONDS) continue;
     if (isJunkTitle(video.snippet.title)) continue;
 
     out.push({
