@@ -3,7 +3,8 @@
 import { useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { Play } from "lucide-react";
+import Link from "next/link";
+import { Play, Disc3, ChevronRight } from "lucide-react";
 import { VideoPlayerModal } from "@/components/movie/VideoPlayerModal";
 import { VideoAdminMenu } from "@/components/movie/VideoAdminControls";
 import { useOptionalAuthUser } from "@/components/auth/AuthUserProvider";
@@ -90,6 +91,7 @@ export function VideoSection({ videos, movieId, movieTitle }: VideoSectionProps)
   const [playingVideo, setPlayingVideo] = useState<VideoItem | null>(null);
 
   const activeGroup = allCategories.find((g) => g.category === activeTab) ?? allCategories[0];
+  const hasSongs = videos.some((v) => v.category === "song");
 
   const handleClose = useCallback(() => setPlayingVideo(null), []);
 
@@ -97,7 +99,7 @@ export function VideoSection({ videos, movieId, movieTitle }: VideoSectionProps)
 
   return (
     <>
-      <div className="mb-5 flex flex-wrap gap-2">
+      <div className="mb-5 flex flex-wrap items-center gap-2">
         {allCategories.map((group) => (
           <button
             key={group.category}
@@ -112,6 +114,17 @@ export function VideoSection({ videos, movieId, movieTitle }: VideoSectionProps)
             {group.label} ({group.items.length})
           </button>
         ))}
+
+        {hasSongs && (
+          <Link
+            href={`/music/${movieId}`}
+            className="group ml-auto inline-flex items-center gap-1.5 rounded-full border border-[rgba(194,154,98,0.32)] px-4 py-2 text-sm font-medium text-[var(--color-accent)] transition hover:border-[rgba(194,154,98,0.6)] hover:bg-[var(--color-accent-soft)]"
+          >
+            <Disc3 className="h-4 w-4" />
+            Music player
+            <ChevronRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+          </Link>
+        )}
       </div>
 
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
