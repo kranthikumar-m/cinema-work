@@ -117,10 +117,15 @@ export default async function MovieDetailPage({ params }: Props) {
       hasDatabaseConfiguration()
         ? listMovieVideoRecords(id)
         : Promise.resolve([]),
-      getMovieMusic(id, movie.title, movie.release_date || null).catch(
-        (): MovieMusic => ({ album: null, songs: [] })
+      getMovieMusic(
+        id,
+        movie.title,
+        movie.release_date || null,
+        movie.original_language === "te"
+      ).catch((): MovieMusic => ({ album: null, songs: [] })),
+      getMovieTrailers(id, movie.title, movie.original_language === "te").catch(
+        (): MovieTrailerVideo[] => []
       ),
-      getMovieTrailers(id, movie.title).catch((): MovieTrailerVideo[] => []),
       hasDatabaseConfiguration()
         ? listHiddenVideoKeys(id)
         : Promise.resolve([] as string[]),

@@ -71,3 +71,38 @@ export function getTitleSimilarityScore(a: string, b: string) {
 
   return Math.max(0, Math.min(0.97, tokenScore * 0.45 + characterScore * 0.55));
 }
+
+/**
+ * Romanized Telugu is written inconsistently: long vowels are doubled by some
+ * and single by others (రా → "Raa" vs "Ra", సా → "Saa" vs "Sa"), consonants
+ * are sometimes geminated ("Rakkasa" vs "Rakasa"), and w/v are interchangeable.
+ * Collapsing consecutive duplicate letters and normalizing w→v yields a
+ * canonical key so these spellings compare as equal.
+ *
+ * This reflects transliteration noise specific to Indic scripts, so callers
+ * should only use it for Telugu titles — applying it to, say, English titles
+ * would wrongly merge legitimately doubled letters ("aa" in "Aaron").
+ */
+export function canonicalizeTeluguRomanization(title: string): string {
+  return compactNormalizedMovieTitle(title)
+    .replace(/w/g, "v")
+    .replace(/(.)\1+/g, "$1");
+}
+
+/**
+ * Title similarity tuned for Telugu transliteration variants. Returns the
+ * stronger of the plain score and a score computed on the Telugu-canonical
+ * forms, so "Raakaasa" matches "Rakasa".
+ */
+export function getTeluguTitleSimilarityScore(a: string, b: string): number {
+  const base = getTitleSimilarityScore(a, b);
+  const canonicalA = canonicalizeTeluguRomanization(a);
+  const canonicalB = canonicalizeTeluguRomanization(b);
+
+  if (!canonicalA || !canonicalB) return base;
+  if (canonicalA === canonicalB) return Math.max(base, 0.99);
+  if (canonicalA.includes(canonicalB) || canonicalB.includes(canonicalA)) {
+    return Math.max(base, 0.93);
+  }
+  return Math.max(base, getTitleSimilarityScore(canonicalA, canonicalB));
+}

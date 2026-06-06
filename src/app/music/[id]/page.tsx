@@ -37,7 +37,12 @@ export default async function MusicPlayerPage({ params }: Props) {
     ]);
     movieTitle = movie.title;
     cast = (credits.cast ?? []).slice(0, 6).map((member) => member.name);
-    music = await getMovieMusic(id, movie.title, movie.release_date || null);
+    music = await getMovieMusic(
+      id,
+      movie.title,
+      movie.release_date || null,
+      movie.original_language === "te"
+    );
     albumImage = music.album?.imageUrl ?? getMoviePosterUrl(movie, "w500");
   } catch {
     notFound();

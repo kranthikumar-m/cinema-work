@@ -5,7 +5,10 @@ import {
   searchYouTubeTrailerCandidates,
   type SongSearchResult,
 } from "@/services/song-sync";
-import { getTitleSimilarityScore } from "@/lib/title-matching";
+import {
+  getTitleSimilarityScore,
+  getTeluguTitleSimilarityScore,
+} from "@/lib/title-matching";
 import {
   hasDatabaseConfiguration,
   listMovieVideoRecords,
@@ -69,9 +72,16 @@ function isOfficialChannel(channel: string): boolean {
   return OFFICIAL_CHANNEL_HINTS.some((hint) => c.includes(hint));
 }
 
-function referencesMovie(movieCore: string, candidateTitle: string): boolean {
+function referencesMovie(
+  movieCore: string,
+  candidateTitle: string,
+  isTelugu: boolean
+): boolean {
   if (movieCore.length >= 3 && normalize(candidateTitle).includes(movieCore)) return true;
-  return getTitleSimilarityScore(movieCore, candidateTitle) >= 0.6;
+  const score = isTelugu
+    ? getTeluguTitleSimilarityScore(movieCore, candidateTitle)
+    : getTitleSimilarityScore(movieCore, candidateTitle);
+  return score >= 0.6;
 }
 
 function scoreTrailerCandidate(kind: TrailerKind, candidate: SongSearchResult): number {
@@ -96,7 +106,8 @@ function scoreTrailerCandidate(kind: TrailerKind, candidate: SongSearchResult): 
 function pickTrailerCandidate(
   movieTitle: string,
   kind: TrailerKind,
-  candidates: SongSearchResult[]
+  candidates: SongSearchResult[],
+  isTelugu: boolean
 ): SongSearchResult | null {
   const core = coreTitle(movieTitle);
   const matches = candidates
@@ -104,7 +115,7 @@ function pickTrailerCandidate(
       const title = candidate.title.toLowerCase();
       if (NON_PROMO_RE.test(title)) return false;
       if (!new RegExp(`\\b${kind}\\b`).test(title)) return false;
-      return referencesMovie(core, candidate.title);
+      return referencesMovie(core, candidate.title, isTelugu);
     })
     .map((candidate) => ({ candidate, score: scoreTrailerCandidate(kind, candidate) }))
     .sort((a, b) => b.score - a.score);
@@ -139,12 +150,13 @@ async function fillKind(
   movieId: number,
   movieTitle: string,
   cleanTitle: string,
-  kind: TrailerKind
+  kind: TrailerKind,
+  isTelugu: boolean
 ): Promise<MovieTrailerVideo | null> {
   const candidates = await searchYouTubeTrailerCandidates(
     `${cleanTitle} Telugu movie ${kind}`
   ).catch(() => [] as SongSearchResult[]);
-  const best = pickTrailerCandidate(movieTitle, kind, candidates);
+  const best = pickTrailerCandidate(movieTitle, kind, candidates, isTelugu);
   if (!best) return null;
   await persistTrailer(movieId, best.videoId, best.title, kind);
   return { youtubeKey: best.videoId, title: best.title, category: kind, source: "youtube" };
@@ -152,7 +164,8 @@ async function fillKind(
 
 async function buildMovieTrailers(
   movieId: number,
-  movieTitle: string
+  movieTitle: string,
+  isTelugu: boolean
 ): Promise<MovieTrailerVideo[]> {
   let tmdbVideos: { key: string; name: string; site: string; type: string; official: boolean }[] = [];
   try {
@@ -167,7 +180,12 @@ async function buildMovieTrailers(
   const tmdbTrailers = youtube.filter((v) => v.type === "Trailer").sort(byOfficial);
   const tmdbTeasers = youtube.filter((v) => v.type === "Teaser").sort(byOfficial);
 
-  const cleanTitle = cleanForQuery(movieTitle);
+  // For Telugu, collapse doubled letters in the search term ("Raakaasa" →
+  // "Rakasa") so the YouTube promo search uses the more common spelling.
+  const searchTitle = isTelugu
+    ? movieTitle.replace(/([a-zA-Z])\1+/g, "$1")
+    : movieTitle;
+  const cleanTitle = cleanForQuery(searchTitle);
   const out: MovieTrailerVideo[] = [];
 
   if (tmdbTrailers.length) {
@@ -175,7 +193,7 @@ async function buildMovieTrailers(
       out.push({ youtubeKey: v.key, title: v.name, category: "trailer", source: "tmdb" });
     }
   } else {
-    const filled = await fillKind(movieId, movieTitle, cleanTitle, "trailer");
+    const filled = await fillKind(movieId, movieTitle, cleanTitle, "trailer", isTelugu);
     if (filled) out.push(filled);
   }
 
@@ -184,7 +202,7 @@ async function buildMovieTrailers(
       out.push({ youtubeKey: v.key, title: v.name, category: "teaser", source: "tmdb" });
     }
   } else {
-    const filled = await fillKind(movieId, movieTitle, cleanTitle, "teaser");
+    const filled = await fillKind(movieId, movieTitle, cleanTitle, "teaser", isTelugu);
     if (filled) out.push(filled);
   }
 
@@ -195,11 +213,13 @@ async function buildMovieTrailers(
 
 export function getMovieTrailers(
   movieId: number,
-  movieTitle: string
+  movieTitle: string,
+  isTelugu = false
 ): Promise<MovieTrailerVideo[]> {
   return unstable_cache(
-    () => buildMovieTrailers(movieId, movieTitle),
-    ["movie-trailers-v1", String(movieId)],
+    () => buildMovieTrailers(movieId, movieTitle, isTelugu),
+    // v2: Telugu transliteration-aware title matching for auto-fetched promos.
+    ["movie-trailers-v2", String(movieId)],
     { revalidate: TRAILERS_CACHE_SECONDS, tags: [`movie-trailers-${movieId}`] }
   )();
 }

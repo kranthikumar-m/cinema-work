@@ -2,7 +2,11 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { findMovieAlbum, type SpotifyTrack } from "@/services/spotify";
 import { searchYouTubeSongCandidates, type SongSearchResult } from "@/services/song-sync";
-import { getTitleSimilarityScore } from "@/lib/title-matching";
+import {
+  getTitleSimilarityScore,
+  getTeluguTitleSimilarityScore,
+  canonicalizeTeluguRomanization,
+} from "@/lib/title-matching";
 import {
   hasDatabaseConfiguration,
   listMovieVideoRecords,
@@ -89,8 +93,20 @@ function videoTypeTier(title: string): number {
   return 3;
 }
 
-function isTrackMatch(trackTitle: string, normTrack: string, candidate: SongSearchResult): boolean {
+function isTrackMatch(
+  trackTitle: string,
+  normTrack: string,
+  candidate: SongSearchResult,
+  isTelugu: boolean
+): boolean {
   if (normTrack.length >= 4 && normalize(candidate.title).includes(normTrack)) return true;
+  if (isTelugu) {
+    // Match across romanization variants (e.g. "Yeevvaa Yeevva" vs "Yevva Yevva").
+    const canonicalTrack = canonicalizeTeluguRomanization(trackTitle);
+    const canonicalCandidate = canonicalizeTeluguRomanization(candidate.title);
+    if (canonicalTrack.length >= 4 && canonicalCandidate.includes(canonicalTrack)) return true;
+    return getTeluguTitleSimilarityScore(trackTitle, candidate.title) >= YOUTUBE_MATCH_MIN_SCORE;
+  }
   return getTitleSimilarityScore(trackTitle, candidate.title) >= YOUTUBE_MATCH_MIN_SCORE;
 }
 
@@ -142,7 +158,8 @@ function scoreCandidate(trackDurationSec: number, candidate: SongSearchResult): 
 function matchYouTube(
   track: { title: string; durationMs: number },
   candidates: SongSearchResult[],
-  excludeIds: Set<string>
+  excludeIds: Set<string>,
+  isTelugu: boolean
 ): SongSearchResult | null {
   const normTrack = coreTitle(track.title);
   if (!normTrack) return null;
@@ -152,7 +169,7 @@ function matchYouTube(
     (candidate) =>
       !excludeIds.has(candidate.videoId) &&
       videoTypeTier(candidate.title) !== EXCLUDE_TIER &&
-      isTrackMatch(track.title, normTrack, candidate)
+      isTrackMatch(track.title, normTrack, candidate, isTelugu)
   );
   if (!matches.length) return null;
 
@@ -213,16 +230,23 @@ function toSong(track: SpotifyTrack, match: SongSearchResult | null): MovieSong 
 async function buildMovieMusic(
   movieId: number,
   movieTitle: string,
-  releaseDate: string | null
+  releaseDate: string | null,
+  isTelugu: boolean
 ): Promise<MovieMusic> {
   const parsedYear = releaseDate ? Number.parseInt(releaseDate.slice(0, 4), 10) : NaN;
   const album = await findMovieAlbum(
     movieTitle,
-    Number.isFinite(parsedYear) ? parsedYear : null
+    Number.isFinite(parsedYear) ? parsedYear : null,
+    { isTelugu }
   );
   if (!album || !album.tracks.length) return EMPTY_MUSIC;
 
-  const cleanTitle = cleanForQuery(movieTitle);
+  // For Telugu, collapse doubled letters in the search term ("Raakaasa" →
+  // "Rakasa") so YouTube surfaces the videos, which use the shorter spelling.
+  const searchTitle = isTelugu
+    ? movieTitle.replace(/([a-zA-Z])\1+/g, "$1")
+    : movieTitle;
+  const cleanTitle = cleanForQuery(searchTitle);
   const usedVideoIds = new Set<string>();
 
   // 1) One movie-level search covers the popular songs (quota-friendly). No
@@ -232,7 +256,7 @@ async function buildMovieMusic(
   ).catch(() => [] as SongSearchResult[]);
 
   const songs: MovieSong[] = album.tracks.map((track) => {
-    const match = matchYouTube(track, movieCandidates, usedVideoIds);
+    const match = matchYouTube(track, movieCandidates, usedVideoIds, isTelugu);
     if (match) usedVideoIds.add(match.videoId);
     return toSong(track, match);
   });
@@ -247,7 +271,7 @@ async function buildMovieMusic(
     const candidates = await searchYouTubeSongCandidates(
       `${coreTitle(track.title)} ${cleanTitle} song`
     ).catch(() => [] as SongSearchResult[]);
-    const match = matchYouTube(track, candidates, usedVideoIds);
+    const match = matchYouTube(track, candidates, usedVideoIds, isTelugu);
     if (match) {
       usedVideoIds.add(match.videoId);
       songs[i] = toSong(track, match);
@@ -271,11 +295,14 @@ async function buildMovieMusic(
 export function getMovieMusic(
   movieId: number,
   movieTitle: string,
-  releaseDate: string | null
+  releaseDate: string | null,
+  isTelugu = false
 ): Promise<MovieMusic> {
   return unstable_cache(
-    () => buildMovieMusic(movieId, movieTitle, releaseDate),
-    ["movie-music-v4", String(movieId)],
+    () => buildMovieMusic(movieId, movieTitle, releaseDate, isTelugu),
+    // v5: Telugu transliteration-aware album/track matching (also busts the
+    // stale "no soundtrack" caches for titles like "Raakaasa").
+    ["movie-music-v5", String(movieId)],
     { revalidate: MUSIC_CACHE_SECONDS, tags: [`movie-music-${movieId}`] }
   )();
 }

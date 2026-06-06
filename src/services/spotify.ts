@@ -1,6 +1,9 @@
 import "server-only";
 import { env } from "@/lib/env";
-import { getTitleSimilarityScore } from "@/lib/title-matching";
+import {
+  getTitleSimilarityScore,
+  getTeluguTitleSimilarityScore,
+} from "@/lib/title-matching";
 
 /**
  * Spotify Web API (client-credentials flow) for a movie's soundtrack: album +
@@ -101,35 +104,57 @@ function pickImage(images: SpotifyImage[] | undefined): string | null {
   return sorted[0]?.url ?? images[0].url ?? null;
 }
 
+interface SpotifyAlbumSearchItem {
+  id: string;
+  name: string;
+  release_date?: string;
+  images?: SpotifyImage[];
+}
+
 /**
  * Finds the Spotify album that best matches a movie's soundtrack by name
  * (release year as a tie-breaker), then returns it with its full track list.
+ *
+ * For Telugu titles (`options.isTelugu`), the title is also searched with its
+ * doubled letters collapsed (so a "Raakaasa" movie still finds Spotify's
+ * "Rakasa" album) and scored with transliteration-aware similarity.
  */
 export async function findMovieAlbum(
   movieTitle: string,
-  year?: number | null
+  year?: number | null,
+  options?: { isTelugu?: boolean }
 ): Promise<SpotifyAlbum | null> {
   const token = await getToken();
   if (!token || !movieTitle) return null;
 
-  const search = await spotifyGet<{
-    albums?: {
-      items?: Array<{
-        id: string;
-        name: string;
-        release_date?: string;
-        images?: SpotifyImage[];
-      }>;
-    };
-  }>(`/search?q=${encodeURIComponent(movieTitle)}&type=album&market=${MARKET}&limit=10`, token);
+  const isTelugu = options?.isTelugu ?? false;
 
-  const items = search?.albums?.items ?? [];
+  // Search variants: the title as-is, plus a doubled-letter-collapsed form for
+  // Telugu (covers the "Raa"/"Ra" romanization split before scoring).
+  const queries = [movieTitle];
+  if (isTelugu) {
+    const collapsed = movieTitle.replace(/([a-zA-Z])\1+/g, "$1");
+    if (collapsed.toLowerCase() !== movieTitle.toLowerCase()) queries.push(collapsed);
+  }
+
+  const itemsById = new Map<string, SpotifyAlbumSearchItem>();
+  for (const query of queries) {
+    const search = await spotifyGet<{
+      albums?: { items?: SpotifyAlbumSearchItem[] };
+    }>(`/search?q=${encodeURIComponent(query)}&type=album&market=${MARKET}&limit=10`, token);
+    for (const item of search?.albums?.items ?? []) {
+      if (!itemsById.has(item.id)) itemsById.set(item.id, item);
+    }
+  }
+
+  const items = Array.from(itemsById.values());
   if (!items.length) return null;
 
+  const scoreTitle = isTelugu ? getTeluguTitleSimilarityScore : getTitleSimilarityScore;
   let bestId: string | null = null;
   let bestScore = 0;
   for (const item of items) {
-    let score = getTitleSimilarityScore(movieTitle, item.name);
+    let score = scoreTitle(movieTitle, item.name);
     const itemYear = Number.parseInt((item.release_date ?? "").slice(0, 4), 10);
     if (year && Number.isFinite(itemYear) && Math.abs(itemYear - year) <= 1) {
       score += 0.15;

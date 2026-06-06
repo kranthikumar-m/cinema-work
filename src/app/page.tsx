@@ -231,7 +231,11 @@ async function buildFeaturedBundle(movie: Movie | null): Promise<HomepageHeroSli
 
   if (!trailerKey) {
     try {
-      const autoTrailers = await getMovieTrailers(movie.id, movie.title);
+      const autoTrailers = await getMovieTrailers(
+        movie.id,
+        movie.title,
+        movie.original_language === "te"
+      );
       const best =
         autoTrailers.find((t) => t.category === "trailer" && !hiddenKeys.has(t.youtubeKey)) ??
         autoTrailers.find((t) => !hiddenKeys.has(t.youtubeKey));
