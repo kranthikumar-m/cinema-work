@@ -73,7 +73,7 @@ interface MusicPageProps {
 export default async function MusicPage({ searchParams }: MusicPageProps) {
   const viewParam = firstParam(searchParams.view) as TeluguBrowseView | undefined;
   const view: TeluguBrowseView =
-    viewParam && VALID_VIEWS.includes(viewParam) ? viewParam : "popular";
+    viewParam && VALID_VIEWS.includes(viewParam) ? viewParam : "latest";
 
   const genreParam = firstParam(searchParams.genre);
   const genreId = genreParam && /^\d+$/.test(genreParam) ? genreParam : "";
@@ -106,7 +106,7 @@ export default async function MusicPage({ searchParams }: MusicPageProps) {
     const effectiveMaxYear = maxYearParam ?? yearBounds.max;
 
     const base: BrowseHrefBase = {
-      view: view === "popular" ? undefined : view,
+      view: view === "latest" ? undefined : view,
       genre: genreId || undefined,
       minRating: minRating > 0 ? String(minRating) : undefined,
       maxRating: maxRating < 10 ? String(maxRating) : undefined,
@@ -122,7 +122,7 @@ export default async function MusicPage({ searchParams }: MusicPageProps) {
         <MovieBrowseToolbar
           view={view}
           tabs={MUSIC_TABS}
-          defaultView="popular"
+          defaultView="latest"
           genres={genres}
           genreId={genreId}
           minRating={minRating}
