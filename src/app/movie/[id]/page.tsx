@@ -8,6 +8,7 @@ import {
   getMovieImages,
   getMovieReviews,
   getSimilarMovies,
+  getMovieRecommendations,
   getWatchProviders,
   getMovieKeywords,
 } from "@/services/tmdb";
@@ -27,7 +28,11 @@ import type { GalleryImage } from "@/components/movie/PhotoGallery";
 import { ReviewCard } from "@/components/movie/ReviewCard";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { MovieDetailClient } from "./client";
-import { enrichMovieAssets, getMovieDetailsWithFallback } from "@/services/telugu-movies";
+import {
+  enrichMovieAssets,
+  getMovieDetailsWithFallback,
+  getPopularTeluguMovies,
+} from "@/services/telugu-movies";
 import { attachImdbRating, getImdbTitleExtras } from "@/services/omdb";
 import { resolvePreferredBackdrop } from "@/services/movie-backdrops";
 import { getMovieMusic, type MovieMusic } from "@/services/movie-music";
@@ -44,7 +49,7 @@ import {
 } from "@/lib/database";
 import { VideoSection } from "@/components/movie/VideoSection";
 import type { VideoItem } from "@/components/movie/VideoSection";
-import type { MovieImage, WatchProvider, WatchProviderResult } from "@/types/tmdb";
+import type { Movie, MovieImage, WatchProvider, WatchProviderResult } from "@/types/tmdb";
 import type { Metadata } from "next";
 
 interface Props {
@@ -139,9 +144,9 @@ export default async function MovieDetailPage({ params }: Props) {
   const id = Number(params.id);
   if (isNaN(id)) notFound();
 
-  let movie, credits, videos, images, reviews, similar, providers;
+  let movie, credits, videos, images, reviews, similar, recommendations, providers;
   try {
-    [movie, credits, videos, images, reviews, similar, providers] =
+    [movie, credits, videos, images, reviews, similar, recommendations, providers] =
       await Promise.all([
         getMovieDetailsWithFallback(id),
         getMovieCredits(id),
@@ -149,6 +154,7 @@ export default async function MovieDetailPage({ params }: Props) {
         getMovieImages(id),
         getMovieReviews(id),
         getSimilarMovies(id),
+        getMovieRecommendations(id).catch(() => ({ results: [] as Movie[] })),
         getWatchProviders(id),
       ]);
 
@@ -159,9 +165,25 @@ export default async function MovieDetailPage({ params }: Props) {
   }
 
   const director = credits.crew.find((c) => c.job === "Director");
-  const similarTeluguMovies = similar.results
-    .filter((item) => item.original_language === "te")
-    .slice(0, 6);
+  // Always populate "Similar Movies" so the section is consistent across titles:
+  // TMDB similar + recommendations (Telugu), then a popular-Telugu fallback.
+  const similarTeluguMovies: Movie[] = [];
+  const similarSeen = new Set<number>([id]);
+  for (const item of [...similar.results, ...recommendations.results]) {
+    if (similarTeluguMovies.length >= 6) break;
+    if (item.original_language !== "te" || similarSeen.has(item.id)) continue;
+    similarSeen.add(item.id);
+    similarTeluguMovies.push(item);
+  }
+  if (similarTeluguMovies.length < 6) {
+    const popular = await getPopularTeluguMovies(14).catch(() => [] as Movie[]);
+    for (const item of popular) {
+      if (similarTeluguMovies.length >= 6) break;
+      if (similarSeen.has(item.id)) continue;
+      similarSeen.add(item.id);
+      similarTeluguMovies.push(item);
+    }
+  }
   const backdropSelection = await resolvePreferredBackdrop(movie, movie.backdrop_path);
   const [
     customImages,

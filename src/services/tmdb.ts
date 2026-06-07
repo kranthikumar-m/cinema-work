@@ -87,6 +87,13 @@ export async function getMovieReviews(
   return tmdbFetch(`/movie/${id}/reviews`, { page: String(page) });
 }
 
+export async function getMovieRecommendations(
+  id: number,
+  page = 1
+): Promise<PaginatedResponse<Movie>> {
+  return tmdbFetch(`/movie/${id}/recommendations`, { page: String(page) });
+}
+
 export async function getSimilarMovies(
   id: number,
   page = 1
