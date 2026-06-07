@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Images } from "lucide-react";
 import { getImageUrl } from "@/lib/utils";
 import type { MovieImage } from "@/types/tmdb";
 
@@ -48,8 +48,14 @@ export function PhotoGallery({ images, posterImages, title, extraImages }: Photo
   const defaultTab: Tab = backdrops.length > 0 ? "backdrops" : "posters";
   const [activeTab, setActiveTab] = useState<Tab>(defaultTab);
   const [selected, setSelected] = useState<number | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
-  const visible = (activeTab === "backdrops" ? backdrops : posters).slice(0, 12);
+  // Collapsed view shows a single desktop row; the last tile reveals the rest.
+  const list = activeTab === "backdrops" ? backdrops : posters;
+  const previewCount = activeTab === "backdrops" ? 4 : 6;
+  const collapsed = !expanded && list.length > previewCount;
+  const visible = collapsed ? list.slice(0, previewCount) : list.slice(0, 40);
+  const hiddenCount = list.length - previewCount;
 
   if (!backdrops.length && !posters.length) return null;
 
@@ -59,7 +65,7 @@ export function PhotoGallery({ images, posterImages, title, extraImages }: Photo
         <div className="mb-4 flex gap-2">
           <button
             type="button"
-            onClick={() => { setActiveTab("backdrops"); setSelected(null); }}
+            onClick={() => { setActiveTab("backdrops"); setSelected(null); setExpanded(false); }}
             className={`rounded-full px-4 py-2 text-sm font-medium transition ${
               activeTab === "backdrops"
                 ? "bg-cyan-500/15 text-cyan-400 border border-cyan-500/30"
@@ -70,7 +76,7 @@ export function PhotoGallery({ images, posterImages, title, extraImages }: Photo
           </button>
           <button
             type="button"
-            onClick={() => { setActiveTab("posters"); setSelected(null); }}
+            onClick={() => { setActiveTab("posters"); setSelected(null); setExpanded(false); }}
             className={`rounded-full px-4 py-2 text-sm font-medium transition ${
               activeTab === "posters"
                 ? "bg-cyan-500/15 text-cyan-400 border border-cyan-500/30"
@@ -89,30 +95,50 @@ export function PhotoGallery({ images, posterImages, title, extraImages }: Photo
             : "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3"
         }
       >
-        {visible.map((item, i) => (
-          <button
-            key={item.thumbnailUrl}
-            onClick={() => setSelected(i)}
-            className={`relative overflow-hidden rounded-lg group ${
-              activeTab === "backdrops" ? "aspect-video" : "aspect-[2/3]"
-            }`}
-          >
-            <Image
-              src={item.thumbnailUrl}
-              alt={item.label || `${title} photo ${i + 1}`}
-              fill
-              className="object-cover transition-transform group-hover:scale-105"
-              unoptimized
-            />
-            {item.label && (
-              <span className="absolute bottom-1.5 left-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
-                {item.label}
-              </span>
-            )}
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-          </button>
-        ))}
+        {visible.map((item, i) => {
+          const isShowAll = collapsed && i === previewCount - 1 && hiddenCount > 0;
+          return (
+            <button
+              key={item.thumbnailUrl}
+              onClick={() => (isShowAll ? setExpanded(true) : setSelected(i))}
+              className={`relative overflow-hidden rounded-lg group ${
+                activeTab === "backdrops" ? "aspect-video" : "aspect-[2/3]"
+              }`}
+            >
+              <Image
+                src={item.thumbnailUrl}
+                alt={item.label || `${title} photo ${i + 1}`}
+                fill
+                className="object-cover transition-transform group-hover:scale-105"
+                unoptimized
+              />
+              {item.label && !isShowAll && (
+                <span className="absolute bottom-1.5 left-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                  {item.label}
+                </span>
+              )}
+              {isShowAll ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-black/65 text-white transition-colors group-hover:bg-black/75">
+                  <Images className="h-6 w-6" />
+                  <span className="text-sm font-semibold">Show all ({hiddenCount})</span>
+                </div>
+              ) : (
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+              )}
+            </button>
+          );
+        })}
       </div>
+
+      {expanded && list.length > previewCount && (
+        <button
+          type="button"
+          onClick={() => setExpanded(false)}
+          className="mt-4 text-sm font-medium text-cyan-400 transition hover:text-cyan-300"
+        >
+          Show less
+        </button>
+      )}
 
       <AnimatePresence>
         {selected !== null && (
