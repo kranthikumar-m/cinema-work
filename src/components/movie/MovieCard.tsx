@@ -40,7 +40,7 @@ export function MovieCard({ movie, priority = false, linkBase = "/movie" }: Movi
           {movie.title}
         </h3>
         <p className="mt-0.5 text-xs text-[var(--color-muted-strong)]">
-          {formatDate(movie.release_date)}
+          {movie.release_date ? formatDate(movie.release_date) : "Coming soon"}
         </p>
       </div>
     </Link>

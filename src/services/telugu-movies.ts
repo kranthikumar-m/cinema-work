@@ -10,7 +10,15 @@ import {
   getIndianCurrentYear,
   getIndianTodayIsoDate,
 } from "@/lib/date";
-import { getTitleSimilarityScore, normalizeMovieTitle } from "@/lib/title-matching";
+import {
+  getTitleSimilarityScore,
+  getTeluguTitleSimilarityScore,
+  normalizeMovieTitle,
+} from "@/lib/title-matching";
+import {
+  getAndhraBoxOfficeUpcoming,
+  type AndhraBoxOfficeEntry,
+} from "@/services/andhra-box-office";
 import {
   getWikipediaTeluguReleases,
   getUpcomingWikipediaTeluguReleases,
@@ -466,6 +474,30 @@ export async function getTopRatedTeluguMovies(limit = DEFAULT_COLLECTION_LIMIT) 
   return withMovieAssetList(movies.slice(0, limit));
 }
 
+// Placeholder TMDB entries (no poster, "#Untitled …", bare codenames like
+// "MEGA 158") aren't real, identifiable films — they're dropped from Upcoming.
+function isRealUpcomingFilm(movie: Movie): boolean {
+  const title = movie.title?.trim() ?? "";
+  if (!title || title.length < 2) return false;
+  if (!movie.poster_path) return false;
+  if (title.startsWith("#")) return false;
+  if (/\buntitled\b/i.test(title)) return false;
+  return true;
+}
+
+// True when a candidate appears in AndhraBoxOffice's Telugu release calendar.
+function matchesAndhraBoxOffice(
+  movie: Movie,
+  entries: AndhraBoxOfficeEntry[]
+): boolean {
+  let best = 0;
+  for (const entry of entries) {
+    const score = getTeluguTitleSimilarityScore(movie.title, entry.title);
+    if (score > best) best = score;
+  }
+  return best >= WIKI_MATCH_STRONG_SCORE;
+}
+
 export async function getUpcomingTeluguMovies(limit = DEFAULT_COLLECTION_LIMIT) {
   const today = getIndianTodayIsoDate();
   const currentYear = getIndianCurrentYear();
@@ -478,24 +510,62 @@ export async function getUpcomingTeluguMovies(limit = DEFAULT_COLLECTION_LIMIT) 
     { minResults: limit * 2 }
   );
 
-  // Validate upcoming candidates against Wikipedia's scheduled-release lists —
-  // the same Wikipedia-confirmation that powers the Latest catalog — so TMDB
-  // junk / mislabeled entries don't surface. The upcoming window spans the
-  // current year and the next, so we check both lists. If Wikipedia is
-  // unavailable, fall back to the raw discover results rather than show nothing.
-  const wikipediaUpcoming = (
-    await Promise.all(
+  // Two confirmation sources (the upcoming window spans the current + next year
+  // for Wikipedia): Wikipedia's scheduled-release lists, then AndhraBoxOffice's
+  // Telugu release calendar. Both are cached and degrade to empty on failure.
+  const [wikipediaUpcoming, andhraBoxOffice] = await Promise.all([
+    Promise.all(
       [currentYear, currentYear + 1].map((year) =>
         getUpcomingWikipediaTeluguReleases(year)
           .then((dataset) => dataset.releases)
           .catch(() => [] as WikipediaReleaseList)
       )
-    )
-  ).flat();
+    ).then((lists) => lists.flat()),
+    getAndhraBoxOfficeUpcoming().catch(() => [] as AndhraBoxOfficeEntry[]),
+  ]);
 
-  const validated = wikipediaUpcoming.length
-    ? await validateCandidatesAgainstWikipedia(discovered, wikipediaUpcoming)
-    : await withMovieAssetList(discovered);
+  // Tiered validation per candidate:
+  //   1. Wikipedia-confirmed       → keep with its release date.
+  //   2. AndhraBoxOffice-confirmed → keep with its release date.
+  //   3. Real film, unconfirmed    → keep, but blank the date → "Coming soon".
+  //   4. Placeholder / junk        → drop.
+  const kept: Movie[] = [];
+  for (const candidate of discovered) {
+    if (!candidate.release_date) continue;
+
+    const wikiMatch = wikipediaUpcoming.length
+      ? findWikipediaMatch(candidate, wikipediaUpcoming)
+      : ({ status: "not_found" } as const);
+
+    if (wikiMatch.status === "validated") {
+      kept.push(
+        await withMovieAssets({
+          ...candidate,
+          validation: buildValidation(
+            "validated",
+            undefined,
+            wikiMatch.matchedBy,
+            wikiMatch.entry.title,
+            wikiMatch.entry.pageTitle,
+            wikiMatch.entry.releaseDate
+          ),
+        })
+      );
+      continue;
+    }
+
+    if (matchesAndhraBoxOffice(candidate, andhraBoxOffice)) {
+      kept.push(await withMovieAssets(candidate));
+      continue;
+    }
+
+    if (isRealUpcomingFilm(candidate)) {
+      // Unconfirmed but clearly a real film — show it without an unverified date.
+      kept.push(await withMovieAssets({ ...candidate, release_date: "" }));
+      continue;
+    }
+    // Otherwise: drop placeholder/junk entries.
+  }
 
   // Fold in admin-added movies whose release date is in the future (or unknown).
   const manual = await getManuallyAddedMovies().catch(() => [] as Movie[]);
@@ -503,10 +573,9 @@ export async function getUpcomingTeluguMovies(limit = DEFAULT_COLLECTION_LIMIT) 
     (movie) => !movie.release_date || movie.release_date > today
   );
 
-  // `validated` is already asset-enriched (by the validator or the fallback);
-  // manual additions carry their own assets, matching getLatestTeluguReleases.
-  const merged = dedupeMovies(mergeUnique(validated, manualUpcoming)).sort((a, b) =>
-    (a.release_date || "").localeCompare(b.release_date || "")
+  // Undated ("Coming soon") titles sort to the end.
+  const merged = dedupeMovies(mergeUnique(kept, manualUpcoming)).sort((a, b) =>
+    (a.release_date || "9999-12-31").localeCompare(b.release_date || "9999-12-31")
   );
 
   return merged.slice(0, limit);
