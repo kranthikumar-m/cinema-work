@@ -7,6 +7,10 @@ import {
 import { getGenres } from "@/services/tmdb";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { MovieBrowseToolbar } from "@/components/movie/MovieBrowseToolbar";
+import {
+  AboCalibrationProvider,
+  AboCalibrationButton,
+} from "@/components/movie/AboCalibration";
 import type { Genre } from "@/types/tmdb";
 
 export const metadata = { title: "Telugu Movies - Telugu Cinema Updates" };
@@ -121,6 +125,7 @@ export default async function MoviesPage({ searchParams }: MoviesPageProps) {
     const pageWindow = getPageWindow(page, totalPages);
 
     return (
+      <AboCalibrationProvider>
       <div className="app-page-shell py-6">
         <MovieBrowseToolbar
           view={view}
@@ -133,9 +138,12 @@ export default async function MoviesPage({ searchParams }: MoviesPageProps) {
           yearBounds={yearBounds}
         />
 
-        <p className="mb-4 text-sm text-[var(--color-muted-strong)]">
-          {totalResults.toLocaleString()} movies · Page {page} of {totalPages}
-        </p>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-[var(--color-muted-strong)]">
+            {totalResults.toLocaleString()} movies · Page {page} of {totalPages}
+          </p>
+          <AboCalibrationButton />
+        </div>
 
         <MovieGrid movies={results} />
 
@@ -186,6 +194,7 @@ export default async function MoviesPage({ searchParams }: MoviesPageProps) {
           </nav>
         )}
       </div>
+      </AboCalibrationProvider>
     );
   } catch {
     return (

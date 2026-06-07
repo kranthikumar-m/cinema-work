@@ -35,6 +35,7 @@ import {
   getCustomImageRecordsByMovieId,
   listMovieVideoRecords,
   listHiddenVideoKeys,
+  getMovieReleaseOverrideRecord,
   hasDatabaseConfiguration,
 } from "@/lib/database";
 import { VideoSection } from "@/components/movie/VideoSection";
@@ -109,7 +110,7 @@ export default async function MovieDetailPage({ params }: Props) {
     .filter((item) => item.original_language === "te")
     .slice(0, 6);
   const backdropSelection = await resolvePreferredBackdrop(movie, movie.backdrop_path);
-  const [customImages, customVideoRows, music, autoTrailers, hiddenKeyList] =
+  const [customImages, customVideoRows, music, autoTrailers, hiddenKeyList, releaseOverride] =
     await Promise.all([
       hasDatabaseConfiguration()
         ? getCustomImageRecordsByMovieId(id)
@@ -129,7 +130,22 @@ export default async function MovieDetailPage({ params }: Props) {
       hasDatabaseConfiguration()
         ? listHiddenVideoKeys(id)
         : Promise.resolve([] as string[]),
+      hasDatabaseConfiguration()
+        ? getMovieReleaseOverrideRecord(id)
+        : Promise.resolve(null),
     ]);
+
+  // Apply admin ABO calibration: corrected release date + alias tags.
+  const releaseDateDisplay = releaseOverride?.release_date || movie.release_date;
+  let aliasTags: string[] = [];
+  if (releaseOverride?.aliases) {
+    try {
+      const parsed = JSON.parse(releaseOverride.aliases);
+      if (Array.isArray(parsed)) aliasTags = parsed.filter((a) => typeof a === "string");
+    } catch {
+      /* ignore malformed */
+    }
+  }
   const hiddenKeys = new Set(hiddenKeyList);
   const customBackdrop = customImages.find((r) => r.image_type === "backdrop");
   const customPoster = customImages.find((r) => r.image_type === "poster");
@@ -292,7 +308,7 @@ export default async function MovieDetailPage({ params }: Props) {
                     </>
                   ) : null}
                   <span className="text-sm text-gray-200">
-                    {formatDate(movie.release_date)}
+                    {releaseDateDisplay ? formatDate(releaseDateDisplay) : "Coming soon"}
                   </span>
                   <span className="text-sm text-gray-500">|</span>
                   <span className="text-sm text-gray-200">
@@ -307,6 +323,15 @@ export default async function MovieDetailPage({ params }: Props) {
                       className="px-3 py-1 text-xs font-medium rounded-full bg-white/10 text-white border border-white/20 backdrop-blur-sm"
                     >
                       {g.name}
+                    </span>
+                  ))}
+                  {aliasTags.map((alias) => (
+                    <span
+                      key={alias}
+                      className="px-3 py-1 text-xs font-medium rounded-full bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)] border border-[rgba(194,154,98,0.4)] backdrop-blur-sm"
+                      title="Alternate title"
+                    >
+                      {alias}
                     </span>
                   ))}
                 </div>

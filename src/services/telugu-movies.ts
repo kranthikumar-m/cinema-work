@@ -32,6 +32,7 @@ import {
   hasDatabaseConfiguration,
   isValidatedYearFrozen,
   listHiddenMovieIds,
+  listMovieReleaseOverrideRecords,
   listTrendingSignalRecords,
   listValidatedYearMovieRecords,
   listValidatedYearProgressRecords,
@@ -167,10 +168,61 @@ const getHiddenMovieIdSet = cache(async (): Promise<Set<number>> => {
   }
 });
 
-async function filterHiddenMovies<T extends Movie>(movies: T[]): Promise<T[]> {
-  const hidden = await getHiddenMovieIdSet();
-  if (!hidden.size) return movies;
-  return movies.filter((movie) => !hidden.has(movie.id));
+interface ReleaseOverride {
+  releaseDate: string | null;
+  aliases: string[];
+}
+
+// Admin ABO-calibration overrides (release date + alternate titles), keyed by
+// movie id. Memoized per request; applied outside the catalog cache so an edit
+// shows on the next request.
+const getReleaseOverrideMap = cache(async (): Promise<Map<number, ReleaseOverride>> => {
+  if (!hasDatabaseConfiguration()) return new Map();
+  try {
+    const rows = await listMovieReleaseOverrideRecords();
+    return new Map(
+      rows.map((row) => {
+        let aliases: string[] = [];
+        if (row.aliases) {
+          try {
+            const parsed = JSON.parse(row.aliases);
+            if (Array.isArray(parsed)) aliases = parsed.filter((a) => typeof a === "string");
+          } catch {
+            /* ignore malformed */
+          }
+        }
+        return [row.movie_id, { releaseDate: row.release_date, aliases }];
+      })
+    );
+  } catch {
+    return new Map();
+  }
+});
+
+// Drops admin-hidden movies and applies admin overrides (ABO-calibrated release
+// date + alias tags). Call this BEFORE sorting so calibrated dates order right.
+async function adjustMovies<T extends Movie>(movies: T[]): Promise<T[]> {
+  const [hidden, overrides] = await Promise.all([
+    getHiddenMovieIdSet(),
+    getReleaseOverrideMap(),
+  ]);
+  if (!hidden.size && !overrides.size) return movies;
+
+  const out: T[] = [];
+  for (const movie of movies) {
+    if (hidden.has(movie.id)) continue;
+    const override = overrides.get(movie.id);
+    if (override) {
+      out.push({
+        ...movie,
+        release_date: override.releaseDate ?? movie.release_date,
+        aliases: override.aliases.length ? override.aliases : movie.aliases,
+      });
+    } else {
+      out.push(movie);
+    }
+  }
+  return out;
 }
 
 type WikipediaReleaseEntry =
@@ -478,7 +530,7 @@ export async function getPopularTeluguMovies(limit = DEFAULT_COLLECTION_LIMIT) {
     { minResults: limit * 2 }
   );
 
-  const visible = await filterHiddenMovies(sortByPopularity(movies));
+  const visible = await adjustMovies(sortByPopularity(movies));
   return withMovieAssetList(visible.slice(0, limit));
 }
 
@@ -492,7 +544,7 @@ export async function getTopRatedTeluguMovies(limit = DEFAULT_COLLECTION_LIMIT) 
     { minResults: limit * 2 }
   );
 
-  const visible = await filterHiddenMovies(movies);
+  const visible = await adjustMovies(movies);
   return withMovieAssetList(visible.slice(0, limit));
 }
 
@@ -687,16 +739,18 @@ export async function getUpcomingTeluguMovies(limit = DEFAULT_COLLECTION_LIMIT) 
     (movie) => !movie.release_date || movie.release_date > today
   );
 
-  // Undated ("Coming soon") titles sort to the end. Discover-validated entries
-  // win over ABO-sourced and manual ones on overlap.
-  const merged = dedupeMovies(
+  // Discover-validated entries win over ABO-sourced and manual ones on overlap.
+  // Apply admin adjustments (hidden + ABO-calibrated dates) BEFORE sorting so a
+  // calibrated date orders correctly; undated ("Coming soon") titles sink last.
+  const combined = dedupeMovies(
     mergeUnique(mergeUnique(kept, aboSourced), manualUpcoming)
-  ).sort((a, b) =>
+  );
+  const adjusted = await adjustMovies(combined);
+  const sorted = adjusted.sort((a, b) =>
     (a.release_date || "9999-12-31").localeCompare(b.release_date || "9999-12-31")
   );
 
-  const visible = await filterHiddenMovies(merged);
-  return visible.slice(0, limit);
+  return sorted.slice(0, limit);
 }
 
 export async function getLatestTeluguReleases(limit = DEFAULT_COLLECTION_LIMIT) {
@@ -713,12 +767,11 @@ export async function getLatestTeluguReleases(limit = DEFAULT_COLLECTION_LIMIT) 
     (movie) => movie.release_date && movie.release_date <= today
   );
 
-  const merged = sortByReleaseDateDescAndPopularity(
+  const adjusted = await adjustMovies(
     dedupeMovies(mergeUnique(validated, manualReleased))
   );
-
-  const visible = await filterHiddenMovies(merged);
-  return visible.slice(0, limit);
+  const merged = sortByReleaseDateDescAndPopularity(adjusted);
+  return merged.slice(0, limit);
 }
 
 function prioritizeTeluguSearchResults(movies: Movie[]) {
@@ -743,7 +796,7 @@ export async function searchTeluguMovies(
   const teluguMatches = response.results.filter(
     (movie) => movie.original_language === TELUGU_LANGUAGE
   );
-  const ranked = await filterHiddenMovies(
+  const ranked = await adjustMovies(
     prioritizeTeluguSearchResults(
       teluguMatches.length ? teluguMatches : response.results
     )
@@ -1034,7 +1087,7 @@ export async function getTeluguMoviesOnline(limit = ONLINE_BROWSE_LIMIT): Promis
     if (page >= (response.total_pages || page)) break;
   }
 
-  const visible = await filterHiddenMovies(collected);
+  const visible = await adjustMovies(collected);
   return withMovieAssetList(visible.slice(0, limit));
 }
 
@@ -1130,7 +1183,7 @@ export async function browseTeluguMovies({
     });
   }
 
-  const sorted = await filterHiddenMovies(sortBrowseMovies(pool, sort));
+  const sorted = sortBrowseMovies(await adjustMovies(pool), sort);
 
   const totalResults = sorted.length;
   const totalPages = Math.max(1, Math.ceil(totalResults / TELUGU_BROWSE_PAGE_SIZE));

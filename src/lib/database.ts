@@ -91,6 +91,14 @@ export interface DatabaseHiddenMovieRow {
   created_at: string;
 }
 
+export interface DatabaseMovieReleaseOverrideRow {
+  movie_id: number;
+  release_date: string | null;
+  aliases: string | null;
+  added_by_user_id: number | null;
+  updated_at: string;
+}
+
 export interface DatabaseSongSyncRow {
   movie_id: number;
   last_synced_at: string;
@@ -208,6 +216,14 @@ interface InsertHiddenMovieRecordInput {
   createdAt: string;
 }
 
+interface UpsertMovieReleaseOverrideInput {
+  movieId: number;
+  releaseDate: string | null;
+  aliases: string[];
+  addedByUserId: number | null;
+  updatedAt: string;
+}
+
 interface StorageProvider {
   getUserByEmail(email: string): Promise<DatabaseUserRow | null>;
   getUserByIdentifier(identifier: string): Promise<DatabaseUserRow | null>;
@@ -248,6 +264,10 @@ interface StorageProvider {
   listHiddenMovies(): Promise<DatabaseHiddenMovieRow[]>;
   insertHiddenMovie(input: InsertHiddenMovieRecordInput): Promise<void>;
   deleteHiddenMovie(movieId: number): Promise<void>;
+  listMovieReleaseOverrides(): Promise<DatabaseMovieReleaseOverrideRow[]>;
+  getMovieReleaseOverride(movieId: number): Promise<DatabaseMovieReleaseOverrideRow | null>;
+  upsertMovieReleaseOverride(input: UpsertMovieReleaseOverrideInput): Promise<void>;
+  deleteMovieReleaseOverride(movieId: number): Promise<void>;
   getSongSync(movieId: number): Promise<DatabaseSongSyncRow | null>;
   upsertSongSync(movieId: number, syncedAt: string): Promise<void>;
   listTrendingSignals(): Promise<DatabaseTrendingSignalRow[]>;
@@ -315,6 +335,8 @@ const MOVIE_VIDEO_SELECT =
   "id,movie_id,youtube_key,title,category,added_by_user_id,created_at";
 const HIDDEN_VIDEO_SELECT = "id,movie_id,youtube_key,created_at";
 const HIDDEN_MOVIE_SELECT = "movie_id,added_by_user_id,created_at";
+const RELEASE_OVERRIDE_SELECT =
+  "movie_id,release_date,aliases,added_by_user_id,updated_at";
 const TRENDING_SIGNAL_SELECT =
   "movie_id,mention_count,mentions_updated_at,admin_order,admin_pinned,updated_at";
 const VALIDATED_YEAR_MOVIE_SELECT = "year,movie_id,payload,created_at";
@@ -464,6 +486,15 @@ function initializeSqliteDatabase(database: BetterSqlite3Database) {
       movie_id INTEGER PRIMARY KEY,
       added_by_user_id INTEGER,
       created_at TEXT NOT NULL,
+      FOREIGN KEY (added_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS movie_release_overrides (
+      movie_id INTEGER PRIMARY KEY,
+      release_date TEXT,
+      aliases TEXT,
+      added_by_user_id INTEGER,
+      updated_at TEXT NOT NULL,
       FOREIGN KEY (added_by_user_id) REFERENCES users(id) ON DELETE SET NULL
     );
 
@@ -1094,6 +1125,44 @@ function createSqliteStorageProvider(databaseUrl: string): StorageProvider {
     async deleteHiddenMovie(movieId) {
       database.prepare("DELETE FROM hidden_movies WHERE movie_id = ?").run(movieId);
     },
+    async listMovieReleaseOverrides() {
+      return database
+        .prepare(`SELECT ${RELEASE_OVERRIDE_SELECT} FROM movie_release_overrides`)
+        .all<DatabaseMovieReleaseOverrideRow>();
+    },
+    async getMovieReleaseOverride(movieId) {
+      return (
+        database
+          .prepare(
+            `SELECT ${RELEASE_OVERRIDE_SELECT} FROM movie_release_overrides WHERE movie_id = ?`
+          )
+          .get<DatabaseMovieReleaseOverrideRow>(movieId) ?? null
+      );
+    },
+    async upsertMovieReleaseOverride(input) {
+      database
+        .prepare(
+          `INSERT INTO movie_release_overrides (movie_id, release_date, aliases, added_by_user_id, updated_at)
+           VALUES (?, ?, ?, ?, ?)
+           ON CONFLICT(movie_id) DO UPDATE SET
+             release_date = excluded.release_date,
+             aliases = excluded.aliases,
+             added_by_user_id = excluded.added_by_user_id,
+             updated_at = excluded.updated_at`
+        )
+        .run(
+          input.movieId,
+          input.releaseDate,
+          JSON.stringify(input.aliases),
+          input.addedByUserId,
+          input.updatedAt
+        );
+    },
+    async deleteMovieReleaseOverride(movieId) {
+      database
+        .prepare("DELETE FROM movie_release_overrides WHERE movie_id = ?")
+        .run(movieId);
+    },
     async getSongSync(movieId) {
       return (
         database
@@ -1711,6 +1780,37 @@ function createSupabaseStorageProvider(databaseUrl: string): StorageProvider {
         query: { movie_id: `eq.${movieId}` },
       });
     },
+    async listMovieReleaseOverrides() {
+      return selectRows<DatabaseMovieReleaseOverrideRow>("movie_release_overrides", {
+        select: RELEASE_OVERRIDE_SELECT,
+      });
+    },
+    async getMovieReleaseOverride(movieId) {
+      return selectSingleRow<DatabaseMovieReleaseOverrideRow>("movie_release_overrides", {
+        select: RELEASE_OVERRIDE_SELECT,
+        movie_id: `eq.${movieId}`,
+      });
+    },
+    async upsertMovieReleaseOverride(input) {
+      await request("movie_release_overrides", {
+        method: "POST",
+        query: { on_conflict: "movie_id" },
+        body: {
+          movie_id: input.movieId,
+          release_date: input.releaseDate,
+          aliases: JSON.stringify(input.aliases),
+          added_by_user_id: input.addedByUserId,
+          updated_at: input.updatedAt,
+        },
+        prefer: ["resolution=merge-duplicates"],
+      });
+    },
+    async deleteMovieReleaseOverride(movieId) {
+      await request("movie_release_overrides", {
+        method: "DELETE",
+        query: { movie_id: `eq.${movieId}` },
+      });
+    },
     async getSongSync(movieId) {
       return selectSingleRow<DatabaseSongSyncRow>("movie_song_syncs", {
         select: "movie_id,last_synced_at",
@@ -2065,6 +2165,28 @@ export async function addHiddenMovie(input: {
 
 export async function removeHiddenMovie(movieId: number) {
   return requireStorageProvider().deleteHiddenMovie(movieId);
+}
+
+export async function listMovieReleaseOverrideRecords() {
+  return requireStorageProvider().listMovieReleaseOverrides();
+}
+
+export async function getMovieReleaseOverrideRecord(movieId: number) {
+  return requireStorageProvider().getMovieReleaseOverride(movieId);
+}
+
+export async function upsertMovieReleaseOverrideRecord(input: {
+  movieId: number;
+  releaseDate: string | null;
+  aliases: string[];
+  addedByUserId: number | null;
+  updatedAt: string;
+}) {
+  return requireStorageProvider().upsertMovieReleaseOverride(input);
+}
+
+export async function deleteMovieReleaseOverrideRecord(movieId: number) {
+  return requireStorageProvider().deleteMovieReleaseOverride(movieId);
 }
 
 export async function getSongSyncRecord(movieId: number) {

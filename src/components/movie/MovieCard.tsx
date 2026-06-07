@@ -3,6 +3,7 @@ import Image from "next/image";
 import { getMoviePosterUrl, formatDate, truncate } from "@/lib/utils";
 import { RatingRing } from "@/components/shared/RatingRing";
 import { MovieAdminMenu } from "@/components/movie/MovieAdminControls";
+import { MovieCardDropZone } from "@/components/movie/AboCalibration";
 import type { Movie } from "@/types/tmdb";
 
 interface MovieCardProps {
@@ -47,6 +48,7 @@ export function MovieCard({ movie, priority = false, linkBase = "/movie" }: Movi
       </div>
       </Link>
       <MovieAdminMenu movieId={movie.id} movieTitle={movie.title} />
+      <MovieCardDropZone movieId={movie.id} movieTitle={movie.title} />
     </div>
   );
 }

@@ -36,6 +36,9 @@ export interface Movie {
   // rating is available (e.g. unreleased films) — the UI shows "NR" in that case.
   imdb_rating?: number | null;
   imdb_votes?: number | null;
+  // Admin-curated alternate titles (e.g. an AndhraBoxOffice spelling), shown as
+  // tags and usable for search.
+  aliases?: string[];
 }
 
 export interface MovieDetails extends Movie {
