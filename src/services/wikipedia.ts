@@ -136,8 +136,10 @@ function parseMoviePageUrl(cellHtml: string) {
   return `https://en.wikipedia.org${href}`;
 }
 
+// Parses every dated entry (released AND upcoming) from a year's tables. The
+// released/upcoming split is applied by the public getters below, so a single
+// cached fetch+parse serves both the Latest catalog and the Upcoming section.
 function parseReleaseTables(html: string, pageTitle: string, year: number) {
-  const today = getIndianTodayIsoDate();
   const releases: WikipediaReleaseEntry[] = [];
   const tableMatches = Array.from(html.matchAll(RELEASE_TABLE_REGEX));
 
@@ -187,10 +189,6 @@ function parseReleaseTables(html: string, pageTitle: string, year: number) {
       }
 
       const releaseDate = `${year}-${currentMonth}-${currentDay}`;
-
-      if (!isIsoDateOnOrBefore(releaseDate, today)) {
-        continue;
-      }
 
       releases.push({
         title,
@@ -288,7 +286,9 @@ async function fetchWikipediaPageHtml(title: string) {
   return payload.parse;
 }
 
-export const getWikipediaTeluguReleases = cache(
+// One cached fetch+parse per year, returning ALL dated entries (released and
+// upcoming). The released/upcoming getters below filter this shared dataset.
+const getAllWikipediaTeluguEntries = cache(
   async (year = getIndianCurrentYear()): Promise<WikipediaReleaseDataset> => {
     const pageTitles = await searchWikipediaPageTitles(year);
     const releases: WikipediaReleaseEntry[] = [];
@@ -322,6 +322,40 @@ export const getWikipediaTeluguReleases = cache(
       sourcePages,
       releases: Array.from(deduped.values()).sort((a, b) =>
         a.releaseDate.localeCompare(b.releaseDate)
+      ),
+    };
+  }
+);
+
+/**
+ * Telugu films from a year's Wikipedia list that have ALREADY released
+ * (on/before today). Used to validate the Latest catalog.
+ */
+export const getWikipediaTeluguReleases = cache(
+  async (year = getIndianCurrentYear()): Promise<WikipediaReleaseDataset> => {
+    const dataset = await getAllWikipediaTeluguEntries(year);
+    const today = getIndianTodayIsoDate();
+    return {
+      ...dataset,
+      releases: dataset.releases.filter((entry) =>
+        isIsoDateOnOrBefore(entry.releaseDate, today)
+      ),
+    };
+  }
+);
+
+/**
+ * Telugu films from a year's Wikipedia list that are scheduled to release AFTER
+ * today. Used to validate the Upcoming section the same way Latest is validated.
+ */
+export const getUpcomingWikipediaTeluguReleases = cache(
+  async (year = getIndianCurrentYear()): Promise<WikipediaReleaseDataset> => {
+    const dataset = await getAllWikipediaTeluguEntries(year);
+    const today = getIndianTodayIsoDate();
+    return {
+      ...dataset,
+      releases: dataset.releases.filter(
+        (entry) => !isIsoDateOnOrBefore(entry.releaseDate, today)
       ),
     };
   }

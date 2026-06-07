@@ -11,7 +11,10 @@ import {
   getIndianTodayIsoDate,
 } from "@/lib/date";
 import { getTitleSimilarityScore, normalizeMovieTitle } from "@/lib/title-matching";
-import { getWikipediaTeluguReleases } from "@/services/wikipedia";
+import {
+  getWikipediaTeluguReleases,
+  getUpcomingWikipediaTeluguReleases,
+} from "@/services/wikipedia";
 import { getMovieFallbackAssets } from "@/services/google-images";
 import { getManuallyAddedMovies, mergeUnique } from "@/services/manual-movies";
 import { attachImdbRatings } from "@/services/omdb";
@@ -465,6 +468,8 @@ export async function getTopRatedTeluguMovies(limit = DEFAULT_COLLECTION_LIMIT) 
 
 export async function getUpcomingTeluguMovies(limit = DEFAULT_COLLECTION_LIMIT) {
   const today = getIndianTodayIsoDate();
+  const currentYear = getIndianCurrentYear();
+
   const discovered = await collectDiscoveredTeluguMovies(
     {
       sort_by: "primary_release_date.asc",
@@ -473,17 +478,38 @@ export async function getUpcomingTeluguMovies(limit = DEFAULT_COLLECTION_LIMIT) 
     { minResults: limit * 2 }
   );
 
+  // Validate upcoming candidates against Wikipedia's scheduled-release lists —
+  // the same Wikipedia-confirmation that powers the Latest catalog — so TMDB
+  // junk / mislabeled entries don't surface. The upcoming window spans the
+  // current year and the next, so we check both lists. If Wikipedia is
+  // unavailable, fall back to the raw discover results rather than show nothing.
+  const wikipediaUpcoming = (
+    await Promise.all(
+      [currentYear, currentYear + 1].map((year) =>
+        getUpcomingWikipediaTeluguReleases(year)
+          .then((dataset) => dataset.releases)
+          .catch(() => [] as WikipediaReleaseList)
+      )
+    )
+  ).flat();
+
+  const validated = wikipediaUpcoming.length
+    ? await validateCandidatesAgainstWikipedia(discovered, wikipediaUpcoming)
+    : await withMovieAssetList(discovered);
+
   // Fold in admin-added movies whose release date is in the future (or unknown).
   const manual = await getManuallyAddedMovies().catch(() => [] as Movie[]);
   const manualUpcoming = manual.filter(
     (movie) => !movie.release_date || movie.release_date > today
   );
 
-  const merged = dedupeMovies(mergeUnique(discovered, manualUpcoming)).sort((a, b) =>
+  // `validated` is already asset-enriched (by the validator or the fallback);
+  // manual additions carry their own assets, matching getLatestTeluguReleases.
+  const merged = dedupeMovies(mergeUnique(validated, manualUpcoming)).sort((a, b) =>
     (a.release_date || "").localeCompare(b.release_date || "")
   );
 
-  return withMovieAssetList(merged.slice(0, limit));
+  return merged.slice(0, limit);
 }
 
 export async function getLatestTeluguReleases(limit = DEFAULT_COLLECTION_LIMIT) {
