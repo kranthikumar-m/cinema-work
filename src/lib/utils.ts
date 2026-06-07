@@ -48,10 +48,17 @@ export function getMovieBackdropUrl(
 
 export function formatDate(dateString: string): string {
   if (!dateString) return "TBA";
-  return new Date(dateString).toLocaleDateString("en-US", {
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return "TBA";
+  // A date-only string like "2026-04-10" is a calendar date — render it without
+  // a timezone shift (parse + format as UTC) so it never slips to the prior day
+  // in a behind-UTC environment. Full timestamps keep local formatting.
+  const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(dateString.trim());
+  return date.toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
+    ...(isDateOnly ? { timeZone: "UTC" } : {}),
   });
 }
 

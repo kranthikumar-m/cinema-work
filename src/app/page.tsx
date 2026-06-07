@@ -39,10 +39,14 @@ const HERO_CANDIDATE_LIMIT = 12;
 function formatReleaseLabel(dateString: string) {
   if (!dateString) return "Coming Soon";
 
+  // Render the date-only release string as a calendar date (UTC) so it doesn't
+  // slip to the prior day in a behind-UTC environment.
+  const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(dateString.trim());
   return new Date(dateString).toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
+    ...(isDateOnly ? { timeZone: "UTC" } : {}),
   });
 }
 
