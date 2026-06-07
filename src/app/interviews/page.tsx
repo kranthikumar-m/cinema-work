@@ -1,11 +1,10 @@
-import { articles, getArticlesByCategory } from "@/data/editorial";
-import { ArticleList } from "@/components/shared/ArticleList";
+import { NewsList } from "@/components/news/NewsList";
+import { getTeluguNews } from "@/services/telugu-news";
 
 export const metadata = { title: "Interviews - Telugu Cinema Updates" };
+export const revalidate = 1800;
 
-export default function InterviewsPage() {
-  const interviewArticles = getArticlesByCategory("interview");
-  const allArticles = interviewArticles.length > 0 ? interviewArticles : articles;
-
-  return <ArticleList title="Interviews" articles={allArticles} />;
+export default async function InterviewsPage() {
+  const items = await getTeluguNews("interview", 36);
+  return <NewsList title="Interviews" items={items} />;
 }

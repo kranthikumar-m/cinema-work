@@ -23,9 +23,9 @@ import { attachImdbRatings } from "@/services/omdb";
 import { HomeLandingHero } from "@/components/home/HomeLandingHero";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { MovieListWidget } from "@/components/movie/SidebarWidgets";
-import { FeaturedArticleCard } from "@/components/movie/FeaturedArticleCard";
+import { HomeStoriesFeed } from "@/components/news/HomeStoriesFeed";
 import { SectionHeader } from "@/components/shared/SectionHeader";
-import { articles } from "@/data/editorial";
+import { getHomeNewsFeed, type NewsItem } from "@/services/telugu-news";
 import { featuredHomepageHeroSeed } from "@/data/homepage";
 import { formatRuntime } from "@/lib/utils";
 import type { HomepageHeroItem, HomepageHeroSlide } from "@/types/homepage";
@@ -353,7 +353,9 @@ async function getData() {
       heroSlides.push(await buildFallbackFeatureBundle());
     }
 
-    return { heroSlides, latestReleases, popular, upcoming, topRated };
+    const newsFeed = await getHomeNewsFeed().catch(() => [] as NewsItem[]);
+
+    return { heroSlides, latestReleases, popular, upcoming, topRated, newsFeed };
   } catch (error) {
     console.error("Failed to load homepage data:", error);
     return {
@@ -362,6 +364,7 @@ async function getData() {
       popular: [],
       upcoming: [],
       topRated: [],
+      newsFeed: [] as NewsItem[],
     };
   }
 }
@@ -369,7 +372,7 @@ async function getData() {
 export default async function HomePage() {
   const data = await getData();
 
-  const { heroSlides, latestReleases, popular, upcoming, topRated } = data;
+  const { heroSlides, latestReleases, popular, upcoming, topRated, newsFeed } = data;
   const panelClass =
     "rounded-[28px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgba(39,44,64,0.92)_0%,rgba(29,34,51,0.9)_100%)] p-6 shadow-[0_24px_70px_rgba(7,10,18,0.22)] md:p-8";
 
@@ -398,17 +401,15 @@ export default async function HomePage() {
                 />
               </div>
 
-              <div className={panelClass}>
-                <SectionHeader
-                  title="Telugu Cinema Stories"
-                  href="/news"
-                />
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                  {articles.slice(0, 3).map((article) => (
-                    <FeaturedArticleCard key={article.id} article={article} />
-                  ))}
+              {newsFeed.length > 0 && (
+                <div className={panelClass}>
+                  <SectionHeader
+                    title="Telugu Cinema Stories"
+                    href="/news"
+                  />
+                  <HomeStoriesFeed items={newsFeed} limit={6} />
                 </div>
-              </div>
+              )}
 
               <div className={panelClass}>
                 <SectionHeader
