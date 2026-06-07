@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronLeft, ChevronRight, Images } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Images } from "lucide-react";
 import { getImageUrl } from "@/lib/utils";
 import type { MovieImage } from "@/types/tmdb";
 
@@ -49,6 +49,8 @@ export function PhotoGallery({ images, posterImages, title, extraImages }: Photo
   const [activeTab, setActiveTab] = useState<Tab>(defaultTab);
   const [selected, setSelected] = useState<number | null>(null);
   const activeThumbRef = useRef<HTMLButtonElement | null>(null);
+  const thumbStripRef = useRef<HTMLDivElement | null>(null);
+  const [thumbScroll, setThumbScroll] = useState({ up: false, down: false });
 
   // Preview shows a single desktop row; the last tile opens the full lightbox.
   const list = activeTab === "backdrops" ? backdrops : posters;
@@ -75,10 +77,27 @@ export function PhotoGallery({ images, posterImages, title, extraImages }: Photo
     };
   }, [selected, list.length]);
 
+  // Track whether the thumbnail strip can scroll up/down (to toggle nav arrows).
+  const updateThumbScroll = useCallback(() => {
+    const el = thumbStripRef.current;
+    if (!el) return;
+    setThumbScroll({
+      up: el.scrollTop > 4,
+      down: el.scrollTop + el.clientHeight < el.scrollHeight - 4,
+    });
+  }, []);
+
+  function scrollThumbs(direction: 1 | -1) {
+    const el = thumbStripRef.current;
+    if (!el) return;
+    el.scrollBy({ top: direction * el.clientHeight * 0.8, behavior: "smooth" });
+  }
+
   // Keep the active thumbnail visible in the strip.
   useEffect(() => {
     activeThumbRef.current?.scrollIntoView({ block: "nearest" });
-  }, [selected]);
+    updateThumbScroll();
+  }, [selected, list.length, updateThumbScroll]);
 
   // Aspect ratio of the open image, so the frame (and its nav arrows) hugs the
   // actual image instead of the full-width column — keeps arrows on portraits.
@@ -234,35 +253,70 @@ export function PhotoGallery({ images, posterImages, title, extraImages }: Photo
                 </div>
               </div>
 
-              {/* Thumbnail selection strip */}
-              <div className="h-full w-[76px] shrink-0 overflow-y-auto pr-1 sm:w-[104px] [scrollbar-width:thin]">
-                <div className="flex flex-col gap-2">
-                  {list.map((item, idx) => (
-                    <button
-                      key={item.thumbnailUrl}
-                      ref={idx === selected ? activeThumbRef : null}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelected(idx);
-                      }}
-                      className={`relative overflow-hidden rounded-md transition ${
-                        isLandscapeTab ? "aspect-video" : "aspect-[2/3]"
-                      } ${
-                        idx === selected
-                          ? "ring-2 ring-cyan-400"
-                          : "opacity-55 hover:opacity-100"
-                      }`}
-                    >
-                      <Image
-                        src={item.thumbnailUrl}
-                        alt={item.label || `${title} thumbnail ${idx + 1}`}
-                        fill
-                        className="object-cover"
-                        unoptimized
-                      />
-                    </button>
-                  ))}
+              {/* Thumbnail selection strip with up/down nav arrows (no scrollbar) */}
+              <div className="group/strip relative h-full w-[76px] shrink-0 sm:w-[104px]">
+                <div
+                  ref={thumbStripRef}
+                  onScroll={updateThumbScroll}
+                  className="h-full overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                >
+                  <div className="flex flex-col gap-2">
+                    {list.map((item, idx) => (
+                      <button
+                        key={item.thumbnailUrl}
+                        ref={idx === selected ? activeThumbRef : null}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelected(idx);
+                        }}
+                        className={`relative overflow-hidden rounded-md transition ${
+                          isLandscapeTab ? "aspect-video" : "aspect-[2/3]"
+                        } ${
+                          idx === selected
+                            ? "ring-2 ring-cyan-400"
+                            : "opacity-55 hover:opacity-100"
+                        }`}
+                      >
+                        <Image
+                          src={item.thumbnailUrl}
+                          alt={item.label || `${title} thumbnail ${idx + 1}`}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
+                {thumbScroll.up && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      scrollThumbs(-1);
+                    }}
+                    aria-label="Scroll thumbnails up"
+                    className="absolute inset-x-0 top-0 flex h-14 items-start justify-center bg-gradient-to-b from-black/80 via-black/30 to-transparent pt-2 opacity-0 transition-opacity duration-200 group-hover/strip:opacity-100"
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white transition hover:bg-black/80">
+                      <ChevronUp className="h-5 w-5" />
+                    </span>
+                  </button>
+                )}
+                {thumbScroll.down && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      scrollThumbs(1);
+                    }}
+                    aria-label="Scroll thumbnails down"
+                    className="absolute inset-x-0 bottom-0 flex h-14 items-end justify-center bg-gradient-to-t from-black/80 via-black/30 to-transparent pb-2 opacity-0 transition-opacity duration-200 group-hover/strip:opacity-100"
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white transition hover:bg-black/80">
+                      <ChevronDown className="h-5 w-5" />
+                    </span>
+                  </button>
+                )}
               </div>
             </div>
           </motion.div>
