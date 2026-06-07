@@ -159,23 +159,23 @@ export function PhotoGallery({ images, posterImages, title, extraImages }: Photo
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/95"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 sm:p-10"
             onClick={() => setSelected(null)}
           >
-            {/* Counter + close */}
+            {/* Counter + close (on the dimmed backdrop, clearly visible) */}
             <span className="absolute left-5 top-5 z-20 text-sm font-medium text-white/70">
               {selected + 1} / {list.length}
             </span>
             <button
               onClick={() => setSelected(null)}
-              className="absolute right-5 top-5 z-20 text-white/80 transition hover:text-white"
+              className="absolute right-5 top-5 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white/90 transition hover:bg-black/80 hover:text-white"
               aria-label="Close gallery"
             >
-              <X className="h-7 w-7" />
+              <X className="h-6 w-6" />
             </button>
 
             <div
-              className="flex h-full w-full items-stretch gap-3 p-4 sm:gap-5 sm:p-6"
+              className="relative flex h-[85vh] w-full max-w-[1500px] items-stretch gap-3 sm:gap-5"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Main image with edge-hover navigation */}
