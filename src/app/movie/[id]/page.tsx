@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
 import {
   getMovieDetails,
@@ -23,6 +24,7 @@ import {
 import { RatingRing } from "@/components/shared/RatingRing";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 import { CastCarousel } from "@/components/movie/CastCarousel";
+import { CrewList } from "@/components/movie/CrewList";
 import { PhotoGallery } from "@/components/movie/PhotoGallery";
 import type { GalleryImage } from "@/components/movie/PhotoGallery";
 import { ReviewCard } from "@/components/movie/ReviewCard";
@@ -566,7 +568,12 @@ export default async function MovieDetailPage({ params }: Props) {
                 {director && (
                   <p className="text-sm text-gray-300 mt-4">
                     <span className="text-gray-400">Director:</span>{" "}
-                    <span className="text-white font-medium">{director.name}</span>
+                    <Link
+                      href={`/person/${director.id}`}
+                      className="font-medium text-white transition-colors hover:text-[var(--color-accent)]"
+                    >
+                      {director.name}
+                    </Link>
                   </p>
                 )}
               </div>
@@ -582,6 +589,14 @@ export default async function MovieDetailPage({ params }: Props) {
           <SectionHeader title="Cast" />
           <CastCarousel cast={credits.cast} />
         </div>
+
+        {/* Crew */}
+        {credits.crew.length > 0 && (
+          <div className="mt-12">
+            <SectionHeader title="Crew" />
+            <CrewList crew={credits.crew} />
+          </div>
+        )}
 
         {/* Videos */}
         {allVideos.length > 0 && (
