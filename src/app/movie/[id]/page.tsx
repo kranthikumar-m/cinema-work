@@ -234,6 +234,22 @@ export default async function MovieDetailPage({ params }: Props) {
     { label: "Budget", values: [formatCurrency(movie.budget)] },
     { label: "Revenue", values: [formatCurrency(movie.revenue)] },
   ];
+  // Production companies: merge TMDB + IMDb (IMDb is often more complete),
+  // deduped by normalized name.
+  const productionCompanies = (() => {
+    const seen = new Set<string>();
+    const out: { name: string; detail: string | null }[] = [];
+    for (const c of [
+      ...movie.production_companies.map((p) => ({ name: p.name, detail: null })),
+      ...(imdbExtras?.productionCompanies ?? []),
+    ]) {
+      const key = c.name.toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      out.push(c);
+    }
+    return out;
+  })();
   const distributors = imdbExtras?.distributors ?? [];
   const otherCompanies = imdbExtras?.otherCompanies ?? [];
 
@@ -615,19 +631,16 @@ export default async function MovieDetailPage({ params }: Props) {
           </div>
         </section>
 
-        {/* Companies — Production (TMDB), Distributors & Other (IMDb) */}
-        {(movie.production_companies.length > 0 ||
+        {/* Company Credits — Production (TMDB+IMDb), Distributors & Other (IMDb) */}
+        {(productionCompanies.length > 0 ||
           distributors.length > 0 ||
           otherCompanies.length > 0) && (
           <section className="mt-12">
-            <SectionHeader title="Companies" />
+            <SectionHeader title="Company Credits" />
             <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              <CompanyGroup
-                label="Production"
-                items={movie.production_companies.map((c) => ({ name: c.name, detail: null }))}
-              />
+              <CompanyGroup label="Production" items={productionCompanies} />
               <CompanyGroup label="Distributors" items={distributors} />
-              <CompanyGroup label="Other" items={otherCompanies} />
+              <CompanyGroup label="Other Companies" items={otherCompanies} />
             </div>
           </section>
         )}

@@ -55,6 +55,7 @@ export interface ImdbTitleExtras {
   negativeFormats: string[];
   cinematographicProcesses: string[];
   printedFormats: string[];
+  productionCompanies: ImdbCompanyCredit[];
   distributors: ImdbCompanyCredit[];
   otherCompanies: ImdbCompanyCredit[];
 }
@@ -67,6 +68,7 @@ const NO_TITLE_EXTRAS: ImdbTitleExtras = {
   negativeFormats: [],
   cinematographicProcesses: [],
   printedFormats: [],
+  productionCompanies: [],
   distributors: [],
   otherCompanies: [],
 };
@@ -245,6 +247,7 @@ const fetchImdbTitleExtras = unstable_cache(
       const tech = title?.technicalSpecifications;
       const colorations = dedupeStrings((tech?.colorations?.items ?? []).map((i) => i.text));
 
+      const productionCompanies: ImdbCompanyCredit[] = [];
       const distributors: ImdbCompanyCredit[] = [];
       const otherCompanies: ImdbCompanyCredit[] = [];
       for (const edge of title?.companyCredits?.edges ?? []) {
@@ -252,7 +255,9 @@ const fetchImdbTitleExtras = unstable_cache(
         const name = node?.company?.companyText?.text?.trim();
         if (!name) continue;
         const category = node?.category?.text ?? "";
-        if (/distributor/i.test(category)) {
+        if (/production/i.test(category)) {
+          productionCompanies.push({ name, detail: null });
+        } else if (/distributor/i.test(category)) {
           distributors.push({ name, detail: companyDetail(node!) });
         } else if (/other/i.test(category)) {
           // IMDb's "Other Companies" section (music labels etc.) — not the
@@ -276,6 +281,7 @@ const fetchImdbTitleExtras = unstable_cache(
         printedFormats: dedupeStrings(
           (tech?.printedFormats?.items ?? []).map((i) => i.printedFormat)
         ),
+        productionCompanies: dedupeCompanies(productionCompanies).slice(0, 14),
         distributors: dedupeCompanies(distributors).slice(0, 14),
         otherCompanies: dedupeCompanies(otherCompanies).slice(0, 12),
       };
