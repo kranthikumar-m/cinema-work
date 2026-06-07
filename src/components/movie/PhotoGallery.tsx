@@ -90,7 +90,15 @@ export function PhotoGallery({ images, posterImages, title, extraImages }: Photo
   function scrollThumbs(direction: 1 | -1) {
     const el = thumbStripRef.current;
     if (!el) return;
-    el.scrollBy({ top: direction * el.clientHeight * 0.8, behavior: "smooth" });
+    // Jump two thumbnails at a time, measured from the rendered item pitch.
+    const items = el.firstElementChild?.children;
+    let step = el.clientHeight * 0.8;
+    if (items && items.length >= 2) {
+      const pitch =
+        (items[1] as HTMLElement).offsetTop - (items[0] as HTMLElement).offsetTop;
+      if (pitch > 0) step = pitch * 2;
+    }
+    el.scrollBy({ top: direction * step, behavior: "smooth" });
   }
 
   // Keep the active thumbnail visible in the strip.
