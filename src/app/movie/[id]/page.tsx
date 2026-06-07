@@ -649,19 +649,16 @@ export default async function MovieDetailPage({ params }: Props) {
               hasOverride={hasDetailOverride}
             />
           </div>
-          <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.5)]">
-            {detailFacts.map((row, idx) => (
+          <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.5)] sm:grid sm:grid-cols-2">
+            {detailFacts.map((row) => (
               <div
                 key={row.label}
-                className={`group relative flex flex-col gap-1.5 px-5 py-3.5 transition hover:bg-[rgba(194,154,98,0.06)] sm:flex-row sm:items-start sm:gap-6 ${
-                  idx ? "border-t border-[var(--color-border)]" : ""
-                }`}
+                className="group flex items-start gap-4 border-b border-[var(--color-border)] px-5 py-3.5 transition last:border-b-0 hover:bg-[rgba(194,154,98,0.06)] sm:odd:border-r sm:last:border-r-0 sm:[&:nth-last-child(-n+2)]:border-b-0"
               >
-                <span className="absolute left-0 top-0 h-full w-[2px] origin-top scale-y-0 bg-[var(--color-accent)] transition-transform duration-200 group-hover:scale-y-100" />
-                <span className="w-48 shrink-0 text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)] sm:pt-1">
+                <span className="w-36 shrink-0 pt-0.5 text-[0.68rem] font-semibold uppercase tracking-[0.13em] text-[var(--color-muted)]">
                   {row.label}
                 </span>
-                <div className="flex flex-wrap items-center gap-1.5">
+                <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                   {(row.chips ?? row.values.length > 1) ? (
                     row.values.map((v) => (
                       <span
