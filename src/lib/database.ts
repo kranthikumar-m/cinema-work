@@ -85,6 +85,12 @@ export interface DatabaseHiddenVideoRow {
   created_at: string;
 }
 
+export interface DatabaseHiddenMovieRow {
+  movie_id: number;
+  added_by_user_id: number | null;
+  created_at: string;
+}
+
 export interface DatabaseSongSyncRow {
   movie_id: number;
   last_synced_at: string;
@@ -196,6 +202,12 @@ interface InsertHiddenVideoRecordInput {
   createdAt: string;
 }
 
+interface InsertHiddenMovieRecordInput {
+  movieId: number;
+  addedByUserId: number | null;
+  createdAt: string;
+}
+
 interface StorageProvider {
   getUserByEmail(email: string): Promise<DatabaseUserRow | null>;
   getUserByIdentifier(identifier: string): Promise<DatabaseUserRow | null>;
@@ -233,6 +245,9 @@ interface StorageProvider {
   listHiddenVideos(movieId: number): Promise<DatabaseHiddenVideoRow[]>;
   insertHiddenVideo(input: InsertHiddenVideoRecordInput): Promise<void>;
   deleteHiddenVideo(movieId: number, youtubeKey: string): Promise<void>;
+  listHiddenMovies(): Promise<DatabaseHiddenMovieRow[]>;
+  insertHiddenMovie(input: InsertHiddenMovieRecordInput): Promise<void>;
+  deleteHiddenMovie(movieId: number): Promise<void>;
   getSongSync(movieId: number): Promise<DatabaseSongSyncRow | null>;
   upsertSongSync(movieId: number, syncedAt: string): Promise<void>;
   listTrendingSignals(): Promise<DatabaseTrendingSignalRow[]>;
@@ -299,6 +314,7 @@ const MANUAL_MOVIE_SELECT =
 const MOVIE_VIDEO_SELECT =
   "id,movie_id,youtube_key,title,category,added_by_user_id,created_at";
 const HIDDEN_VIDEO_SELECT = "id,movie_id,youtube_key,created_at";
+const HIDDEN_MOVIE_SELECT = "movie_id,added_by_user_id,created_at";
 const TRENDING_SIGNAL_SELECT =
   "movie_id,mention_count,mentions_updated_at,admin_order,admin_pinned,updated_at";
 const VALIDATED_YEAR_MOVIE_SELECT = "year,movie_id,payload,created_at";
@@ -443,6 +459,13 @@ function initializeSqliteDatabase(database: BetterSqlite3Database) {
     );
 
     CREATE INDEX IF NOT EXISTS idx_movie_hidden_videos_movie_id ON movie_hidden_videos(movie_id);
+
+    CREATE TABLE IF NOT EXISTS hidden_movies (
+      movie_id INTEGER PRIMARY KEY,
+      added_by_user_id INTEGER,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (added_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+    );
 
     CREATE TABLE IF NOT EXISTS movie_song_syncs (
       movie_id INTEGER PRIMARY KEY,
@@ -1055,6 +1078,22 @@ function createSqliteStorageProvider(databaseUrl: string): StorageProvider {
         .prepare("DELETE FROM movie_hidden_videos WHERE movie_id = ? AND youtube_key = ?")
         .run(movieId, youtubeKey);
     },
+    async listHiddenMovies() {
+      return database
+        .prepare(`SELECT ${HIDDEN_MOVIE_SELECT} FROM hidden_movies`)
+        .all<DatabaseHiddenMovieRow>();
+    },
+    async insertHiddenMovie(input) {
+      database
+        .prepare(
+          `INSERT OR IGNORE INTO hidden_movies (movie_id, added_by_user_id, created_at)
+           VALUES (?, ?, ?)`
+        )
+        .run(input.movieId, input.addedByUserId, input.createdAt);
+    },
+    async deleteHiddenMovie(movieId) {
+      database.prepare("DELETE FROM hidden_movies WHERE movie_id = ?").run(movieId);
+    },
     async getSongSync(movieId) {
       return (
         database
@@ -1649,6 +1688,29 @@ function createSupabaseStorageProvider(databaseUrl: string): StorageProvider {
         query: { movie_id: `eq.${movieId}`, youtube_key: `eq.${youtubeKey}` },
       });
     },
+    async listHiddenMovies() {
+      return selectRows<DatabaseHiddenMovieRow>("hidden_movies", {
+        select: HIDDEN_MOVIE_SELECT,
+      });
+    },
+    async insertHiddenMovie(input) {
+      await request("hidden_movies", {
+        method: "POST",
+        query: { on_conflict: "movie_id" },
+        body: {
+          movie_id: input.movieId,
+          added_by_user_id: input.addedByUserId,
+          created_at: input.createdAt,
+        },
+        prefer: ["resolution=merge-duplicates"],
+      });
+    },
+    async deleteHiddenMovie(movieId) {
+      await request("hidden_movies", {
+        method: "DELETE",
+        query: { movie_id: `eq.${movieId}` },
+      });
+    },
     async getSongSync(movieId) {
       return selectSingleRow<DatabaseSongSyncRow>("movie_song_syncs", {
         select: "movie_id,last_synced_at",
@@ -1986,6 +2048,23 @@ export async function addHiddenVideoKey(input: {
 
 export async function removeHiddenVideoKey(movieId: number, youtubeKey: string) {
   return requireStorageProvider().deleteHiddenVideo(movieId, youtubeKey);
+}
+
+export async function listHiddenMovieIds(): Promise<number[]> {
+  const rows = await requireStorageProvider().listHiddenMovies();
+  return rows.map((row) => row.movie_id);
+}
+
+export async function addHiddenMovie(input: {
+  movieId: number;
+  addedByUserId: number | null;
+  createdAt: string;
+}) {
+  return requireStorageProvider().insertHiddenMovie(input);
+}
+
+export async function removeHiddenMovie(movieId: number) {
+  return requireStorageProvider().deleteHiddenMovie(movieId);
 }
 
 export async function getSongSyncRecord(movieId: number) {

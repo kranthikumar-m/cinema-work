@@ -30,6 +30,7 @@ import {
   appendValidatedYearMovies,
   hasDatabaseConfiguration,
   isValidatedYearFrozen,
+  listHiddenMovieIds,
   listTrendingSignalRecords,
   listValidatedYearMovieRecords,
   listValidatedYearProgressRecords,
@@ -151,6 +152,24 @@ async function withMovieAssetList(movies: Movie[]) {
   }
 
   return enriched;
+}
+
+// Admin-hidden movie IDs ("Remove movie"). Memoized per request so the many
+// collection functions share one read; applied OUTSIDE the 6h catalog cache so
+// a removal takes effect on the next request.
+const getHiddenMovieIdSet = cache(async (): Promise<Set<number>> => {
+  if (!hasDatabaseConfiguration()) return new Set<number>();
+  try {
+    return new Set(await listHiddenMovieIds());
+  } catch {
+    return new Set<number>();
+  }
+});
+
+async function filterHiddenMovies<T extends Movie>(movies: T[]): Promise<T[]> {
+  const hidden = await getHiddenMovieIdSet();
+  if (!hidden.size) return movies;
+  return movies.filter((movie) => !hidden.has(movie.id));
 }
 
 type WikipediaReleaseEntry =
@@ -458,7 +477,8 @@ export async function getPopularTeluguMovies(limit = DEFAULT_COLLECTION_LIMIT) {
     { minResults: limit * 2 }
   );
 
-  return withMovieAssetList(sortByPopularity(movies).slice(0, limit));
+  const visible = await filterHiddenMovies(sortByPopularity(movies));
+  return withMovieAssetList(visible.slice(0, limit));
 }
 
 export async function getTopRatedTeluguMovies(limit = DEFAULT_COLLECTION_LIMIT) {
@@ -471,7 +491,8 @@ export async function getTopRatedTeluguMovies(limit = DEFAULT_COLLECTION_LIMIT) 
     { minResults: limit * 2 }
   );
 
-  return withMovieAssetList(movies.slice(0, limit));
+  const visible = await filterHiddenMovies(movies);
+  return withMovieAssetList(visible.slice(0, limit));
 }
 
 // Placeholder TMDB entries (no poster, "#Untitled …", bare codenames like
@@ -578,7 +599,8 @@ export async function getUpcomingTeluguMovies(limit = DEFAULT_COLLECTION_LIMIT) 
     (a.release_date || "9999-12-31").localeCompare(b.release_date || "9999-12-31")
   );
 
-  return merged.slice(0, limit);
+  const visible = await filterHiddenMovies(merged);
+  return visible.slice(0, limit);
 }
 
 export async function getLatestTeluguReleases(limit = DEFAULT_COLLECTION_LIMIT) {
@@ -599,7 +621,8 @@ export async function getLatestTeluguReleases(limit = DEFAULT_COLLECTION_LIMIT) 
     dedupeMovies(mergeUnique(validated, manualReleased))
   );
 
-  return merged.slice(0, limit);
+  const visible = await filterHiddenMovies(merged);
+  return visible.slice(0, limit);
 }
 
 function prioritizeTeluguSearchResults(movies: Movie[]) {
@@ -624,14 +647,16 @@ export async function searchTeluguMovies(
   const teluguMatches = response.results.filter(
     (movie) => movie.original_language === TELUGU_LANGUAGE
   );
-  const ranked = prioritizeTeluguSearchResults(
-    teluguMatches.length ? teluguMatches : response.results
+  const ranked = await filterHiddenMovies(
+    prioritizeTeluguSearchResults(
+      teluguMatches.length ? teluguMatches : response.results
+    )
   );
 
   return {
     ...response,
     results: await attachImdbRatings(await withMovieAssetList(ranked)),
-    total_results: teluguMatches.length ? teluguMatches.length : response.total_results,
+    total_results: teluguMatches.length ? ranked.length : response.total_results,
   };
 }
 
@@ -913,7 +938,8 @@ export async function getTeluguMoviesOnline(limit = ONLINE_BROWSE_LIMIT): Promis
     if (page >= (response.total_pages || page)) break;
   }
 
-  return withMovieAssetList(collected.slice(0, limit));
+  const visible = await filterHiddenMovies(collected);
+  return withMovieAssetList(visible.slice(0, limit));
 }
 
 /**
@@ -1008,7 +1034,7 @@ export async function browseTeluguMovies({
     });
   }
 
-  const sorted = sortBrowseMovies(pool, sort);
+  const sorted = await filterHiddenMovies(sortBrowseMovies(pool, sort));
 
   const totalResults = sorted.length;
   const totalPages = Math.max(1, Math.ceil(totalResults / TELUGU_BROWSE_PAGE_SIZE));

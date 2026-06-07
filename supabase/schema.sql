@@ -78,6 +78,12 @@ create table if not exists public.movie_hidden_videos (
 
 create index if not exists idx_movie_hidden_videos_movie_id on public.movie_hidden_videos(movie_id);
 
+create table if not exists public.hidden_movies (
+  movie_id bigint primary key,
+  added_by_user_id bigint references public.users(id) on delete set null,
+  created_at text not null
+);
+
 create index if not exists idx_sessions_token_hash on public.sessions(token_hash);
 create index if not exists idx_sessions_user_id on public.sessions(user_id);
 create index if not exists idx_users_role on public.users(role);
@@ -95,3 +101,4 @@ alter table public.validated_year_movies enable row level security;
 alter table public.validated_year_freezes enable row level security;
 alter table public.validated_year_progress enable row level security;
 alter table public.movie_hidden_videos enable row level security;
+alter table public.hidden_movies enable row level security;

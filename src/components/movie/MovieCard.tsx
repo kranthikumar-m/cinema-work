@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { getMoviePosterUrl, formatDate, truncate } from "@/lib/utils";
 import { RatingRing } from "@/components/shared/RatingRing";
+import { MovieAdminMenu } from "@/components/movie/MovieAdminControls";
 import type { Movie } from "@/types/tmdb";
 
 interface MovieCardProps {
@@ -12,7 +13,8 @@ interface MovieCardProps {
 
 export function MovieCard({ movie, priority = false, linkBase = "/movie" }: MovieCardProps) {
   return (
-    <Link href={`${linkBase}/${movie.id}`} className="group block">
+    <div className="group relative">
+      <Link href={`${linkBase}/${movie.id}`} className="block">
       <div className="relative overflow-hidden rounded-[22px] border border-[var(--color-border)] bg-[var(--color-bg-deep)] transition-transform duration-300 group-hover:scale-[1.01] group-hover:shadow-[0_18px_48px_rgba(7,10,18,0.22)]">
         <div className="aspect-[2/3] relative">
           <Image
@@ -43,6 +45,8 @@ export function MovieCard({ movie, priority = false, linkBase = "/movie" }: Movi
           {movie.release_date ? formatDate(movie.release_date) : "Coming soon"}
         </p>
       </div>
-    </Link>
+      </Link>
+      <MovieAdminMenu movieId={movie.id} movieTitle={movie.title} />
+    </div>
   );
 }
