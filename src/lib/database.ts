@@ -99,6 +99,14 @@ export interface DatabaseMovieReleaseOverrideRow {
   updated_at: string;
 }
 
+export interface DatabaseMovieDetailOverrideRow {
+  movie_id: number;
+  facts: string | null;
+  companies: string | null;
+  added_by_user_id: number | null;
+  updated_at: string;
+}
+
 export interface DatabaseSongSyncRow {
   movie_id: number;
   last_synced_at: string;
@@ -224,6 +232,14 @@ interface UpsertMovieReleaseOverrideInput {
   updatedAt: string;
 }
 
+interface UpsertMovieDetailOverrideInput {
+  movieId: number;
+  facts: string | null;
+  companies: string | null;
+  addedByUserId: number | null;
+  updatedAt: string;
+}
+
 interface StorageProvider {
   getUserByEmail(email: string): Promise<DatabaseUserRow | null>;
   getUserByIdentifier(identifier: string): Promise<DatabaseUserRow | null>;
@@ -268,6 +284,9 @@ interface StorageProvider {
   getMovieReleaseOverride(movieId: number): Promise<DatabaseMovieReleaseOverrideRow | null>;
   upsertMovieReleaseOverride(input: UpsertMovieReleaseOverrideInput): Promise<void>;
   deleteMovieReleaseOverride(movieId: number): Promise<void>;
+  getMovieDetailOverride(movieId: number): Promise<DatabaseMovieDetailOverrideRow | null>;
+  upsertMovieDetailOverride(input: UpsertMovieDetailOverrideInput): Promise<void>;
+  deleteMovieDetailOverride(movieId: number): Promise<void>;
   getSongSync(movieId: number): Promise<DatabaseSongSyncRow | null>;
   upsertSongSync(movieId: number, syncedAt: string): Promise<void>;
   listTrendingSignals(): Promise<DatabaseTrendingSignalRow[]>;
@@ -337,6 +356,8 @@ const HIDDEN_VIDEO_SELECT = "id,movie_id,youtube_key,created_at";
 const HIDDEN_MOVIE_SELECT = "movie_id,added_by_user_id,created_at";
 const RELEASE_OVERRIDE_SELECT =
   "movie_id,release_date,aliases,added_by_user_id,updated_at";
+const DETAIL_OVERRIDE_SELECT =
+  "movie_id,facts,companies,added_by_user_id,updated_at";
 const TRENDING_SIGNAL_SELECT =
   "movie_id,mention_count,mentions_updated_at,admin_order,admin_pinned,updated_at";
 const VALIDATED_YEAR_MOVIE_SELECT = "year,movie_id,payload,created_at";
@@ -493,6 +514,15 @@ function initializeSqliteDatabase(database: BetterSqlite3Database) {
       movie_id INTEGER PRIMARY KEY,
       release_date TEXT,
       aliases TEXT,
+      added_by_user_id INTEGER,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (added_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS movie_detail_overrides (
+      movie_id INTEGER PRIMARY KEY,
+      facts TEXT,
+      companies TEXT,
       added_by_user_id INTEGER,
       updated_at TEXT NOT NULL,
       FOREIGN KEY (added_by_user_id) REFERENCES users(id) ON DELETE SET NULL
@@ -1163,6 +1193,33 @@ function createSqliteStorageProvider(databaseUrl: string): StorageProvider {
         .prepare("DELETE FROM movie_release_overrides WHERE movie_id = ?")
         .run(movieId);
     },
+    async getMovieDetailOverride(movieId) {
+      return (
+        database
+          .prepare(
+            `SELECT ${DETAIL_OVERRIDE_SELECT} FROM movie_detail_overrides WHERE movie_id = ?`
+          )
+          .get<DatabaseMovieDetailOverrideRow>(movieId) ?? null
+      );
+    },
+    async upsertMovieDetailOverride(input) {
+      database
+        .prepare(
+          `INSERT INTO movie_detail_overrides (movie_id, facts, companies, added_by_user_id, updated_at)
+           VALUES (?, ?, ?, ?, ?)
+           ON CONFLICT(movie_id) DO UPDATE SET
+             facts = excluded.facts,
+             companies = excluded.companies,
+             added_by_user_id = excluded.added_by_user_id,
+             updated_at = excluded.updated_at`
+        )
+        .run(input.movieId, input.facts, input.companies, input.addedByUserId, input.updatedAt);
+    },
+    async deleteMovieDetailOverride(movieId) {
+      database
+        .prepare("DELETE FROM movie_detail_overrides WHERE movie_id = ?")
+        .run(movieId);
+    },
     async getSongSync(movieId) {
       return (
         database
@@ -1811,6 +1868,32 @@ function createSupabaseStorageProvider(databaseUrl: string): StorageProvider {
         query: { movie_id: `eq.${movieId}` },
       });
     },
+    async getMovieDetailOverride(movieId) {
+      return selectSingleRow<DatabaseMovieDetailOverrideRow>("movie_detail_overrides", {
+        select: DETAIL_OVERRIDE_SELECT,
+        movie_id: `eq.${movieId}`,
+      });
+    },
+    async upsertMovieDetailOverride(input) {
+      await request("movie_detail_overrides", {
+        method: "POST",
+        query: { on_conflict: "movie_id" },
+        body: {
+          movie_id: input.movieId,
+          facts: input.facts,
+          companies: input.companies,
+          added_by_user_id: input.addedByUserId,
+          updated_at: input.updatedAt,
+        },
+        prefer: ["resolution=merge-duplicates"],
+      });
+    },
+    async deleteMovieDetailOverride(movieId) {
+      await request("movie_detail_overrides", {
+        method: "DELETE",
+        query: { movie_id: `eq.${movieId}` },
+      });
+    },
     async getSongSync(movieId) {
       return selectSingleRow<DatabaseSongSyncRow>("movie_song_syncs", {
         select: "movie_id,last_synced_at",
@@ -2187,6 +2270,24 @@ export async function upsertMovieReleaseOverrideRecord(input: {
 
 export async function deleteMovieReleaseOverrideRecord(movieId: number) {
   return requireStorageProvider().deleteMovieReleaseOverride(movieId);
+}
+
+export async function getMovieDetailOverrideRecord(movieId: number) {
+  return requireStorageProvider().getMovieDetailOverride(movieId);
+}
+
+export async function upsertMovieDetailOverrideRecord(input: {
+  movieId: number;
+  facts: string | null;
+  companies: string | null;
+  addedByUserId: number | null;
+  updatedAt: string;
+}) {
+  return requireStorageProvider().upsertMovieDetailOverride(input);
+}
+
+export async function deleteMovieDetailOverrideRecord(movieId: number) {
+  return requireStorageProvider().deleteMovieDetailOverride(movieId);
 }
 
 export async function getSongSyncRecord(movieId: number) {

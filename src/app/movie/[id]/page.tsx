@@ -33,11 +33,13 @@ import { resolvePreferredBackdrop } from "@/services/movie-backdrops";
 import { getMovieMusic, type MovieMusic } from "@/services/movie-music";
 import { getMovieTrailers, type MovieTrailerVideo } from "@/services/movie-trailers";
 import { getMovieIndiaOttProviders, type OttProvider } from "@/services/telugu-ott";
+import { MovieDetailsAdminEditor } from "@/components/movie/MovieDetailsAdminEditor";
 import {
   getCustomImageRecordsByMovieId,
   listMovieVideoRecords,
   listHiddenVideoKeys,
   getMovieReleaseOverrideRecord,
+  getMovieDetailOverrideRecord,
   hasDatabaseConfiguration,
 } from "@/lib/database";
 import { VideoSection } from "@/components/movie/VideoSection";
@@ -170,6 +172,7 @@ export default async function MovieDetailPage({ params }: Props) {
     releaseOverride,
     keywordData,
     imdbExtras,
+    detailOverride,
   ] = await Promise.all([
       hasDatabaseConfiguration()
         ? getCustomImageRecordsByMovieId(id)
@@ -194,6 +197,9 @@ export default async function MovieDetailPage({ params }: Props) {
         : Promise.resolve(null),
       getMovieKeywords(id).catch(() => ({ keywords: [] })),
       getImdbTitleExtras(movie.imdb_id).catch(() => null),
+      hasDatabaseConfiguration()
+        ? getMovieDetailOverrideRecord(id)
+        : Promise.resolve(null),
     ]);
 
   // Plot keywords shown as tags next to genres (Title Cased for display).
@@ -252,6 +258,41 @@ export default async function MovieDetailPage({ params }: Props) {
   })();
   const distributors = imdbExtras?.distributors ?? [];
   const otherCompanies = imdbExtras?.otherCompanies ?? [];
+
+  // Admin overrides (full snapshots) replace the auto-sourced data when present.
+  let detailFacts: { label: string; values: string[]; chips?: boolean }[] = factRows;
+  let companyCredits = {
+    production: productionCompanies,
+    distributors,
+    other: otherCompanies,
+  };
+  if (detailOverride?.facts) {
+    try {
+      const parsed = JSON.parse(detailOverride.facts);
+      if (Array.isArray(parsed)) {
+        detailFacts = parsed.filter(
+          (r) => r && typeof r.label === "string" && Array.isArray(r.values)
+        );
+      }
+    } catch {
+      /* ignore malformed */
+    }
+  }
+  if (detailOverride?.companies) {
+    try {
+      const parsed = JSON.parse(detailOverride.companies);
+      if (parsed && typeof parsed === "object") {
+        companyCredits = {
+          production: Array.isArray(parsed.production) ? parsed.production : [],
+          distributors: Array.isArray(parsed.distributors) ? parsed.distributors : [],
+          other: Array.isArray(parsed.other) ? parsed.other : [],
+        };
+      }
+    } catch {
+      /* ignore malformed */
+    }
+  }
+  const hasDetailOverride = Boolean(detailOverride?.facts || detailOverride?.companies);
 
   // Apply admin ABO calibration: corrected release date + alias tags.
   const releaseDateDisplay = releaseOverride?.release_date || movie.release_date;
@@ -597,9 +638,19 @@ export default async function MovieDetailPage({ params }: Props) {
 
         {/* Facts Panel — clean definition rows with chips for multi-value fields */}
         <section id="box-office" className="mt-12 scroll-mt-[170px]">
-          <SectionHeader title="Movie Facts" />
+          <div className="mb-6 flex items-center justify-between gap-3">
+            <h2 className="font-[family-name:var(--font-heading)] text-xl font-bold text-[var(--color-text)] md:text-2xl">
+              Movie Facts
+            </h2>
+            <MovieDetailsAdminEditor
+              movieId={id}
+              facts={detailFacts.map((r) => ({ label: r.label, values: r.values }))}
+              companies={companyCredits}
+              hasOverride={hasDetailOverride}
+            />
+          </div>
           <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.5)]">
-            {factRows.map((row, idx) => (
+            {detailFacts.map((row, idx) => (
               <div
                 key={row.label}
                 className={`group relative flex flex-col gap-1.5 px-5 py-3.5 transition hover:bg-[rgba(194,154,98,0.06)] sm:flex-row sm:items-start sm:gap-6 ${
@@ -611,7 +662,7 @@ export default async function MovieDetailPage({ params }: Props) {
                   {row.label}
                 </span>
                 <div className="flex flex-wrap items-center gap-1.5">
-                  {row.chips ? (
+                  {(row.chips ?? row.values.length > 1) ? (
                     row.values.map((v) => (
                       <span
                         key={v}
@@ -632,15 +683,15 @@ export default async function MovieDetailPage({ params }: Props) {
         </section>
 
         {/* Company Credits — Production (TMDB+IMDb), Distributors & Other (IMDb) */}
-        {(productionCompanies.length > 0 ||
-          distributors.length > 0 ||
-          otherCompanies.length > 0) && (
+        {(companyCredits.production.length > 0 ||
+          companyCredits.distributors.length > 0 ||
+          companyCredits.other.length > 0) && (
           <section className="mt-12">
             <SectionHeader title="Company Credits" />
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              <CompanyGroup label="Production" items={productionCompanies} />
-              <CompanyGroup label="Distributors" items={distributors} />
-              <CompanyGroup label="Other Companies" items={otherCompanies} />
+            <div className="grid items-start gap-6 md:grid-cols-2 xl:grid-cols-3">
+              <CompanyGroup label="Production" items={companyCredits.production} />
+              <CompanyGroup label="Distributors" items={companyCredits.distributors} />
+              <CompanyGroup label="Other Companies" items={companyCredits.other} />
             </div>
           </section>
         )}

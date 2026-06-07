@@ -116,3 +116,25 @@ export interface YouTubeSearchResult {
   thumbnailUrl: string;
   channelTitle: string;
 }
+
+// Admin-editable movie detail overrides (Movie Facts + Company Credits).
+export interface DetailFact {
+  label: string;
+  values: string[];
+}
+
+export interface DetailCompany {
+  name: string;
+  detail: string | null;
+}
+
+export interface MovieCompanyCredits {
+  production: DetailCompany[];
+  distributors: DetailCompany[];
+  other: DetailCompany[];
+}
+
+export interface MovieDetailOverridePayload {
+  facts: DetailFact[] | null;
+  companies: MovieCompanyCredits | null;
+}
