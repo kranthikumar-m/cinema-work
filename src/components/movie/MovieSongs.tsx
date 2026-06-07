@@ -91,7 +91,7 @@ export function MovieSongs({ music, movieId, movieTitle, albumImage }: MovieSong
         </div>
 
         {/* Track list */}
-        <ul className="divide-y divide-[var(--color-border)] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.5)]">
+        <ul className="self-start divide-y divide-[var(--color-border)] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.5)]">
           {songs.map((song, index) => {
             const views = formatCount(song.youtubeViews);
             const playable = Boolean(song.youtubeKey);
