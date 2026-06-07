@@ -13,6 +13,7 @@ const KEY_ROLES: { label: string; categoryId: string }[] = [
   { label: "Producer", categoryId: "producer" },
   { label: "Music", categoryId: "composer" },
   { label: "Cinematographer", categoryId: "cinematographer" },
+  { label: "Editor", categoryId: "editor" },
 ];
 
 function initials(name: string): string {
