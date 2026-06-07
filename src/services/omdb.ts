@@ -196,6 +196,17 @@ const resolveImdbIdViaSuggestion = unstable_cache(
   { revalidate: RATING_CACHE_SECONDS }
 );
 
+/**
+ * Resolves an IMDb id ("tt…") from a film title via IMDb's suggestion API.
+ * Used to bridge a non-TMDB-discovered title to TMDB (via /find?imdb_id).
+ */
+export function resolveImdbIdFromTitle(
+  title: string,
+  year: number | null
+): Promise<string | null> {
+  return resolveImdbIdViaSuggestion(title, year);
+}
+
 async function resolveImdbRating(movie: Movie): Promise<ImdbRating> {
   const title = movie.title?.trim();
   let imdbId = (movie as { imdb_id?: string | null }).imdb_id ?? null;

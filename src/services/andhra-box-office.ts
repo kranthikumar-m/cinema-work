@@ -39,6 +39,9 @@ function decodeEntities(value: string): string {
 function parseAndhraBoxOffice(html: string): AndhraBoxOfficeEntry[] {
   const text = decodeEntities(
     html
+      // Drop script/style bodies first so their JS/CSS text isn't parsed as rows.
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
       .replace(/<br\s*\/?>/gi, "\n")
       .replace(/<\/div>/gi, "\n")
       .replace(/<\/p>/gi, "\n")

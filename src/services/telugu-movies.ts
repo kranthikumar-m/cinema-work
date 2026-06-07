@@ -2,6 +2,7 @@ import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import {
   discoverMovies,
+  findMovieByImdbId,
   getMovieDetails,
   searchMovies,
 } from "@/services/tmdb";
@@ -25,7 +26,7 @@ import {
 } from "@/services/wikipedia";
 import { getMovieFallbackAssets } from "@/services/google-images";
 import { getManuallyAddedMovies, mergeUnique } from "@/services/manual-movies";
-import { attachImdbRatings } from "@/services/omdb";
+import { attachImdbRatings, resolveImdbIdFromTitle } from "@/services/omdb";
 import {
   appendValidatedYearMovies,
   hasDatabaseConfiguration,
@@ -519,6 +520,88 @@ function matchesAndhraBoxOffice(
   return best >= WIKI_MATCH_STRONG_SCORE;
 }
 
+// Best Telugu, upcoming TMDB record for an AndhraBoxOffice title. Released
+// same-title films are skipped (ABO entries here are unreleased).
+function pickAboTmdbMatch(
+  entry: AndhraBoxOfficeEntry,
+  movies: Movie[],
+  today: string
+): Movie | null {
+  let best: { movie: Movie; score: number } | null = null;
+  for (const movie of movies) {
+    if (movie.original_language !== TELUGU_LANGUAGE) continue;
+    if (movie.release_date && movie.release_date <= today) continue;
+    const score = getTeluguTitleSimilarityScore(entry.title, movie.title);
+    if (!best || score > best.score) best = { movie, score };
+  }
+  return best && best.score >= WIKI_MATCH_STRONG_SCORE ? best.movie : null;
+}
+
+// Resolves one ABO title to a real TMDB record: first by TMDB title search,
+// then by bridging through IMDb's id (suggestion API → TMDB /find). Returns
+// null when neither source has a matching Telugu upcoming film.
+async function resolveAndhraBoxOfficeMovie(
+  entry: AndhraBoxOfficeEntry,
+  today: string
+): Promise<Movie | null> {
+  const year = entry.releaseDate ? Number(entry.releaseDate.slice(0, 4)) : null;
+
+  let searchResults: Movie[] = [];
+  try {
+    searchResults = (await searchMovies(entry.title)).results ?? [];
+  } catch {
+    /* ignore */
+  }
+  const direct = pickAboTmdbMatch(entry, searchResults, today);
+  if (direct) return direct;
+
+  // Not found by TMDB title search → resolve via IMDb, then map back to TMDB.
+  try {
+    const imdbId = await resolveImdbIdFromTitle(entry.title, year);
+    if (imdbId) {
+      const found = (await findMovieByImdbId(imdbId)).movie_results ?? [];
+      const viaImdb = pickAboTmdbMatch(entry, found, today);
+      if (viaImdb) return viaImdb;
+    }
+  } catch {
+    /* ignore */
+  }
+
+  return null;
+}
+
+// AndhraBoxOffice-listed upcoming Telugu films, resolved to TMDB records so
+// they're real, linkable movies — covering titles TMDB discover missed. Cached
+// 24h (heavy: a search, sometimes an IMDb lookup, per title).
+const getAndhraBoxOfficeSourcedUpcoming = unstable_cache(
+  async (): Promise<Movie[]> => {
+    const today = getIndianTodayIsoDate();
+    const entries = await getAndhraBoxOfficeUpcoming().catch(
+      () => [] as AndhraBoxOfficeEntry[]
+    );
+
+    // Unreleased entries only, deduped by normalized title.
+    const seen = new Set<string>();
+    const upcomingEntries = entries.filter((entry) => {
+      if (entry.releaseDate && entry.releaseDate <= today) return false;
+      if (seen.has(entry.normalizedTitle)) return false;
+      seen.add(entry.normalizedTitle);
+      return true;
+    });
+
+    const resolved = await Promise.all(
+      upcomingEntries.map((entry) =>
+        resolveAndhraBoxOfficeMovie(entry, today).catch(() => null)
+      )
+    );
+
+    const movies = dedupeMovies(resolved.filter((m): m is Movie => m !== null));
+    return withMovieAssetList(movies);
+  },
+  ["abo-sourced-upcoming-v1"],
+  { revalidate: 86400, tags: [VALIDATED_CATALOG_CACHE_TAG] }
+);
+
 export async function getUpcomingTeluguMovies(limit = DEFAULT_COLLECTION_LIMIT) {
   const today = getIndianTodayIsoDate();
   const currentYear = getIndianCurrentYear();
@@ -588,14 +671,27 @@ export async function getUpcomingTeluguMovies(limit = DEFAULT_COLLECTION_LIMIT) 
     // Otherwise: drop placeholder/junk entries.
   }
 
+  // AndhraBoxOffice-listed films TMDB discover missed, resolved to TMDB records
+  // (then via IMDb). They're ABO-confirmed; keep an upcoming date, else blank it
+  // so the card reads "Coming soon".
+  const aboSourced = (await getAndhraBoxOfficeSourcedUpcoming().catch(() => [] as Movie[])).map(
+    (movie) =>
+      movie.release_date && movie.release_date > today
+        ? movie
+        : { ...movie, release_date: "" }
+  );
+
   // Fold in admin-added movies whose release date is in the future (or unknown).
   const manual = await getManuallyAddedMovies().catch(() => [] as Movie[]);
   const manualUpcoming = manual.filter(
     (movie) => !movie.release_date || movie.release_date > today
   );
 
-  // Undated ("Coming soon") titles sort to the end.
-  const merged = dedupeMovies(mergeUnique(kept, manualUpcoming)).sort((a, b) =>
+  // Undated ("Coming soon") titles sort to the end. Discover-validated entries
+  // win over ABO-sourced and manual ones on overlap.
+  const merged = dedupeMovies(
+    mergeUnique(mergeUnique(kept, aboSourced), manualUpcoming)
+  ).sort((a, b) =>
     (a.release_date || "9999-12-31").localeCompare(b.release_date || "9999-12-31")
   );
 

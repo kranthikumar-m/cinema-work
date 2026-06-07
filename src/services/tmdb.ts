@@ -114,6 +114,13 @@ export async function searchMovies(
   return tmdbFetch("/search/movie", { query, page: String(page) });
 }
 
+// Resolves a TMDB movie from an external IMDb id (e.g. "tt1234567").
+export async function findMovieByImdbId(
+  imdbId: string
+): Promise<{ movie_results: Movie[] }> {
+  return tmdbFetch(`/find/${imdbId}`, { external_source: "imdb_id" });
+}
+
 // Genres
 export async function getGenres(): Promise<{ genres: Genre[] }> {
   return tmdbFetch("/genre/movie/list");
