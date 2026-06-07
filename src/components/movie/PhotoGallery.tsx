@@ -80,6 +80,16 @@ export function PhotoGallery({ images, posterImages, title, extraImages }: Photo
     activeThumbRef.current?.scrollIntoView({ block: "nearest" });
   }, [selected]);
 
+  // Aspect ratio of the open image, so the frame (and its nav arrows) hugs the
+  // actual image instead of the full-width column — keeps arrows on portraits.
+  const current = selected !== null ? list[selected] : null;
+  const currentAspect =
+    current && current.aspectRatio && current.aspectRatio > 0
+      ? current.aspectRatio
+      : isLandscapeTab
+        ? 16 / 9
+        : 2 / 3;
+
   if (!backdrops.length && !posters.length) return null;
 
   return (
@@ -159,7 +169,7 @@ export function PhotoGallery({ images, posterImages, title, extraImages }: Photo
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 sm:p-10"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-sm sm:p-10"
             onClick={() => setSelected(null)}
           >
             {/* Counter + close (on the dimmed backdrop, clearly visible) */}
@@ -180,43 +190,48 @@ export function PhotoGallery({ images, posterImages, title, extraImages }: Photo
             >
               {/* Main image with edge-hover navigation */}
               <div className="relative flex min-w-0 flex-1 items-center justify-center">
-                <Image
-                  key={list[selected].fullUrl}
-                  src={list[selected].fullUrl}
-                  alt={list[selected].label || `${title} photo ${selected + 1}`}
-                  fill
-                  className="object-contain"
-                  unoptimized
-                />
+                <div
+                  className="relative h-full max-h-full max-w-full"
+                  style={{ aspectRatio: String(currentAspect) }}
+                >
+                  <Image
+                    key={list[selected].fullUrl}
+                    src={list[selected].fullUrl}
+                    alt={list[selected].label || `${title} photo ${selected + 1}`}
+                    fill
+                    className="object-contain"
+                    unoptimized
+                  />
 
-                {selected > 0 && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelected(selected - 1);
-                    }}
-                    aria-label="Previous image"
-                    className="group/nav absolute left-0 top-0 flex h-full w-1/5 items-center justify-start pl-2 sm:pl-5"
-                  >
-                    <span className="flex h-12 w-12 items-center justify-center rounded-full bg-black/0 text-white opacity-0 transition-all duration-200 group-hover/nav:bg-black/45 group-hover/nav:opacity-100">
-                      <ChevronLeft className="h-7 w-7" />
-                    </span>
-                  </button>
-                )}
-                {selected < list.length - 1 && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelected(selected + 1);
-                    }}
-                    aria-label="Next image"
-                    className="group/nav absolute right-0 top-0 flex h-full w-1/5 items-center justify-end pr-2 sm:pr-5"
-                  >
-                    <span className="flex h-12 w-12 items-center justify-center rounded-full bg-black/0 text-white opacity-0 transition-all duration-200 group-hover/nav:bg-black/45 group-hover/nav:opacity-100">
-                      <ChevronRight className="h-7 w-7" />
-                    </span>
-                  </button>
-                )}
+                  {selected > 0 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelected(selected - 1);
+                      }}
+                      aria-label="Previous image"
+                      className="group/nav absolute left-0 top-0 flex h-full w-1/4 items-center justify-start pl-2 sm:pl-3"
+                    >
+                      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-black/0 text-white opacity-0 transition-all duration-200 group-hover/nav:bg-black/45 group-hover/nav:opacity-100">
+                        <ChevronLeft className="h-7 w-7" />
+                      </span>
+                    </button>
+                  )}
+                  {selected < list.length - 1 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelected(selected + 1);
+                      }}
+                      aria-label="Next image"
+                      className="group/nav absolute right-0 top-0 flex h-full w-1/4 items-center justify-end pr-2 sm:pr-3"
+                    >
+                      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-black/0 text-white opacity-0 transition-all duration-200 group-hover/nav:bg-black/45 group-hover/nav:opacity-100">
+                        <ChevronRight className="h-7 w-7" />
+                      </span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Thumbnail selection strip */}
