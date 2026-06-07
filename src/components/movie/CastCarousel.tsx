@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { getImageUrl } from "@/lib/utils";
+import { ScrollRow } from "@/components/shared/ScrollRow";
 import type { CastMember } from "@/types/tmdb";
 
 interface CastCarouselProps {
@@ -21,7 +22,7 @@ export function CastCarousel({ cast }: CastCarouselProps) {
   if (!visible.length) return null;
 
   return (
-    <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
+    <ScrollRow>
       {visible.map((person) => (
         <Link
           key={person.id}
@@ -44,6 +45,6 @@ export function CastCarousel({ cast }: CastCarouselProps) {
           </div>
         </Link>
       ))}
-    </div>
+    </ScrollRow>
   );
 }

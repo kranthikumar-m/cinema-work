@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { ScrollRow } from "@/components/shared/ScrollRow";
 import type { ImdbCastCredit } from "@/services/omdb";
 
 function initials(name: string): string {
@@ -23,7 +24,7 @@ export function ImdbCastCarousel({ cast }: { cast: ImdbCastCredit[] }) {
   if (!visible.length) return null;
 
   return (
-    <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
+    <ScrollRow>
       {visible.map((person) => (
         <a
           key={`${person.id}-${person.name}`}
@@ -54,6 +55,6 @@ export function ImdbCastCarousel({ cast }: { cast: ImdbCastCredit[] }) {
           </div>
         </a>
       ))}
-    </div>
+    </ScrollRow>
   );
 }
