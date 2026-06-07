@@ -23,30 +23,35 @@ export function ImdbCastCarousel({ cast }: { cast: ImdbCastCredit[] }) {
   if (!visible.length) return null;
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+    <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
       {visible.map((person) => (
         <a
           key={`${person.id}-${person.name}`}
           href={imdbNameUrl(person.id)}
           target="_blank"
           rel="noopener noreferrer"
-          className="group w-32 flex-shrink-0"
+          className="group relative block aspect-[2/3] w-36 shrink-0 overflow-hidden rounded-xl bg-[var(--color-bg-elevated)]"
         >
-          <div className="relative mx-auto mb-2 flex h-32 w-32 items-center justify-center overflow-hidden rounded-full bg-[var(--color-bg-elevated)] text-lg font-semibold text-[var(--color-muted)] ring-0 ring-[var(--color-accent)] transition group-hover:ring-2">
-            {person.imageUrl ? (
-              <Image src={person.imageUrl} alt={person.name} fill className="object-cover" unoptimized />
-            ) : (
-              <span>{initials(person.name)}</span>
+          {person.imageUrl ? (
+            <Image
+              src={person.imageUrl}
+              alt={person.name}
+              fill
+              sizes="144px"
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              unoptimized
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center text-2xl font-semibold text-[var(--color-muted)]">
+              {initials(person.name)}
+            </div>
+          )}
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/45 to-transparent px-2.5 pb-2.5 pt-10 text-center">
+            <p className="truncate text-sm font-semibold text-white">{person.name}</p>
+            {person.characters.length > 0 && (
+              <p className="truncate text-xs text-white/65">{person.characters.join(", ")}</p>
             )}
           </div>
-          <p className="truncate text-center text-sm font-medium text-white transition-colors group-hover:text-[var(--color-accent)]">
-            {person.name}
-          </p>
-          {person.characters.length > 0 && (
-            <p className="truncate text-center text-xs text-gray-400">
-              {person.characters.join(", ")}
-            </p>
-          )}
         </a>
       ))}
     </div>

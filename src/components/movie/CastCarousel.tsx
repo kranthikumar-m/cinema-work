@@ -21,28 +21,27 @@ export function CastCarousel({ cast }: CastCarouselProps) {
   if (!visible.length) return null;
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+    <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
       {visible.map((person) => (
         <Link
           key={person.id}
           href={`/person/${person.id}`}
-          className="group w-32 flex-shrink-0"
+          className="group relative block aspect-[2/3] w-36 shrink-0 overflow-hidden rounded-xl bg-[var(--color-bg-elevated)]"
         >
-          <div className="relative mx-auto mb-2 h-32 w-32 overflow-hidden rounded-full bg-gray-800 ring-0 ring-[var(--color-accent)] transition group-hover:ring-2">
-            <Image
-              src={getImageUrl(person.profile_path, "w200")}
-              alt={person.name}
-              fill
-              className="object-cover"
-              unoptimized={!person.profile_path}
-            />
+          <Image
+            src={getImageUrl(person.profile_path, "w500")}
+            alt={person.name}
+            fill
+            sizes="144px"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            unoptimized={!person.profile_path}
+          />
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/45 to-transparent px-2.5 pb-2.5 pt-10 text-center">
+            <p className="truncate text-sm font-semibold text-white">{person.name}</p>
+            {person.character && (
+              <p className="truncate text-xs text-white/65">{person.character}</p>
+            )}
           </div>
-          <p className="truncate text-center text-sm font-medium text-white transition-colors group-hover:text-[var(--color-accent)]">
-            {person.name}
-          </p>
-          <p className="truncate text-center text-xs text-gray-400">
-            {person.character}
-          </p>
         </Link>
       ))}
     </div>
