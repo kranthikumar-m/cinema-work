@@ -31,6 +31,7 @@ import { attachImdbRating } from "@/services/omdb";
 import { resolvePreferredBackdrop } from "@/services/movie-backdrops";
 import { getMovieMusic, type MovieMusic } from "@/services/movie-music";
 import { getMovieTrailers, type MovieTrailerVideo } from "@/services/movie-trailers";
+import { getMovieIndiaOttProviders, type OttProvider } from "@/services/telugu-ott";
 import {
   getCustomImageRecordsByMovieId,
   listMovieVideoRecords,
@@ -123,16 +124,6 @@ export default async function MovieDetailPage({ params }: Props) {
   }
 
   const director = credits.crew.find((c) => c.job === "Director");
-  // Watch providers shown as separate region groups (India OTT first, then US).
-  const watchRegions = [
-    { code: "IN", label: "India" },
-    { code: "US", label: "United States" },
-  ]
-    .map((region) => ({
-      ...region,
-      providers: flattenWatchProviders(providers.results?.[region.code]),
-    }))
-    .filter((region) => region.providers.length > 0);
   const similarTeluguMovies = similar.results
     .filter((item) => item.original_language === "te")
     .slice(0, 6);
@@ -173,6 +164,38 @@ export default async function MovieDetailPage({ params }: Props) {
       /* ignore malformed */
     }
   }
+  // Watch providers as separate region groups. India = TMDB IN providers PLUS
+  // 123telugu OTT data (matched by title/alias, given TMDB logos); US = TMDB only.
+  const toOttProviders = (list: WatchProvider[]): OttProvider[] =>
+    list.map((p) => ({ name: p.provider_name, logoPath: p.logo_path }));
+  const indiaFrom123 = await getMovieIndiaOttProviders(movie.title, aliasTags).catch(
+    () => [] as OttProvider[]
+  );
+  const dedupeProviders = (list: OttProvider[]): OttProvider[] => {
+    const seen = new Set<string>();
+    return list.filter((p) => {
+      const key = p.name.toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+  const watchRegions = [
+    {
+      code: "IN",
+      label: "India",
+      providers: dedupeProviders([
+        ...toOttProviders(flattenWatchProviders(providers.results?.IN)),
+        ...indiaFrom123,
+      ]),
+    },
+    {
+      code: "US",
+      label: "United States",
+      providers: toOttProviders(flattenWatchProviders(providers.results?.US)),
+    },
+  ].filter((region) => region.providers.length > 0);
+
   const hiddenKeys = new Set(hiddenKeyList);
   const customBackdrop = customImages.find((r) => r.image_type === "backdrop");
   const customPoster = customImages.find((r) => r.image_type === "poster");
@@ -425,18 +448,20 @@ export default async function MovieDetailPage({ params }: Props) {
                   <div className="flex flex-wrap gap-4">
                     {region.providers.map((p) => (
                       <div
-                        key={p.provider_id}
+                        key={p.name}
                         className="flex items-center gap-2 bg-gray-900 rounded-lg px-3 py-2"
                       >
-                        <Image
-                          src={getImageUrl(p.logo_path, "w200")}
-                          alt={p.provider_name}
-                          width={32}
-                          height={32}
-                          className="rounded"
-                          unoptimized
-                        />
-                        <span className="text-sm text-gray-300">{p.provider_name}</span>
+                        {p.logoPath && (
+                          <Image
+                            src={getImageUrl(p.logoPath, "w200")}
+                            alt={p.name}
+                            width={32}
+                            height={32}
+                            className="rounded"
+                            unoptimized
+                          />
+                        )}
+                        <span className="text-sm text-gray-300">{p.name}</span>
                       </div>
                     ))}
                   </div>

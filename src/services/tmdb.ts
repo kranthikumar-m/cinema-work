@@ -5,6 +5,7 @@ import type {
   Credits,
   Video,
   MovieImage,
+  WatchProvider,
   WatchProviderResult,
   Review,
   PaginatedResponse,
@@ -104,6 +105,14 @@ export async function getWatchProviders(
   id: number
 ): Promise<{ results: Record<string, WatchProviderResult> }> {
   return tmdbFetch(`/movie/${id}/watch/providers`);
+}
+
+// All movie watch providers available in a region (with logos), e.g. to resolve
+// an OTT platform name from another source to its TMDB logo.
+export async function getWatchProviderList(
+  watchRegion = "IN"
+): Promise<{ results: WatchProvider[] }> {
+  return tmdbFetch("/watch/providers/movie", { watch_region: watchRegion });
 }
 
 // Search
