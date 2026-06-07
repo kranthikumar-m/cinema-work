@@ -204,6 +204,39 @@ function parseReleaseTables(html: string, pageTitle: string, year: number) {
   return releases;
 }
 
+const WIKIPEDIA_HEADERS = {
+  "accept-language": "en-US,en;q=0.9",
+  "user-agent":
+    "Mozilla/5.0 (compatible; TeluguCinemaUpdatesBot/1.0; +https://example.com)",
+};
+const WIKIPEDIA_MAX_RETRIES = 3;
+
+/**
+ * Fetches a Wikipedia URL, retrying transient rate-limits (429) and server
+ * blips (503) with backoff that honors any Retry-After header. Returns the final
+ * Response either way — callers decide how to treat a non-OK status.
+ */
+async function wikipediaFetch(url: string): Promise<Response> {
+  let response = await fetch(url, { headers: WIKIPEDIA_HEADERS, next: { revalidate: 21600 } });
+
+  for (let attempt = 0; attempt < WIKIPEDIA_MAX_RETRIES; attempt += 1) {
+    if (response.ok || (response.status !== 429 && response.status !== 503)) {
+      return response;
+    }
+
+    const retryAfter = Number(response.headers.get("retry-after"));
+    const delayMs =
+      Number.isFinite(retryAfter) && retryAfter > 0
+        ? Math.min(retryAfter * 1000, 5000)
+        : 400 * 2 ** attempt; // 400ms, 800ms, 1600ms
+
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    response = await fetch(url, { headers: WIKIPEDIA_HEADERS, next: { revalidate: 21600 } });
+  }
+
+  return response;
+}
+
 async function wikipediaFetchJson<T>(params: Record<string, string>) {
   const url = new URL(WIKIPEDIA_API_URL);
 
@@ -217,14 +250,7 @@ async function wikipediaFetchJson<T>(params: Record<string, string>) {
     url.searchParams.set(key, value);
   });
 
-  const response = await fetch(url.toString(), {
-    headers: {
-      "accept-language": "en-US,en;q=0.9",
-      "user-agent":
-        "Mozilla/5.0 (compatible; TeluguCinemaUpdatesBot/1.0; +https://example.com)",
-    },
-    next: { revalidate: 21600 },
-  });
+  const response = await wikipediaFetch(url.toString());
 
   if (!response.ok) {
     throw new Error(`Wikipedia request failed: ${response.status} ${response.statusText}`);
@@ -262,14 +288,7 @@ async function fetchWikipediaPageHtml(title: string) {
   url.searchParams.set("formatversion", "2");
   url.searchParams.set("origin", "*");
 
-  const response = await fetch(url.toString(), {
-    headers: {
-      "accept-language": "en-US,en;q=0.9",
-      "user-agent":
-        "Mozilla/5.0 (compatible; TeluguCinemaUpdatesBot/1.0; +https://example.com)",
-    },
-    next: { revalidate: 21600 },
-  });
+  const response = await wikipediaFetch(url.toString());
 
   if (!response.ok) {
     return null;
@@ -290,40 +309,52 @@ async function fetchWikipediaPageHtml(title: string) {
 // upcoming). The released/upcoming getters below filter this shared dataset.
 const getAllWikipediaTeluguEntries = cache(
   async (year = getIndianCurrentYear()): Promise<WikipediaReleaseDataset> => {
-    const pageTitles = await searchWikipediaPageTitles(year);
-    const releases: WikipediaReleaseEntry[] = [];
-    const sourcePages: string[] = [];
+    try {
+      const pageTitles = await searchWikipediaPageTitles(year);
+      const releases: WikipediaReleaseEntry[] = [];
+      const sourcePages: string[] = [];
 
-    for (const title of pageTitles) {
-      const page = await fetchWikipediaPageHtml(title);
+      for (const title of pageTitles) {
+        const page = await fetchWikipediaPageHtml(title);
 
-      if (!page) {
-        continue;
+        if (!page) {
+          continue;
+        }
+
+        const pageReleases = parseReleaseTables(page.text, page.title, year);
+
+        if (!pageReleases.length) {
+          continue;
+        }
+
+        sourcePages.push(page.title);
+        releases.push(...pageReleases);
       }
 
-      const pageReleases = parseReleaseTables(page.text, page.title, year);
+      const deduped = new Map<string, WikipediaReleaseEntry>();
 
-      if (!pageReleases.length) {
-        continue;
-      }
+      releases.forEach((entry) => {
+        deduped.set(`${entry.normalizedTitle}::${entry.releaseDate}`, entry);
+      });
 
-      sourcePages.push(page.title);
-      releases.push(...pageReleases);
+      return {
+        year,
+        sourcePages,
+        releases: Array.from(deduped.values()).sort((a, b) =>
+          a.releaseDate.localeCompare(b.releaseDate)
+        ),
+      };
+    } catch (error) {
+      // Wikipedia is a validation source, not a hard dependency. If it stays
+      // unreachable (e.g. a persistent 429) after retries, degrade to an empty
+      // dataset so the catalog/upcoming code falls back gracefully instead of
+      // crashing the page — matching how the other scrapers fail soft.
+      console.warn(
+        `[wikipedia] could not load Telugu releases for ${year}; continuing without them.`,
+        error instanceof Error ? error.message : error
+      );
+      return { year, sourcePages: [], releases: [] };
     }
-
-    const deduped = new Map<string, WikipediaReleaseEntry>();
-
-    releases.forEach((entry) => {
-      deduped.set(`${entry.normalizedTitle}::${entry.releaseDate}`, entry);
-    });
-
-    return {
-      year,
-      sourcePages,
-      releases: Array.from(deduped.values()).sort((a, b) =>
-        a.releaseDate.localeCompare(b.releaseDate)
-      ),
-    };
   }
 );
 
