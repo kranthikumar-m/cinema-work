@@ -42,16 +42,33 @@ export interface ImdbRating {
 
 const NO_RATING: ImdbRating = { rating: null, votes: null };
 
-export interface ImdbTechnicalSpecs {
+export interface ImdbCompanyCredit {
+  name: string;
+  detail: string | null;
+}
+
+export interface ImdbTitleExtras {
   color: string | null;
   soundMixes: string[];
   aspectRatios: string[];
+  cameras: string[];
+  negativeFormats: string[];
+  cinematographicProcesses: string[];
+  printedFormats: string[];
+  distributors: ImdbCompanyCredit[];
+  otherCompanies: ImdbCompanyCredit[];
 }
 
-const NO_TECH_SPECS: ImdbTechnicalSpecs = {
+const NO_TITLE_EXTRAS: ImdbTitleExtras = {
   color: null,
   soundMixes: [],
   aspectRatios: [],
+  cameras: [],
+  negativeFormats: [],
+  cinematographicProcesses: [],
+  printedFormats: [],
+  distributors: [],
+  otherCompanies: [],
 };
 
 interface OmdbLookup extends ImdbRating {
@@ -157,16 +174,45 @@ function dedupeStrings(values: (string | null | undefined)[]): string[] {
   return out;
 }
 
+interface ImdbCompanyNode {
+  company?: { companyText?: { text?: string } };
+  category?: { text?: string };
+  countries?: { text?: string }[] | null;
+  attributes?: { text?: string }[] | null;
+}
+
+// Builds "India · theatrical" style detail from a company credit's countries +
+// attributes (medium). Returns null when there's nothing extra to show.
+function companyDetail(node: ImdbCompanyNode): string | null {
+  const countries = dedupeStrings((node.countries ?? []).map((c) => c.text));
+  const mediums = dedupeStrings((node.attributes ?? []).map((a) => a.text));
+  const parts = [...countries, ...mediums];
+  return parts.length ? parts.join(" · ") : null;
+}
+
+function dedupeCompanies(list: ImdbCompanyCredit[]): ImdbCompanyCredit[] {
+  const seen = new Set<string>();
+  const out: ImdbCompanyCredit[] = [];
+  for (const c of list) {
+    const key = `${c.name}|${c.detail ?? ""}`.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(c);
+  }
+  return out;
+}
+
 /**
- * IMDb-exclusive technical specs (colour, sound mixes, aspect ratios) via IMDb's
- * GraphQL — TMDB doesn't carry these. Same source/caveat as the rating lookup:
+ * IMDb-exclusive title extras via IMDb's GraphQL — technical specs (colour,
+ * sound, aspect, camera, formats, process) plus distributor and other-company
+ * credits, which TMDB doesn't carry. Same source/caveat as the rating lookup:
  * IMDb's API ToS restricts commercial/public reuse, so treat as best-effort.
  */
-const fetchImdbTechnicalSpecs = unstable_cache(
-  async (imdbId: string): Promise<ImdbTechnicalSpecs> => {
-    if (!imdbId) return NO_TECH_SPECS;
+const fetchImdbTitleExtras = unstable_cache(
+  async (imdbId: string): Promise<ImdbTitleExtras> => {
+    if (!imdbId) return NO_TITLE_EXTRAS;
 
-    const query = `query{title(id:"${imdbId}"){technicalSpecifications{soundMixes{items{text}} aspectRatios{items{aspectRatio}} colorations{items{text}}}}}`;
+    const query = `query{title(id:"${imdbId}"){technicalSpecifications{soundMixes{items{text}} aspectRatios{items{aspectRatio}} colorations{items{text}} cameras{items{camera}} negativeFormats{items{negativeFormat}} processes{items{process}} printedFormats{items{printedFormat}}} companyCredits(first:80){edges{node{company{companyText{text}} category{text} countries{text} attributes{text}}}}}}`;
     try {
       const res = await fetch(IMDB_GRAPHQL_URL, {
         method: "POST",
@@ -177,7 +223,7 @@ const fetchImdbTechnicalSpecs = unstable_cache(
         },
         body: JSON.stringify({ query }),
       });
-      if (!res.ok) return NO_TECH_SPECS;
+      if (!res.ok) return NO_TITLE_EXTRAS;
 
       const data = (await res.json()) as {
         data?: {
@@ -186,33 +232,66 @@ const fetchImdbTechnicalSpecs = unstable_cache(
               soundMixes?: { items?: { text?: string }[] };
               aspectRatios?: { items?: { aspectRatio?: string }[] };
               colorations?: { items?: { text?: string }[] };
+              cameras?: { items?: { camera?: string }[] };
+              negativeFormats?: { items?: { negativeFormat?: string }[] };
+              processes?: { items?: { process?: string }[] };
+              printedFormats?: { items?: { printedFormat?: string }[] };
             };
+            companyCredits?: { edges?: { node?: ImdbCompanyNode }[] };
           };
         };
       };
-      const tech = data?.data?.title?.technicalSpecifications;
-      if (!tech) return NO_TECH_SPECS;
+      const title = data?.data?.title;
+      const tech = title?.technicalSpecifications;
+      const colorations = dedupeStrings((tech?.colorations?.items ?? []).map((i) => i.text));
 
-      const soundMixes = dedupeStrings((tech.soundMixes?.items ?? []).map((i) => i.text));
-      const aspectRatios = dedupeStrings(
-        (tech.aspectRatios?.items ?? []).map((i) => i.aspectRatio)
-      );
-      const colorations = dedupeStrings((tech.colorations?.items ?? []).map((i) => i.text));
+      const distributors: ImdbCompanyCredit[] = [];
+      const otherCompanies: ImdbCompanyCredit[] = [];
+      for (const edge of title?.companyCredits?.edges ?? []) {
+        const node = edge.node;
+        const name = node?.company?.companyText?.text?.trim();
+        if (!name) continue;
+        const category = node?.category?.text ?? "";
+        if (/distributor/i.test(category)) {
+          distributors.push({ name, detail: companyDetail(node!) });
+        } else if (/other/i.test(category)) {
+          // IMDb's "Other Companies" section (music labels etc.) — not the
+          // separate "Special Effects" / "Production Companies" buckets.
+          const mediums = dedupeStrings((node!.attributes ?? []).map((a) => a.text));
+          otherCompanies.push({ name, detail: mediums.join(" · ") || null });
+        }
+      }
 
-      return { color: colorations[0] ?? null, soundMixes, aspectRatios };
+      return {
+        color: colorations[0] ?? null,
+        soundMixes: dedupeStrings((tech?.soundMixes?.items ?? []).map((i) => i.text)),
+        aspectRatios: dedupeStrings((tech?.aspectRatios?.items ?? []).map((i) => i.aspectRatio)),
+        cameras: dedupeStrings((tech?.cameras?.items ?? []).map((i) => i.camera)),
+        negativeFormats: dedupeStrings(
+          (tech?.negativeFormats?.items ?? []).map((i) => i.negativeFormat)
+        ),
+        cinematographicProcesses: dedupeStrings(
+          (tech?.processes?.items ?? []).map((i) => i.process)
+        ),
+        printedFormats: dedupeStrings(
+          (tech?.printedFormats?.items ?? []).map((i) => i.printedFormat)
+        ),
+        distributors: dedupeCompanies(distributors).slice(0, 14),
+        otherCompanies: dedupeCompanies(otherCompanies).slice(0, 12),
+      };
     } catch {
-      return NO_TECH_SPECS;
+      return NO_TITLE_EXTRAS;
     }
   },
-  ["imdb-graphql-tech-specs"],
+  ["imdb-graphql-title-extras"],
   { revalidate: RATING_CACHE_SECONDS }
 );
 
-export function getImdbTechnicalSpecs(
+export function getImdbTitleExtras(
   imdbId: string | null | undefined
-): Promise<ImdbTechnicalSpecs> {
-  if (!imdbId) return Promise.resolve(NO_TECH_SPECS);
-  return fetchImdbTechnicalSpecs(imdbId);
+): Promise<ImdbTitleExtras> {
+  if (!imdbId) return Promise.resolve(NO_TITLE_EXTRAS);
+  return fetchImdbTitleExtras(imdbId);
 }
 
 function extractYear(dateString: string | undefined): number | null {

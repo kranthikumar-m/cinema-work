@@ -28,7 +28,7 @@ import { ReviewCard } from "@/components/movie/ReviewCard";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { MovieDetailClient } from "./client";
 import { enrichMovieAssets, getMovieDetailsWithFallback } from "@/services/telugu-movies";
-import { attachImdbRating, getImdbTechnicalSpecs } from "@/services/omdb";
+import { attachImdbRating, getImdbTitleExtras } from "@/services/omdb";
 import { resolvePreferredBackdrop } from "@/services/movie-backdrops";
 import { getMovieMusic, type MovieMusic } from "@/services/movie-music";
 import { getMovieTrailers, type MovieTrailerVideo } from "@/services/movie-trailers";
@@ -80,6 +80,38 @@ function flattenWatchProviders(
   return all
     .filter((p, i, arr) => arr.findIndex((x) => x.provider_id === p.provider_id) === i)
     .slice(0, 12);
+}
+
+function CompanyGroup({
+  label,
+  items,
+}: {
+  label: string;
+  items: { name: string; detail: string | null }[];
+}) {
+  if (!items.length) return null;
+  return (
+    <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.5)]">
+      <p className="border-b border-[var(--color-border)] px-5 py-3 text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-accent)]">
+        {label}
+      </p>
+      <ul>
+        {items.map((company, index) => (
+          <li
+            key={`${company.name}-${index}`}
+            className={`flex items-center justify-between gap-3 px-5 py-3 transition hover:bg-[rgba(194,154,98,0.06)] ${
+              index ? "border-t border-[var(--color-border)]" : ""
+            }`}
+          >
+            <span className="text-sm font-medium text-[var(--color-text)]">{company.name}</span>
+            {company.detail && (
+              <span className="shrink-0 text-xs text-[var(--color-muted)]">{company.detail}</span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 function shouldUseUnoptimizedImage(src: string) {
@@ -137,7 +169,7 @@ export default async function MovieDetailPage({ params }: Props) {
     hiddenKeyList,
     releaseOverride,
     keywordData,
-    techSpecs,
+    imdbExtras,
   ] = await Promise.all([
       hasDatabaseConfiguration()
         ? getCustomImageRecordsByMovieId(id)
@@ -161,11 +193,7 @@ export default async function MovieDetailPage({ params }: Props) {
         ? getMovieReleaseOverrideRecord(id)
         : Promise.resolve(null),
       getMovieKeywords(id).catch(() => ({ keywords: [] })),
-      getImdbTechnicalSpecs(movie.imdb_id).catch(() => ({
-        color: null,
-        soundMixes: [] as string[],
-        aspectRatios: [] as string[],
-      })),
+      getImdbTitleExtras(movie.imdb_id).catch(() => null),
     ]);
 
   // Plot keywords shown as tags next to genres (Title Cased for display).
@@ -177,27 +205,37 @@ export default async function MovieDetailPage({ params }: Props) {
     .filter(Boolean);
   const countries = (movie.production_countries ?? []).map((c) => c.name).filter(Boolean);
 
-  // Details + tech specs (IMDb-sourced color/sound/aspect, when available).
-  const movieFacts: { label: string; value: string }[] = [
-    { label: "Status", value: movie.status || "—" },
+  // Details + tech specs (IMDb-sourced fields shown only when available).
+  const ex = imdbExtras;
+  const factRows: { label: string; values: string[]; chips?: boolean }[] = [
+    { label: "Status", values: [movie.status || "—"] },
     {
       label: "Languages",
-      value: spokenLanguages.length
-        ? spokenLanguages.join(", ")
-        : movie.original_language.toUpperCase(),
+      values: spokenLanguages.length ? spokenLanguages : [movie.original_language.toUpperCase()],
+      chips: true,
     },
-    ...(countries.length ? [{ label: "Country", value: countries.join(", ") }] : []),
-    { label: "Runtime", value: formatRuntime(movie.runtime) },
-    ...(techSpecs.color ? [{ label: "Color", value: techSpecs.color }] : []),
-    ...(techSpecs.soundMixes.length
-      ? [{ label: "Sound Mix", value: techSpecs.soundMixes.join(", ") }]
+    ...(countries.length ? [{ label: "Country", values: countries, chips: true }] : []),
+    { label: "Runtime", values: [formatRuntime(movie.runtime)] },
+    ...(ex?.color ? [{ label: "Color", values: [ex.color] }] : []),
+    ...(ex?.soundMixes.length ? [{ label: "Sound Mix", values: ex.soundMixes, chips: true }] : []),
+    ...(ex?.aspectRatios.length
+      ? [{ label: "Aspect Ratio", values: ex.aspectRatios, chips: true }]
       : []),
-    ...(techSpecs.aspectRatios.length
-      ? [{ label: "Aspect Ratio", value: techSpecs.aspectRatios.join(", ") }]
+    ...(ex?.cameras.length ? [{ label: "Camera", values: ex.cameras }] : []),
+    ...(ex?.negativeFormats.length
+      ? [{ label: "Negative Format", values: ex.negativeFormats, chips: true }]
       : []),
-    { label: "Budget", value: formatCurrency(movie.budget) },
-    { label: "Revenue", value: formatCurrency(movie.revenue) },
+    ...(ex?.cinematographicProcesses.length
+      ? [{ label: "Cinematographic Process", values: ex.cinematographicProcesses, chips: true }]
+      : []),
+    ...(ex?.printedFormats.length
+      ? [{ label: "Printed Film Format", values: ex.printedFormats, chips: true }]
+      : []),
+    { label: "Budget", values: [formatCurrency(movie.budget)] },
+    { label: "Revenue", values: [formatCurrency(movie.revenue)] },
   ];
+  const distributors = imdbExtras?.distributors ?? [];
+  const otherCompanies = imdbExtras?.otherCompanies ?? [];
 
   // Apply admin ABO calibration: corrected release date + alias tags.
   const releaseDateDisplay = releaseOverride?.release_date || movie.release_date;
@@ -541,33 +579,58 @@ export default async function MovieDetailPage({ params }: Props) {
           )}
         </section>
 
-        {/* Facts Panel */}
+        {/* Facts Panel — clean definition rows with chips for multi-value fields */}
         <section id="box-office" className="mt-12 scroll-mt-[170px]">
           <SectionHeader title="Movie Facts" />
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {movieFacts.map((fact) => (
+          <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.5)]">
+            {factRows.map((row, idx) => (
               <div
-                key={fact.label}
-                className="bg-gray-900/60 border border-gray-800 rounded-xl p-4"
+                key={row.label}
+                className={`group relative flex flex-col gap-1.5 px-5 py-3.5 transition hover:bg-[rgba(194,154,98,0.06)] sm:flex-row sm:items-start sm:gap-6 ${
+                  idx ? "border-t border-[var(--color-border)]" : ""
+                }`}
               >
-                <p className="text-xs text-gray-500 mb-1">{fact.label}</p>
-                <p className="text-sm font-medium text-white">{fact.value}</p>
+                <span className="absolute left-0 top-0 h-full w-[2px] origin-top scale-y-0 bg-[var(--color-accent)] transition-transform duration-200 group-hover:scale-y-100" />
+                <span className="w-48 shrink-0 text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)] sm:pt-1">
+                  {row.label}
+                </span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {row.chips ? (
+                    row.values.map((v) => (
+                      <span
+                        key={v}
+                        className="rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-xs font-medium text-[var(--color-text)]"
+                      >
+                        {v}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-sm font-medium text-[var(--color-text)]">
+                      {row.values.join(" · ")}
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
           </div>
-          {movie.production_companies.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-3">
-              {movie.production_companies.map((c) => (
-                <span
-                  key={c.id}
-                  className="text-xs text-gray-400 bg-gray-900 px-3 py-1.5 rounded-lg"
-                >
-                  {c.name}
-                </span>
-              ))}
-            </div>
-          )}
         </section>
+
+        {/* Companies — Production (TMDB), Distributors & Other (IMDb) */}
+        {(movie.production_companies.length > 0 ||
+          distributors.length > 0 ||
+          otherCompanies.length > 0) && (
+          <section className="mt-12">
+            <SectionHeader title="Companies" />
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              <CompanyGroup
+                label="Production"
+                items={movie.production_companies.map((c) => ({ name: c.name, detail: null }))}
+              />
+              <CompanyGroup label="Distributors" items={distributors} />
+              <CompanyGroup label="Other" items={otherCompanies} />
+            </div>
+          </section>
+        )}
 
         {/* Similar Movies */}
         {similarTeluguMovies.length > 0 && (
