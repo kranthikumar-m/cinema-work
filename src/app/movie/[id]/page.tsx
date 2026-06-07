@@ -25,7 +25,8 @@ import { RatingRing } from "@/components/shared/RatingRing";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 import { CastCarousel } from "@/components/movie/CastCarousel";
 import { CrewList } from "@/components/movie/CrewList";
-import { ImdbCastCarousel, ImdbCrewList } from "@/components/movie/ImdbCredits";
+import { ImdbCastCarousel } from "@/components/movie/ImdbCredits";
+import { MovieCreditsPanel } from "@/components/movie/MovieCreditsPanel";
 import { PhotoGallery } from "@/components/movie/PhotoGallery";
 import type { GalleryImage } from "@/components/movie/PhotoGallery";
 import { ReviewCard } from "@/components/movie/ReviewCard";
@@ -597,18 +598,15 @@ export default async function MovieDetailPage({ params }: Props) {
           )}
         </div>
 
-        {/* Crew — full crew from IMDb (grouped by department, IMDb order), TMDB fallback. */}
+        {/* Crew — key roles inline (Movie Facts style) + full cast & crew popup. */}
         {((imdbCredits && imdbCredits.crew.length > 0) || credits.crew.length > 0) && (
           <div className="mt-12">
             <SectionHeader title="Crew" />
             {imdbCredits && imdbCredits.crew.length > 0 ? (
-              <ImdbCrewList
+              <MovieCreditsPanel
+                cast={imdbCredits.cast}
                 crew={imdbCredits.crew}
-                fullCreditsUrl={
-                  movie.imdb_id
-                    ? `https://www.imdb.com/title/${movie.imdb_id}/fullcredits`
-                    : undefined
-                }
+                title={movie.title}
               />
             ) : (
               <CrewList crew={credits.crew} />
