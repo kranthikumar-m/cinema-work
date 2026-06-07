@@ -7,10 +7,8 @@ import {
 import { getGenres } from "@/services/tmdb";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { MovieBrowseToolbar } from "@/components/movie/MovieBrowseToolbar";
-import {
-  AboCalibrationProvider,
-  AboCalibrationButton,
-} from "@/components/movie/AboCalibration";
+import { AboCalibrationProvider } from "@/components/movie/AboCalibration";
+import { MoviesAdminMenu } from "@/components/movie/MoviesAdminMenu";
 import type { Genre } from "@/types/tmdb";
 
 export const metadata = { title: "Telugu Movies - Telugu Cinema Updates" };
@@ -142,7 +140,7 @@ export default async function MoviesPage({ searchParams }: MoviesPageProps) {
           <p className="text-sm text-[var(--color-muted-strong)]">
             {totalResults.toLocaleString()} movies · Page {page} of {totalPages}
           </p>
-          <AboCalibrationButton />
+          <MoviesAdminMenu />
         </div>
 
         <MovieGrid movies={results} />

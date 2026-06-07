@@ -136,27 +136,6 @@ export function AboCalibrationProvider({ children }: { children: ReactNode }) {
   );
 }
 
-/** Admin toggle button — render inside the provider (e.g. the page toolbar). */
-export function AboCalibrationButton() {
-  const ctx = useOptionalAboCalibration();
-  if (!ctx) return null;
-
-  return (
-    <button
-      type="button"
-      onClick={ctx.toggle}
-      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
-        ctx.active
-          ? "border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)]"
-          : "border-[rgba(194,154,98,0.32)] text-[var(--color-accent)] hover:border-[rgba(194,154,98,0.6)] hover:bg-[var(--color-accent-soft)]"
-      }`}
-    >
-      <CalendarClock className="h-4 w-4" />
-      {ctx.active ? "Done calibrating" : "Calibrate dates (ABO)"}
-    </button>
-  );
-}
-
 function AboCalibrationSidebar() {
   const ctx = useContext(CalibrationContext);
   const [query, setQuery] = useState("");
