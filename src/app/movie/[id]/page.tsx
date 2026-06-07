@@ -25,6 +25,7 @@ import { RatingRing } from "@/components/shared/RatingRing";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 import { CastCarousel } from "@/components/movie/CastCarousel";
 import { CrewList } from "@/components/movie/CrewList";
+import { ImdbCastCarousel, ImdbCrewList } from "@/components/movie/ImdbCredits";
 import { PhotoGallery } from "@/components/movie/PhotoGallery";
 import type { GalleryImage } from "@/components/movie/PhotoGallery";
 import { ReviewCard } from "@/components/movie/ReviewCard";
@@ -35,7 +36,7 @@ import {
   getMovieDetailsWithFallback,
   getPopularTeluguMovies,
 } from "@/services/telugu-movies";
-import { attachImdbRating, getImdbTitleExtras } from "@/services/omdb";
+import { attachImdbRating, getImdbTitleExtras, getImdbFullCredits } from "@/services/omdb";
 import { resolvePreferredBackdrop } from "@/services/movie-backdrops";
 import { getMovieMusic, type MovieMusic } from "@/services/movie-music";
 import { getMovieTrailers, type MovieTrailerVideo } from "@/services/movie-trailers";
@@ -197,6 +198,7 @@ export default async function MovieDetailPage({ params }: Props) {
     keywordData,
     imdbExtras,
     detailOverride,
+    imdbCredits,
   ] = await Promise.all([
       hasDatabaseConfiguration()
         ? getCustomImageRecordsByMovieId(id)
@@ -224,6 +226,7 @@ export default async function MovieDetailPage({ params }: Props) {
       hasDatabaseConfiguration()
         ? getMovieDetailOverrideRecord(id)
         : Promise.resolve(null),
+      getImdbFullCredits(movie.imdb_id).catch(() => null),
     ]);
 
   // Plot keywords shown as tags next to genres (Title Cased for display).
@@ -584,17 +587,32 @@ export default async function MovieDetailPage({ params }: Props) {
 
       <div className="app-page-shell-detail">
 
-        {/* Cast */}
+        {/* Cast — full cast from IMDb (billing order), falling back to TMDB. */}
         <div className="mt-12">
           <SectionHeader title="Cast" />
-          <CastCarousel cast={credits.cast} />
+          {imdbCredits && imdbCredits.cast.length > 0 ? (
+            <ImdbCastCarousel cast={imdbCredits.cast} />
+          ) : (
+            <CastCarousel cast={credits.cast} />
+          )}
         </div>
 
-        {/* Crew */}
-        {credits.crew.length > 0 && (
+        {/* Crew — full crew from IMDb (grouped by department, IMDb order), TMDB fallback. */}
+        {((imdbCredits && imdbCredits.crew.length > 0) || credits.crew.length > 0) && (
           <div className="mt-12">
             <SectionHeader title="Crew" />
-            <CrewList crew={credits.crew} />
+            {imdbCredits && imdbCredits.crew.length > 0 ? (
+              <ImdbCrewList
+                crew={imdbCredits.crew}
+                fullCreditsUrl={
+                  movie.imdb_id
+                    ? `https://www.imdb.com/title/${movie.imdb_id}/fullcredits`
+                    : undefined
+                }
+              />
+            ) : (
+              <CrewList crew={credits.crew} />
+            )}
           </div>
         )}
 

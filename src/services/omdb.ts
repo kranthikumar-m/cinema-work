@@ -73,6 +73,29 @@ const NO_TITLE_EXTRAS: ImdbTitleExtras = {
   otherCompanies: [],
 };
 
+export interface ImdbCastCredit {
+  id: string; // IMDb name id ("nm…")
+  name: string;
+  imageUrl: string | null;
+  characters: string[];
+}
+
+export interface ImdbCrewCredit {
+  id: string;
+  name: string;
+  imageUrl: string | null;
+  categoryId: string;
+  categoryLabel: string;
+  jobs: string[];
+}
+
+export interface ImdbFullCredits {
+  cast: ImdbCastCredit[];
+  crew: ImdbCrewCredit[];
+}
+
+const NO_FULL_CREDITS: ImdbFullCredits = { cast: [], crew: [] };
+
 interface OmdbLookup extends ImdbRating {
   imdbId: string | null;
 }
@@ -298,6 +321,122 @@ export function getImdbTitleExtras(
 ): Promise<ImdbTitleExtras> {
   if (!imdbId) return Promise.resolve(NO_TITLE_EXTRAS);
   return fetchImdbTitleExtras(imdbId);
+}
+
+// How many credits to pull from IMDb. The connection returns them in IMDb's
+// display order (cast in billing order first, then crew by department), so this
+// covers the full cast plus the meaningful crew without the extreme long tail.
+const IMDB_CREDITS_FETCH_COUNT = 220;
+
+/**
+ * Full cast & crew straight from IMDb's GraphQL `credits` connection, preserving
+ * IMDb's own display order — cast in billing order with characters + headshots,
+ * then crew grouped by department (Director, Writer, Producer, Composer,
+ * Cinematographer, Editor, …). Cast vs crew is told apart by the presence of
+ * `characters` (only Cast nodes carry it). Same source/caveat as the other IMDb
+ * lookups: IMDb's API ToS restricts reuse, so treat as best-effort.
+ */
+const fetchImdbFullCredits = unstable_cache(
+  async (imdbId: string): Promise<ImdbFullCredits> => {
+    if (!imdbId) return NO_FULL_CREDITS;
+
+    const query = `query{title(id:"${imdbId}"){credits(first:${IMDB_CREDITS_FETCH_COUNT}){edges{node{category{id text} name{id nameText{text} primaryImage{url}} ... on Cast{characters{name}} ... on Crew{jobs{text}}}}}}}`;
+    try {
+      const res = await fetch(IMDB_GRAPHQL_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "User-Agent": BROWSER_USER_AGENT,
+        },
+        body: JSON.stringify({ query }),
+      });
+      if (!res.ok) return NO_FULL_CREDITS;
+
+      const data = (await res.json()) as {
+        data?: {
+          title?: {
+            credits?: {
+              edges?: {
+                node?: {
+                  category?: { id?: string; text?: string };
+                  name?: {
+                    id?: string;
+                    nameText?: { text?: string };
+                    primaryImage?: { url?: string };
+                  };
+                  characters?: { name?: string }[];
+                  jobs?: { text?: string }[];
+                };
+              }[];
+            };
+          };
+        };
+      };
+
+      const edges = data?.data?.title?.credits?.edges ?? [];
+      // Maps preserve insertion (= IMDb) order while deduping repeat credits.
+      const castMap = new Map<string, ImdbCastCredit>();
+      const crewMap = new Map<string, ImdbCrewCredit>();
+
+      for (const edge of edges) {
+        const node = edge?.node;
+        const name = node?.name?.nameText?.text?.trim();
+        if (!node || !name) continue;
+        const id = node.name?.id ?? "";
+        const imageUrl = node.name?.primaryImage?.url ?? null;
+
+        const categoryId = node.category?.id ?? "";
+        // A cast credit either carries a `characters` array or sits in a cast
+        // category (actor/actress/self/voice) — actors with no listed character
+        // return `characters: null`, so the category check keeps them in Cast.
+        const isCast =
+          Array.isArray(node.characters) || /^(actor|actress|self|voice)/i.test(categoryId);
+
+        if (isCast) {
+          const characters = (node.characters ?? [])
+            .map((c) => c?.name?.trim())
+            .filter((c): c is string => Boolean(c));
+          const key = id || name;
+          const existing = castMap.get(key);
+          if (existing) {
+            for (const ch of characters) {
+              if (!existing.characters.includes(ch)) existing.characters.push(ch);
+            }
+          } else {
+            castMap.set(key, { id, name, imageUrl, characters });
+          }
+        } else {
+          const categoryLabel = node.category?.text ?? "";
+          const jobs = (node.jobs ?? [])
+            .map((j) => j?.text?.trim())
+            .filter((j): j is string => Boolean(j));
+          const key = `${id || name}:${categoryId}`;
+          const existing = crewMap.get(key);
+          if (existing) {
+            for (const job of jobs) {
+              if (!existing.jobs.includes(job)) existing.jobs.push(job);
+            }
+          } else {
+            crewMap.set(key, { id, name, imageUrl, categoryId, categoryLabel, jobs });
+          }
+        }
+      }
+
+      return { cast: Array.from(castMap.values()), crew: Array.from(crewMap.values()) };
+    } catch {
+      return NO_FULL_CREDITS;
+    }
+  },
+  ["imdb-full-credits"],
+  { revalidate: RATING_CACHE_SECONDS }
+);
+
+export function getImdbFullCredits(
+  imdbId: string | null | undefined
+): Promise<ImdbFullCredits> {
+  if (!imdbId) return Promise.resolve(NO_FULL_CREDITS);
+  return fetchImdbFullCredits(imdbId);
 }
 
 function extractYear(dateString: string | undefined): number | null {
