@@ -42,12 +42,13 @@ export interface TeluguPersonSummary {
   id: number;
   name: string;
   profile_path: string | null;
-  /** Catalog films this person appears in (the ranking signal). */
+  /** How many catalog films this person appears in (shown on the card). */
   filmCount: number;
-  /** TMDB popularity (tie-breaker). */
   popularity: number;
   /** Their dominant role label within this category, e.g. "Director". */
   role: string;
+  /** Newest catalog release this person appears in (ISO date) — the recency sort key. */
+  latestReleaseDate: string;
 }
 
 // How many catalog films to read credits for. Bounds the cost on a cache miss
@@ -66,6 +67,7 @@ interface PersonAccumulator {
   popularity: number;
   castCount: number;
   jobCounts: Map<string, number>;
+  latestReleaseDate: string;
 }
 
 function ensurePerson(
@@ -83,6 +85,7 @@ function ensurePerson(
       popularity: base.popularity,
       castCount: 0,
       jobCounts: new Map(),
+      latestReleaseDate: "",
     };
     map.set(base.id, person);
   }
@@ -109,28 +112,37 @@ function toSummary(person: PersonAccumulator, role: string, filmCount: number): 
     filmCount,
     popularity: person.popularity,
     role,
+    latestReleaseDate: person.latestReleaseDate,
   };
 }
 
-// Relevance order — used to pick the most prominent people when a view is
-// limited (top-N), before they're alphabetized for display.
-function rank(list: TeluguPersonSummary[]): TeluguPersonSummary[] {
-  return [...list].sort(
-    (a, b) => b.filmCount - a.filmCount || b.popularity - a.popularity
-  );
-}
+/**
+ * Display order:
+ *   1. People with a profile photo come first; those without sink to the end.
+ *   2. Then by the newest catalog release they appear in (newest first), so the
+ *      cast & crew of the latest release lead the list, then the next, and so on.
+ *   3. Alphabetical by name as the final tie-breaker.
+ */
+function sortForDisplay(list: TeluguPersonSummary[]): TeluguPersonSummary[] {
+  return [...list].sort((a, b) => {
+    const photoA = a.profile_path ? 0 : 1;
+    const photoB = b.profile_path ? 0 : 1;
+    if (photoA !== photoB) return photoA - photoB;
 
-function alphabetize(list: TeluguPersonSummary[]): TeluguPersonSummary[] {
-  return [...list].sort((a, b) =>
-    a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
-  );
+    const dateCmp = (b.latestReleaseDate || "").localeCompare(a.latestReleaseDate || "");
+    if (dateCmp !== 0) return dateCmp;
+
+    return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+  });
 }
 
 const buildTeluguPeople = unstable_cache(
   async (): Promise<Record<TeluguPeopleCategory, TeluguPersonSummary[]>> => {
     const catalog = await getValidatedTeluguCatalog();
+    // Scan the most recent releases so the roster reflects current cinema and the
+    // recency sort has a release date for every person.
     const films = [...catalog]
-      .sort((a, b) => b.popularity - a.popularity)
+      .sort((a, b) => (b.release_date || "").localeCompare(a.release_date || ""))
       .slice(0, MAX_FILMS_SCANNED);
 
     const people = new Map<number, PersonAccumulator>();
@@ -143,10 +155,12 @@ const buildTeluguPeople = unstable_cache(
         )
       );
 
-      for (const credit of credits) {
+      credits.forEach((credit, idx) => {
+        const releaseDate = batch[idx].release_date || "";
         (credit.cast as CastMember[]).forEach((member) => {
           const person = ensurePerson(people, member);
           person.castCount += 1;
+          if (releaseDate > person.latestReleaseDate) person.latestReleaseDate = releaseDate;
           if (!person.knownForDepartment && member.known_for_department) {
             person.knownForDepartment = member.known_for_department;
           }
@@ -155,11 +169,12 @@ const buildTeluguPeople = unstable_cache(
           const person = ensurePerson(people, member);
           const job = member.job || "";
           person.jobCounts.set(job, (person.jobCounts.get(job) ?? 0) + 1);
+          if (releaseDate > person.latestReleaseDate) person.latestReleaseDate = releaseDate;
           if (!person.knownForDepartment && member.known_for_department) {
             person.knownForDepartment = member.known_for_department;
           }
         });
-      }
+      });
     }
 
     const actors: TeluguPersonSummary[] = [];
@@ -208,18 +223,9 @@ const buildTeluguPeople = unstable_cache(
       if (writerCount > 0) writers.push(toSummary(person, "Writer", writerCount));
     }
 
-    return {
-      actors: rank(actors),
-      actresses: rank(actresses),
-      directors: rank(directors),
-      music: rank(music),
-      cinematographers: rank(cinematographers),
-      editors: rank(editors),
-      producers: rank(producers),
-      writers: rank(writers),
-    };
+    return { actors, actresses, directors, music, cinematographers, editors, producers, writers };
   },
-  ["telugu-people-roster-v1"],
+  ["telugu-people-roster-v2"],
   { revalidate: 86400 }
 );
 
@@ -229,7 +235,7 @@ export async function getTeluguPeople(): Promise<
   const all = await buildTeluguPeople();
   const out = {} as Record<TeluguPeopleCategory, TeluguPersonSummary[]>;
   (Object.keys(all) as TeluguPeopleCategory[]).forEach((key) => {
-    out[key] = alphabetize(all[key]);
+    out[key] = sortForDisplay(all[key]);
   });
   return out;
 }
@@ -239,6 +245,5 @@ export async function getTeluguPeopleByCategory(
   limit = DEFAULT_CATEGORY_LIMIT
 ): Promise<TeluguPersonSummary[]> {
   const all = await buildTeluguPeople();
-  // Pick the most prominent (relevance-ranked) people, then show them A–Z.
-  return alphabetize((all[category] ?? []).slice(0, limit));
+  return sortForDisplay(all[category] ?? []).slice(0, limit);
 }

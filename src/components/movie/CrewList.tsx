@@ -38,9 +38,12 @@ export function CrewList({ crew }: CrewListProps) {
     }
   }
 
-  const people = Array.from(byId.values()).sort((a, b) =>
-    a.member.name.localeCompare(b.member.name, undefined, { sensitivity: "base" })
-  );
+  const people = Array.from(byId.values()).sort((a, b) => {
+    const photoA = a.member.profile_path ? 0 : 1;
+    const photoB = b.member.profile_path ? 0 : 1;
+    if (photoA !== photoB) return photoA - photoB;
+    return a.member.name.localeCompare(b.member.name, undefined, { sensitivity: "base" });
+  });
 
   if (!people.length) return null;
 

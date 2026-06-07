@@ -10,10 +10,14 @@ interface CastCarouselProps {
 }
 
 export function CastCarousel({ cast }: CastCarouselProps) {
-  // Keep the main (top-billed) cast, but display it alphabetically by name.
-  const visible = cast
-    .slice(0, 20)
-    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+  // Keep the main (top-billed) cast; show those with a photo first (alphabetically),
+  // and sink anyone without a profile picture to the end.
+  const visible = cast.slice(0, 20).sort((a, b) => {
+    const photoA = a.profile_path ? 0 : 1;
+    const photoB = b.profile_path ? 0 : 1;
+    if (photoA !== photoB) return photoA - photoB;
+    return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+  });
   if (!visible.length) return null;
 
   return (
