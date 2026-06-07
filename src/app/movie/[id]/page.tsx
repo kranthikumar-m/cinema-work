@@ -31,6 +31,8 @@ import { PhotoGallery } from "@/components/movie/PhotoGallery";
 import type { GalleryImage } from "@/components/movie/PhotoGallery";
 import { ReviewCard } from "@/components/movie/ReviewCard";
 import { MovieGrid } from "@/components/movie/MovieGrid";
+import { MovieSongs } from "@/components/movie/MovieSongs";
+import { NewsCard } from "@/components/news/NewsCard";
 import { MovieDetailClient } from "./client";
 import {
   enrichMovieAssets,
@@ -42,6 +44,7 @@ import { resolvePreferredBackdrop } from "@/services/movie-backdrops";
 import { getMovieMusic, type MovieMusic } from "@/services/movie-music";
 import { getMovieTrailers, type MovieTrailerVideo } from "@/services/movie-trailers";
 import { getMovieIndiaOttProviders, type OttProvider } from "@/services/telugu-ott";
+import { getMovieRelatedNews, type NewsItem } from "@/services/telugu-news";
 import { MovieDetailsAdminEditor } from "@/components/movie/MovieDetailsAdminEditor";
 import {
   getCustomImageRecordsByMovieId,
@@ -337,9 +340,10 @@ export default async function MovieDetailPage({ params }: Props) {
   // 123telugu OTT data (matched by title/alias, given TMDB logos); US = TMDB only.
   const toOttProviders = (list: WatchProvider[]): OttProvider[] =>
     list.map((p) => ({ name: p.provider_name, logoPath: p.logo_path }));
-  const indiaFrom123 = await getMovieIndiaOttProviders(movie.title, aliasTags).catch(
-    () => [] as OttProvider[]
-  );
+  const [indiaFrom123, movieNews] = await Promise.all([
+    getMovieIndiaOttProviders(movie.title, aliasTags).catch(() => [] as OttProvider[]),
+    getMovieRelatedNews(movie.title, aliasTags).catch(() => [] as NewsItem[]),
+  ]);
   const dedupeProviders = (list: OttProvider[]): OttProvider[] => {
     const seen = new Set<string>();
     return list.filter((p) => {
@@ -588,8 +592,8 @@ export default async function MovieDetailPage({ params }: Props) {
 
       <div className="app-page-shell-detail">
 
-        {/* Cast — full cast from IMDb (billing order), falling back to TMDB. */}
-        <div className="mt-12">
+        {/* Cast & Crew — full cast from IMDb (billing order), falling back to TMDB. */}
+        <div id="cast-crew" className="mt-12 scroll-mt-[150px]">
           <SectionHeader title="Cast" />
           {imdbCredits && imdbCredits.cast.length > 0 ? (
             <ImdbCastCarousel cast={imdbCredits.cast} />
@@ -614,6 +618,19 @@ export default async function MovieDetailPage({ params }: Props) {
           </div>
         )}
 
+        {/* Songs — dedicated soundtrack track list (also reachable at /music/[id]) */}
+        {music.songs.length > 0 && (
+          <div id="songs" className="mt-12 scroll-mt-[150px]">
+            <SectionHeader title="Songs" />
+            <MovieSongs
+              music={music}
+              movieId={id}
+              movieTitle={movie.title}
+              albumImage={posterImage}
+            />
+          </div>
+        )}
+
         {/* Videos */}
         {allVideos.length > 0 && (
           <div id="videos" className="mt-12 scroll-mt-[100px]">
@@ -624,9 +641,9 @@ export default async function MovieDetailPage({ params }: Props) {
           </div>
         )}
 
-        {/* Photos */}
+        {/* Gallery */}
         {hasPhotos && (
-          <div className="mt-12">
+          <div id="gallery" className="mt-12 scroll-mt-[150px]">
             <SectionHeader title="Photos" />
             <PhotoGallery
               images={images.backdrops}
@@ -689,6 +706,18 @@ export default async function MovieDetailPage({ params }: Props) {
           )}
         </section>
 
+        {/* News — recent Telugu coverage mentioning this title (links out to source) */}
+        {movieNews.length > 0 && (
+          <section id="news" className="mt-12 scroll-mt-[150px]">
+            <SectionHeader title="News" />
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {movieNews.map((item) => (
+                <NewsCard key={item.id} item={item} />
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Facts Panel — clean definition rows with chips for multi-value fields */}
         <section id="box-office" className="mt-12 scroll-mt-[170px]">
           <div className="mb-6 flex items-center justify-between gap-3">
@@ -748,7 +777,7 @@ export default async function MovieDetailPage({ params }: Props) {
 
         {/* Similar Movies */}
         {similarTeluguMovies.length > 0 && (
-          <div className="mt-12 pb-12">
+          <div id="similar" className="mt-12 pb-12 scroll-mt-[150px]">
             <SectionHeader title="Similar Movies" />
             <MovieGrid
               movies={similarTeluguMovies}

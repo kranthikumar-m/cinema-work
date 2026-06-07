@@ -245,3 +245,47 @@ export async function getHomeNewsFeed(): Promise<NewsItem[]> {
   ]);
   return dedupeByUrl([...news, ...reviews, ...interviews]);
 }
+
+// Loose normalization for title matching: lowercase, alphanumerics separated by
+// single spaces (so "RRR: Roudram" → "rrr roudram").
+function normalizeForMatch(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Recent Telugu news, reviews, and interviews that mention a specific movie (by
+ * title, the part before a subtitle, or a known alias), newest first. Powers the
+ * movie page's News tab. Matching is word-boundary phrase based to avoid spurious
+ * substring hits. Best-effort: returns [] when nothing matches or sources fail.
+ */
+export async function getMovieRelatedNews(
+  title: string,
+  aliases: string[] = [],
+  limit = 9
+): Promise<NewsItem[]> {
+  const keys = Array.from(
+    new Set(
+      [title, title.split(/[:\-–—(]/)[0], ...aliases]
+        .map(normalizeForMatch)
+        .filter((key) => key.length >= 3)
+    )
+  );
+  if (!keys.length) return [];
+
+  const [news, reviews, interviews] = await Promise.all([
+    getTeluguNews("news", 60),
+    getTeluguNews("review", 30),
+    getTeluguNews("interview", 18),
+  ]);
+  const pool = dedupeByUrl([...news, ...reviews, ...interviews]);
+
+  const matched = pool.filter((item) => {
+    const padded = ` ${normalizeForMatch(item.title)} `;
+    return keys.some((key) => padded.includes(` ${key} `));
+  });
+  return sortNews(matched).slice(0, limit);
+}
