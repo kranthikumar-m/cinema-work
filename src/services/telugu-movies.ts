@@ -1145,7 +1145,7 @@ export async function browseTeluguMovies({
       break;
     case "online":
       pool = await getTeluguMoviesOnline(ONLINE_BROWSE_LIMIT);
-      sort = "popularity";
+      sort = "newest";
       break;
     case "az":
       pool = everything;
