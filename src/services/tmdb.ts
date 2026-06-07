@@ -11,6 +11,7 @@ import type {
   PaginatedResponse,
   Genre,
   Person,
+  PersonDetails,
 } from "@/types/tmdb";
 
 async function tmdbFetch<T>(
@@ -162,4 +163,11 @@ export async function getTrendingPeople(
   page = 1
 ): Promise<PaginatedResponse<Person>> {
   return tmdbFetch("/trending/person/week", { page: String(page) });
+}
+
+// Full person profile in one call: bio + movie filmography + external ids + photos.
+export async function getPersonDetails(id: number): Promise<PersonDetails> {
+  return tmdbFetch(`/person/${id}`, {
+    append_to_response: "movie_credits,external_ids,images",
+  });
 }

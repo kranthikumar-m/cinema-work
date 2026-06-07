@@ -81,6 +81,8 @@ export interface CastMember {
   order: number;
   known_for_department: string;
   popularity: number;
+  // TMDB gender: 0 = unknown, 1 = female, 2 = male. Used to split Actors/Actresses.
+  gender?: number;
 }
 
 export interface CrewMember {
@@ -90,6 +92,8 @@ export interface CrewMember {
   department: string;
   profile_path: string | null;
   popularity: number;
+  gender?: number;
+  known_for_department?: string;
 }
 
 export interface Credits {
@@ -163,6 +167,59 @@ export interface Person {
   popularity: number;
   birthday?: string;
   known_for?: Movie[];
+}
+
+export interface PersonExternalIds {
+  imdb_id?: string | null;
+  instagram_id?: string | null;
+  twitter_id?: string | null;
+  facebook_id?: string | null;
+}
+
+export interface PersonImageProfile {
+  file_path: string;
+  aspect_ratio: number;
+  height: number;
+  width: number;
+  vote_average: number;
+}
+
+// A person's individual movie credit (from /person/{id}/movie_credits).
+export interface PersonMovieCredit {
+  id: number;
+  title: string;
+  original_title: string;
+  character?: string;
+  job?: string;
+  department?: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  release_date: string;
+  vote_average: number;
+  vote_count: number;
+  popularity: number;
+  overview: string;
+  genre_ids: number[];
+  original_language: string;
+}
+
+export interface PersonDetails {
+  id: number;
+  name: string;
+  biography: string;
+  birthday: string | null;
+  deathday: string | null;
+  place_of_birth: string | null;
+  profile_path: string | null;
+  known_for_department: string;
+  gender: number;
+  also_known_as: string[];
+  homepage: string | null;
+  popularity: number;
+  imdb_id?: string | null;
+  external_ids?: PersonExternalIds;
+  images?: { profiles: PersonImageProfile[] };
+  movie_credits?: { cast: PersonMovieCredit[]; crew: PersonMovieCredit[] };
 }
 
 export type MovieCategory =
