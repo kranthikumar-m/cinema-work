@@ -42,6 +42,18 @@ export interface ImdbRating {
 
 const NO_RATING: ImdbRating = { rating: null, votes: null };
 
+export interface ImdbTechnicalSpecs {
+  color: string | null;
+  soundMixes: string[];
+  aspectRatios: string[];
+}
+
+const NO_TECH_SPECS: ImdbTechnicalSpecs = {
+  color: null,
+  soundMixes: [],
+  aspectRatios: [],
+};
+
 interface OmdbLookup extends ImdbRating {
   imdbId: string | null;
 }
@@ -132,6 +144,76 @@ const fetchImdbGraphqlRating = unstable_cache(
   ["imdb-graphql-rating"],
   { revalidate: RATING_CACHE_SECONDS }
 );
+
+function dedupeStrings(values: (string | null | undefined)[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const value of values) {
+    const v = value?.trim();
+    if (!v || seen.has(v.toLowerCase())) continue;
+    seen.add(v.toLowerCase());
+    out.push(v);
+  }
+  return out;
+}
+
+/**
+ * IMDb-exclusive technical specs (colour, sound mixes, aspect ratios) via IMDb's
+ * GraphQL — TMDB doesn't carry these. Same source/caveat as the rating lookup:
+ * IMDb's API ToS restricts commercial/public reuse, so treat as best-effort.
+ */
+const fetchImdbTechnicalSpecs = unstable_cache(
+  async (imdbId: string): Promise<ImdbTechnicalSpecs> => {
+    if (!imdbId) return NO_TECH_SPECS;
+
+    const query = `query{title(id:"${imdbId}"){technicalSpecifications{soundMixes{items{text}} aspectRatios{items{aspectRatio}} colorations{items{text}}}}}`;
+    try {
+      const res = await fetch(IMDB_GRAPHQL_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "User-Agent": BROWSER_USER_AGENT,
+        },
+        body: JSON.stringify({ query }),
+      });
+      if (!res.ok) return NO_TECH_SPECS;
+
+      const data = (await res.json()) as {
+        data?: {
+          title?: {
+            technicalSpecifications?: {
+              soundMixes?: { items?: { text?: string }[] };
+              aspectRatios?: { items?: { aspectRatio?: string }[] };
+              colorations?: { items?: { text?: string }[] };
+            };
+          };
+        };
+      };
+      const tech = data?.data?.title?.technicalSpecifications;
+      if (!tech) return NO_TECH_SPECS;
+
+      const soundMixes = dedupeStrings((tech.soundMixes?.items ?? []).map((i) => i.text));
+      const aspectRatios = dedupeStrings(
+        (tech.aspectRatios?.items ?? []).map((i) => i.aspectRatio)
+      );
+      const colorations = dedupeStrings((tech.colorations?.items ?? []).map((i) => i.text));
+
+      return { color: colorations[0] ?? null, soundMixes, aspectRatios };
+    } catch {
+      return NO_TECH_SPECS;
+    }
+  },
+  ["imdb-graphql-tech-specs"],
+  { revalidate: RATING_CACHE_SECONDS }
+);
+
+export function getImdbTechnicalSpecs(
+  imdbId: string | null | undefined
+): Promise<ImdbTechnicalSpecs> {
+  if (!imdbId) return Promise.resolve(NO_TECH_SPECS);
+  return fetchImdbTechnicalSpecs(imdbId);
+}
 
 function extractYear(dateString: string | undefined): number | null {
   const year = Number.parseInt((dateString ?? "").slice(0, 4), 10);

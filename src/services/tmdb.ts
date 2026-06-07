@@ -135,6 +135,13 @@ export async function getGenres(): Promise<{ genres: Genre[] }> {
   return tmdbFetch("/genre/movie/list");
 }
 
+// Keywords (plot tags), shown alongside genres on the detail page.
+export async function getMovieKeywords(
+  id: number
+): Promise<{ keywords: { id: number; name: string }[] }> {
+  return tmdbFetch(`/movie/${id}/keywords`);
+}
+
 // Discover
 export async function discoverMovies(
   params: Record<string, string> = {},

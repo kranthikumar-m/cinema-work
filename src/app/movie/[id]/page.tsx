@@ -9,6 +9,7 @@ import {
   getMovieReviews,
   getSimilarMovies,
   getWatchProviders,
+  getMovieKeywords,
 } from "@/services/tmdb";
 import {
   getImageUrl,
@@ -27,7 +28,7 @@ import { ReviewCard } from "@/components/movie/ReviewCard";
 import { MovieGrid } from "@/components/movie/MovieGrid";
 import { MovieDetailClient } from "./client";
 import { enrichMovieAssets, getMovieDetailsWithFallback } from "@/services/telugu-movies";
-import { attachImdbRating } from "@/services/omdb";
+import { attachImdbRating, getImdbTechnicalSpecs } from "@/services/omdb";
 import { resolvePreferredBackdrop } from "@/services/movie-backdrops";
 import { getMovieMusic, type MovieMusic } from "@/services/movie-music";
 import { getMovieTrailers, type MovieTrailerVideo } from "@/services/movie-trailers";
@@ -128,8 +129,16 @@ export default async function MovieDetailPage({ params }: Props) {
     .filter((item) => item.original_language === "te")
     .slice(0, 6);
   const backdropSelection = await resolvePreferredBackdrop(movie, movie.backdrop_path);
-  const [customImages, customVideoRows, music, autoTrailers, hiddenKeyList, releaseOverride] =
-    await Promise.all([
+  const [
+    customImages,
+    customVideoRows,
+    music,
+    autoTrailers,
+    hiddenKeyList,
+    releaseOverride,
+    keywordData,
+    techSpecs,
+  ] = await Promise.all([
       hasDatabaseConfiguration()
         ? getCustomImageRecordsByMovieId(id)
         : Promise.resolve([]),
@@ -151,7 +160,44 @@ export default async function MovieDetailPage({ params }: Props) {
       hasDatabaseConfiguration()
         ? getMovieReleaseOverrideRecord(id)
         : Promise.resolve(null),
+      getMovieKeywords(id).catch(() => ({ keywords: [] })),
+      getImdbTechnicalSpecs(movie.imdb_id).catch(() => ({
+        color: null,
+        soundMixes: [] as string[],
+        aspectRatios: [] as string[],
+      })),
     ]);
+
+  // Plot keywords shown as tags next to genres (Title Cased for display).
+  const keywordTags = (keywordData.keywords ?? [])
+    .slice(0, 8)
+    .map((k) => k.name.replace(/\b\w/g, (c) => c.toUpperCase()));
+  const spokenLanguages = (movie.spoken_languages ?? [])
+    .map((l) => l.english_name || l.name)
+    .filter(Boolean);
+  const countries = (movie.production_countries ?? []).map((c) => c.name).filter(Boolean);
+
+  // Details + tech specs (IMDb-sourced color/sound/aspect, when available).
+  const movieFacts: { label: string; value: string }[] = [
+    { label: "Status", value: movie.status || "—" },
+    {
+      label: "Languages",
+      value: spokenLanguages.length
+        ? spokenLanguages.join(", ")
+        : movie.original_language.toUpperCase(),
+    },
+    ...(countries.length ? [{ label: "Country", value: countries.join(", ") }] : []),
+    { label: "Runtime", value: formatRuntime(movie.runtime) },
+    ...(techSpecs.color ? [{ label: "Color", value: techSpecs.color }] : []),
+    ...(techSpecs.soundMixes.length
+      ? [{ label: "Sound Mix", value: techSpecs.soundMixes.join(", ") }]
+      : []),
+    ...(techSpecs.aspectRatios.length
+      ? [{ label: "Aspect Ratio", value: techSpecs.aspectRatios.join(", ") }]
+      : []),
+    { label: "Budget", value: formatCurrency(movie.budget) },
+    { label: "Revenue", value: formatCurrency(movie.revenue) },
+  ];
 
   // Apply admin ABO calibration: corrected release date + alias tags.
   const releaseDateDisplay = releaseOverride?.release_date || movie.release_date;
@@ -384,6 +430,14 @@ export default async function MovieDetailPage({ params }: Props) {
                       {alias}
                     </span>
                   ))}
+                  {keywordTags.map((kw) => (
+                    <span
+                      key={kw}
+                      className="px-3 py-1 text-xs font-medium rounded-full bg-white/5 text-gray-300 border border-white/10 backdrop-blur-sm"
+                    >
+                      {kw}
+                    </span>
+                  ))}
                 </div>
 
                 <p className="text-gray-200 leading-relaxed mb-6 max-w-2xl drop-shadow">
@@ -491,12 +545,7 @@ export default async function MovieDetailPage({ params }: Props) {
         <section id="box-office" className="mt-12 scroll-mt-[170px]">
           <SectionHeader title="Movie Facts" />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { label: "Status", value: movie.status },
-              { label: "Language", value: movie.original_language.toUpperCase() },
-              { label: "Budget", value: formatCurrency(movie.budget) },
-              { label: "Revenue", value: formatCurrency(movie.revenue) },
-            ].map((fact) => (
+            {movieFacts.map((fact) => (
               <div
                 key={fact.label}
                 className="bg-gray-900/60 border border-gray-800 rounded-xl p-4"
