@@ -127,6 +127,8 @@ export interface WatchProvider {
 export interface WatchProviderResult {
   link: string;
   flatrate?: WatchProvider[];
+  free?: WatchProvider[];
+  ads?: WatchProvider[];
   rent?: WatchProvider[];
   buy?: WatchProvider[];
 }

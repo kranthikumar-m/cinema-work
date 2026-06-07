@@ -105,7 +105,9 @@ export default async function MovieDetailPage({ params }: Props) {
   }
 
   const director = credits.crew.find((c) => c.job === "Director");
-  const usProviders = providers.results?.US;
+  // India is the app's region (and what the "Movies Online" filter uses), so
+  // resolve providers for IN first; fall back to US only when IN has none.
+  const watchProviders = providers.results?.IN ?? providers.results?.US;
   const similarTeluguMovies = similar.results
     .filter((item) => item.original_language === "te")
     .slice(0, 6);
@@ -386,14 +388,21 @@ export default async function MovieDetailPage({ params }: Props) {
         )}
 
         {/* Watch Providers */}
-        {usProviders && (usProviders.flatrate || usProviders.rent || usProviders.buy) && (
+        {watchProviders &&
+          (watchProviders.flatrate ||
+            watchProviders.free ||
+            watchProviders.ads ||
+            watchProviders.rent ||
+            watchProviders.buy) && (
           <div className="mt-12">
             <SectionHeader title="Where to Watch" />
             <div className="flex flex-wrap gap-4">
               {[
-                ...(usProviders.flatrate || []),
-                ...(usProviders.rent || []),
-                ...(usProviders.buy || []),
+                ...(watchProviders.flatrate || []),
+                ...(watchProviders.free || []),
+                ...(watchProviders.ads || []),
+                ...(watchProviders.rent || []),
+                ...(watchProviders.buy || []),
               ]
                 .filter(
                   (p, i, arr) =>
