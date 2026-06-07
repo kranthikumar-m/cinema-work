@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import Image from "next/image";
 import { getImageUrl } from "@/lib/utils";
 import type { CastMember } from "@/types/tmdb";
@@ -15,11 +16,12 @@ export function CastCarousel({ cast }: CastCarouselProps) {
   return (
     <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
       {visible.map((person) => (
-        <div
+        <Link
           key={person.id}
-          className="flex-shrink-0 w-32 group"
+          href={`/person/${person.id}`}
+          className="group w-32 flex-shrink-0"
         >
-          <div className="relative w-32 h-32 rounded-full overflow-hidden bg-gray-800 mb-2 mx-auto">
+          <div className="relative mx-auto mb-2 h-32 w-32 overflow-hidden rounded-full bg-gray-800 ring-0 ring-[var(--color-accent)] transition group-hover:ring-2">
             <Image
               src={getImageUrl(person.profile_path, "w200")}
               alt={person.name}
@@ -28,13 +30,13 @@ export function CastCarousel({ cast }: CastCarouselProps) {
               unoptimized={!person.profile_path}
             />
           </div>
-          <p className="text-sm font-medium text-white text-center truncate">
+          <p className="truncate text-center text-sm font-medium text-white transition-colors group-hover:text-[var(--color-accent)]">
             {person.name}
           </p>
-          <p className="text-xs text-gray-400 text-center truncate">
+          <p className="truncate text-center text-xs text-gray-400">
             {person.character}
           </p>
-        </div>
+        </Link>
       ))}
     </div>
   );
