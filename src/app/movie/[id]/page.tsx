@@ -40,7 +40,7 @@ import {
 } from "@/lib/database";
 import { VideoSection } from "@/components/movie/VideoSection";
 import type { VideoItem } from "@/components/movie/VideoSection";
-import type { MovieImage } from "@/types/tmdb";
+import type { MovieImage, WatchProvider, WatchProviderResult } from "@/types/tmdb";
 import type { Metadata } from "next";
 
 interface Props {
@@ -60,6 +60,24 @@ function pickHeroBackdropPath(backdrops: MovieImage[]): string | null {
     })[0];
 
   return best?.file_path ?? null;
+}
+
+// Dedupes a region's providers across all monetization tiers (subscription,
+// free, ad-supported, rent, buy) into a single ordered list for display.
+function flattenWatchProviders(
+  region: WatchProviderResult | undefined
+): WatchProvider[] {
+  if (!region) return [];
+  const all = [
+    ...(region.flatrate || []),
+    ...(region.free || []),
+    ...(region.ads || []),
+    ...(region.rent || []),
+    ...(region.buy || []),
+  ];
+  return all
+    .filter((p, i, arr) => arr.findIndex((x) => x.provider_id === p.provider_id) === i)
+    .slice(0, 12);
 }
 
 function shouldUseUnoptimizedImage(src: string) {
@@ -105,9 +123,16 @@ export default async function MovieDetailPage({ params }: Props) {
   }
 
   const director = credits.crew.find((c) => c.job === "Director");
-  // India is the app's region (and what the "Movies Online" filter uses), so
-  // resolve providers for IN first; fall back to US only when IN has none.
-  const watchProviders = providers.results?.IN ?? providers.results?.US;
+  // Watch providers shown as separate region groups (India OTT first, then US).
+  const watchRegions = [
+    { code: "IN", label: "India" },
+    { code: "US", label: "United States" },
+  ]
+    .map((region) => ({
+      ...region,
+      providers: flattenWatchProviders(providers.results?.[region.code]),
+    }))
+    .filter((region) => region.providers.length > 0);
   const similarTeluguMovies = similar.results
     .filter((item) => item.original_language === "te")
     .slice(0, 6);
@@ -387,46 +412,36 @@ export default async function MovieDetailPage({ params }: Props) {
           </div>
         )}
 
-        {/* Watch Providers */}
-        {watchProviders &&
-          (watchProviders.flatrate ||
-            watchProviders.free ||
-            watchProviders.ads ||
-            watchProviders.rent ||
-            watchProviders.buy) && (
+        {/* Watch Providers — grouped by region (India OTT, then US). */}
+        {watchRegions.length > 0 && (
           <div className="mt-12">
             <SectionHeader title="Where to Watch" />
-            <div className="flex flex-wrap gap-4">
-              {[
-                ...(watchProviders.flatrate || []),
-                ...(watchProviders.free || []),
-                ...(watchProviders.ads || []),
-                ...(watchProviders.rent || []),
-                ...(watchProviders.buy || []),
-              ]
-                .filter(
-                  (p, i, arr) =>
-                    arr.findIndex((x) => x.provider_id === p.provider_id) === i
-                )
-                .slice(0, 10)
-                .map((p) => (
-                  <div
-                    key={p.provider_id}
-                    className="flex items-center gap-2 bg-gray-900 rounded-lg px-3 py-2"
-                  >
-                    <Image
-                      src={getImageUrl(p.logo_path, "w200")}
-                      alt={p.provider_name}
-                      width={32}
-                      height={32}
-                      className="rounded"
-                      unoptimized
-                    />
-                    <span className="text-sm text-gray-300">
-                      {p.provider_name}
-                    </span>
+            <div className="space-y-5">
+              {watchRegions.map((region) => (
+                <div key={region.code}>
+                  <p className="mb-2.5 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)]">
+                    {region.label}
+                  </p>
+                  <div className="flex flex-wrap gap-4">
+                    {region.providers.map((p) => (
+                      <div
+                        key={p.provider_id}
+                        className="flex items-center gap-2 bg-gray-900 rounded-lg px-3 py-2"
+                      >
+                        <Image
+                          src={getImageUrl(p.logo_path, "w200")}
+                          alt={p.provider_name}
+                          width={32}
+                          height={32}
+                          className="rounded"
+                          unoptimized
+                        />
+                        <span className="text-sm text-gray-300">{p.provider_name}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
+              ))}
             </div>
           </div>
         )}
