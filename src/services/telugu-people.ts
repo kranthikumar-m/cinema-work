@@ -112,9 +112,17 @@ function toSummary(person: PersonAccumulator, role: string, filmCount: number): 
   };
 }
 
+// Relevance order — used to pick the most prominent people when a view is
+// limited (top-N), before they're alphabetized for display.
 function rank(list: TeluguPersonSummary[]): TeluguPersonSummary[] {
   return [...list].sort(
     (a, b) => b.filmCount - a.filmCount || b.popularity - a.popularity
+  );
+}
+
+function alphabetize(list: TeluguPersonSummary[]): TeluguPersonSummary[] {
+  return [...list].sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
   );
 }
 
@@ -218,7 +226,12 @@ const buildTeluguPeople = unstable_cache(
 export async function getTeluguPeople(): Promise<
   Record<TeluguPeopleCategory, TeluguPersonSummary[]>
 > {
-  return buildTeluguPeople();
+  const all = await buildTeluguPeople();
+  const out = {} as Record<TeluguPeopleCategory, TeluguPersonSummary[]>;
+  (Object.keys(all) as TeluguPeopleCategory[]).forEach((key) => {
+    out[key] = alphabetize(all[key]);
+  });
+  return out;
 }
 
 export async function getTeluguPeopleByCategory(
@@ -226,5 +239,6 @@ export async function getTeluguPeopleByCategory(
   limit = DEFAULT_CATEGORY_LIMIT
 ): Promise<TeluguPersonSummary[]> {
   const all = await buildTeluguPeople();
-  return (all[category] ?? []).slice(0, limit);
+  // Pick the most prominent (relevance-ranked) people, then show them A–Z.
+  return alphabetize((all[category] ?? []).slice(0, limit));
 }

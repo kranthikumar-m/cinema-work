@@ -10,7 +10,10 @@ interface CastCarouselProps {
 }
 
 export function CastCarousel({ cast }: CastCarouselProps) {
-  const visible = cast.slice(0, 20);
+  // Keep the main (top-billed) cast, but display it alphabetically by name.
+  const visible = cast
+    .slice(0, 20)
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
   if (!visible.length) return null;
 
   return (

@@ -26,25 +26,20 @@ interface CrewListProps {
 }
 
 export function CrewList({ crew }: CrewListProps) {
-  const byId = new Map<
-    number,
-    { member: CrewMember; jobs: string[]; priority: number }
-  >();
+  const byId = new Map<number, { member: CrewMember; jobs: string[] }>();
 
   for (const member of crew) {
-    const priority = rolePriority(member.job);
-    if (priority === ROLES.length) continue; // not a key role
+    if (rolePriority(member.job) === ROLES.length) continue; // not a key role
     const existing = byId.get(member.id);
     if (existing) {
       if (!existing.jobs.includes(member.job)) existing.jobs.push(member.job);
-      existing.priority = Math.min(existing.priority, priority);
     } else {
-      byId.set(member.id, { member, jobs: [member.job], priority });
+      byId.set(member.id, { member, jobs: [member.job] });
     }
   }
 
-  const people = Array.from(byId.values()).sort(
-    (a, b) => a.priority - b.priority || b.member.popularity - a.member.popularity
+  const people = Array.from(byId.values()).sort((a, b) =>
+    a.member.name.localeCompare(b.member.name, undefined, { sensitivity: "base" })
   );
 
   if (!people.length) return null;
