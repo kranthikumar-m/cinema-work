@@ -979,7 +979,8 @@ const getCachedValidatedTeluguCatalog = unstable_cache(
 
     return sortByReleaseDateDescAndPopularity(dedupeMovies(releases));
   },
-  ["validated-telugu-catalog-v4"],
+  // v5: wiki parser fixed (abbreviated month cells + wrong-year page pollution).
+  ["validated-telugu-catalog-v5"],
   { revalidate: 21600, tags: [VALIDATED_CATALOG_CACHE_TAG] }
 );
 

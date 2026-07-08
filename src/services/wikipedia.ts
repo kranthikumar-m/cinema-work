@@ -8,6 +8,8 @@ const ROW_REGEX = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
 const CELL_REGEX = /<(td|th)\b([^>]*)>([\s\S]*?)<\/\1>/gi;
 const STRIP_SUP_REGEX = /<sup\b[^>]*>[\s\S]*?<\/sup>/gi;
 const STRIP_TAG_REGEX = /<[^>]+>/g;
+// Month cells appear as full names on older year pages and as stacked-letter
+// abbreviations on newer ones ("J<br>U<br>N" → "JUN"), so map both forms.
 const MONTHS = new Map<string, string>([
   ["JANUARY", "01"],
   ["FEBRUARY", "02"],
@@ -21,6 +23,18 @@ const MONTHS = new Map<string, string>([
   ["OCTOBER", "10"],
   ["NOVEMBER", "11"],
   ["DECEMBER", "12"],
+  ["JAN", "01"],
+  ["FEB", "02"],
+  ["MAR", "03"],
+  ["APR", "04"],
+  ["JUN", "06"],
+  ["JUL", "07"],
+  ["AUG", "08"],
+  ["SEP", "09"],
+  ["SEPT", "09"],
+  ["OCT", "10"],
+  ["NOV", "11"],
+  ["DEC", "12"],
 ]);
 
 interface WikipediaSearchResponse {
@@ -265,10 +279,19 @@ async function searchWikipediaPageTitles(year: number) {
     srsearch: `${year} Telugu films`,
   });
 
+  // The year MUST appear in the page title: the search also returns other
+  // years' lists ("List of Telugu films of 2025" for a 2026 query), and parsing
+  // those would stamp their films with the wrong year and validate movies that
+  // aren't in the requested year's list at all.
   const discoveredTitles =
     response.query?.search
       ?.map((result) => result.title)
-      ?.filter((title) => /Telugu/i.test(title) && /(films|cinema)/i.test(title)) ?? [];
+      ?.filter(
+        (title) =>
+          /Telugu/i.test(title) &&
+          /(films|cinema)/i.test(title) &&
+          title.includes(String(year))
+      ) ?? [];
 
   const titleSet = new Set<string>([
     `List of Telugu films of ${year}`,
