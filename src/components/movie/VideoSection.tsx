@@ -38,7 +38,7 @@ function VideoCard({ video, onPlay }: { video: VideoItem; onPlay: () => void }) 
     <button
       type="button"
       onClick={onPlay}
-      className="group relative w-full overflow-hidden rounded-xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.48)] transition hover:border-[rgba(26,167,230,0.32)]"
+      className="group relative w-full overflow-hidden rounded-xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.48)] transition hover:border-[rgba(194,154,98,0.32)]"
     >
       <div className="relative aspect-video w-full overflow-hidden">
         <Image
@@ -108,7 +108,7 @@ export function VideoSection({ videos, movieId, movieTitle }: VideoSectionProps)
             className={`rounded-full px-4 py-2 text-sm font-medium transition ${
               activeTab === group.category
                 ? "bg-[var(--color-accent)] text-[var(--color-accent-contrast)]"
-                : "border border-[var(--color-border)] bg-transparent text-[var(--color-muted-strong)] hover:border-[rgba(26,167,230,0.32)] hover:text-[var(--color-text)]"
+                : "border border-[var(--color-border)] bg-transparent text-[var(--color-muted-strong)] hover:border-[rgba(194,154,98,0.32)] hover:text-[var(--color-text)]"
             }`}
           >
             {group.label} ({group.items.length})
@@ -118,7 +118,7 @@ export function VideoSection({ videos, movieId, movieTitle }: VideoSectionProps)
         {activeTab === "song" && hasSongs && (
           <Link
             href={`/music/${movieId}`}
-            className="group ml-auto inline-flex items-center gap-1.5 rounded-full border border-[rgba(26,167,230,0.32)] px-4 py-2 text-sm font-medium text-[var(--color-accent)] transition hover:border-[rgba(26,167,230,0.6)] hover:bg-[var(--color-accent-soft)]"
+            className="group ml-auto inline-flex items-center gap-1.5 rounded-full border border-[rgba(194,154,98,0.32)] px-4 py-2 text-sm font-medium text-[var(--color-accent)] transition hover:border-[rgba(194,154,98,0.6)] hover:bg-[var(--color-accent-soft)]"
           >
             <Disc3 className="h-4 w-4" />
             Music player

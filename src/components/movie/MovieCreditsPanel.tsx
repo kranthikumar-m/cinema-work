@@ -108,7 +108,7 @@ export function MovieCreditsPanel({ cast, crew, title }: MovieCreditsPanelProps)
           {roleRows.map((row) => (
             <div
               key={row.label}
-              className="flex items-start gap-4 border-b border-[var(--color-border)] px-5 py-3.5 transition last:border-b-0 hover:bg-[rgba(26,167,230,0.06)] sm:odd:border-r sm:last:border-r-0 sm:[&:nth-last-child(-n+2)]:border-b-0"
+              className="flex items-start gap-4 border-b border-[var(--color-border)] px-5 py-3.5 transition last:border-b-0 hover:bg-[rgba(194,154,98,0.06)] sm:odd:border-r sm:last:border-r-0 sm:[&:nth-last-child(-n+2)]:border-b-0"
             >
               <span className="w-36 shrink-0 pt-0.5 text-[0.68rem] font-semibold uppercase tracking-[0.13em] text-[var(--color-muted)]">
                 {row.label}
@@ -131,7 +131,7 @@ export function MovieCreditsPanel({ cast, crew, title }: MovieCreditsPanelProps)
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-4 inline-flex items-center gap-2 rounded-full border border-[rgba(26,167,230,0.32)] px-4 py-2 text-sm font-semibold text-[var(--color-accent)] transition hover:border-[rgba(26,167,230,0.6)] hover:bg-[var(--color-accent-soft)]"
+        className="mt-4 inline-flex items-center gap-2 rounded-full border border-[rgba(194,154,98,0.32)] px-4 py-2 text-sm font-semibold text-[var(--color-accent)] transition hover:border-[rgba(194,154,98,0.6)] hover:bg-[var(--color-accent-soft)]"
       >
         <Users className="h-4 w-4" />
         View full cast &amp; crew

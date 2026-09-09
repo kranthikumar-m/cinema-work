@@ -81,7 +81,7 @@ export function MovieSongs({ music, movieId, movieTitle, albumImage }: MovieSong
             </p>
             <Link
               href={`/music/${movieId}`}
-              className="group mt-3 inline-flex items-center gap-1.5 rounded-full border border-[rgba(26,167,230,0.32)] px-3.5 py-1.5 text-xs font-semibold text-[var(--color-accent)] transition hover:border-[rgba(26,167,230,0.6)] hover:bg-[var(--color-accent-soft)]"
+              className="group mt-3 inline-flex items-center gap-1.5 rounded-full border border-[rgba(194,154,98,0.32)] px-3.5 py-1.5 text-xs font-semibold text-[var(--color-accent)] transition hover:border-[rgba(194,154,98,0.6)] hover:bg-[var(--color-accent-soft)]"
             >
               <Disc3 className="h-3.5 w-3.5" />
               Music player
@@ -102,7 +102,7 @@ export function MovieSongs({ music, movieId, movieTitle, albumImage }: MovieSong
                   onClick={() => playable && setPlayingKey(song.youtubeKey)}
                   disabled={!playable}
                   className={`flex w-full items-center gap-4 px-4 py-3 text-left transition ${
-                    playable ? "hover:bg-[rgba(26,167,230,0.06)]" : "cursor-default opacity-60"
+                    playable ? "hover:bg-[rgba(194,154,98,0.06)]" : "cursor-default opacity-60"
                   }`}
                 >
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.05] text-xs font-semibold tabular-nums text-[var(--color-muted)]">

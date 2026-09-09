@@ -53,7 +53,7 @@ export function CrewList({ crew }: CrewListProps) {
         <Link
           key={member.id}
           href={`/person/${member.id}`}
-          className="group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-deep)] p-2.5 transition hover:border-[rgba(26,167,230,0.4)]"
+          className="group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-deep)] p-2.5 transition hover:border-[rgba(194,154,98,0.4)]"
         >
           <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-gray-800">
             <Image

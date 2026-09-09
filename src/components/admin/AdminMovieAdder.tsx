@@ -122,7 +122,7 @@ export function AdminMovieAdder() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search TMDB for a missing movie..."
-            className="h-12 w-full rounded-xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.72)] pl-12 pr-4 text-sm text-[var(--color-text)] outline-none transition focus:border-[rgba(26,167,230,0.46)]"
+            className="h-12 w-full rounded-xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.72)] pl-12 pr-4 text-sm text-[var(--color-text)] outline-none transition focus:border-[rgba(194,154,98,0.46)]"
           />
           <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-accent)]" />
         </div>

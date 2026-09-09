@@ -51,7 +51,7 @@ export function AccountMenu({ variant = "bar" }: AccountMenuProps) {
     "flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold transition",
     variant === "overlay"
       ? "border-white/15 bg-black/20 text-white/92 backdrop-blur-[10px] hover:border-white/30 hover:bg-black/35"
-      : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] hover:border-[rgba(26,167,230,0.5)]"
+      : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] hover:border-[rgba(194,154,98,0.5)]"
   );
 
   if (isLoading) {

@@ -37,7 +37,7 @@ export function PosterPlaceholder({ movieId, title, year }: PosterPlaceholderPro
     <div
       className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden p-4 text-center"
       style={{
-        background: `radial-gradient(circle at 30% 20%, hsl(${hue} 45% 22%) 0%, hsl(${hue} 35% 9%) 60%, #050607 100%)`,
+        background: `radial-gradient(circle at 30% 20%, hsl(${hue} 45% 22%) 0%, hsl(${hue} 35% 9%) 60%, #141827 100%)`,
       }}
     >
       <span
@@ -55,7 +55,7 @@ export function PosterPlaceholder({ movieId, title, year }: PosterPlaceholderPro
         <Link
           href={`/admin?movie=${movieId}#images`}
           onClick={(event) => event.stopPropagation()}
-          className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-[rgba(26,167,230,0.5)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-accent)] transition hover:bg-[var(--color-accent-soft)]"
+          className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-[rgba(194,154,98,0.5)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-accent)] transition hover:bg-[var(--color-accent-soft)]"
         >
           <ImagePlus className="h-3 w-3" />
           Add poster

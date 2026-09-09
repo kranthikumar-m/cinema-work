@@ -3,31 +3,31 @@
 @tailwind utilities;
 
 :root {
-  /* Near-black ground with a single cyan accent (vcinema-style). */
-  --color-bg: #050607;
-  --color-bg-elevated: #0f1114;
-  --color-bg-deep: #000000;
-  --color-surface: #101216;
-  --color-surface-strong: #16191e;
-  --color-surface-soft: rgba(16, 18, 22, 0.82);
-  --color-sidebar: #000000;
-  --color-text: #f2f4f7;
-  --color-muted: #7d8794;
-  --color-muted-strong: #a0a9b5;
-  --color-border: rgba(255, 255, 255, 0.08);
-  --color-accent: #1aa7e6;
-  --color-accent-soft: rgba(26, 167, 230, 0.16);
-  --color-accent-strong: #5cc4f2;
-  --color-accent-contrast: #03131d;
+  /* House palette: deep navy ground with the warm gold accent. */
+  --color-bg: #1a1e2e;
+  --color-bg-elevated: #202538;
+  --color-bg-deep: #141827;
+  --color-surface: #21263a;
+  --color-surface-strong: #272c40;
+  --color-surface-soft: rgba(33, 38, 58, 0.78);
+  --color-sidebar: #1c2133;
+  --color-text: #eef1fa;
+  --color-muted: #7b859e;
+  --color-muted-strong: #98a1b8;
+  --color-border: rgba(194, 154, 98, 0.16);
+  --color-accent: #c29a62;
+  --color-accent-soft: rgba(194, 154, 98, 0.16);
+  --color-accent-strong: #e2bb87;
+  --color-accent-contrast: #25190b;
   /* Feed / card type badges. */
-  --badge-photo: #3dbe7a;
-  --badge-video: #2fb8c9;
+  --badge-photo: #4fc48a;
+  --badge-video: #4cc3d6;
   --badge-trailer: #e0b22e;
-  --badge-interview: #9b6ce0;
-  --badge-news: #1aa7e6;
+  --badge-interview: #a98be8;
+  --badge-news: #c29a62;
   --badge-review: #f0824a;
-  --badge-song: #e05c8a;
-  --badge-feature: #c9c9c9;
+  --badge-song: #e56d98;
+  --badge-feature: #b9c0d0;
   --background: var(--color-bg);
   --foreground: var(--color-text);
   --app-page-gutter: clamp(1rem, 0.55rem + 1.4vw, 3.5rem);
@@ -39,7 +39,9 @@
 }
 
 body {
-  background: var(--color-bg);
+  background:
+    radial-gradient(circle at top, rgba(194, 154, 98, 0.08) 0%, rgba(194, 154, 98, 0) 34%),
+    linear-gradient(180deg, #20253a 0%, #1a1e2e 44%, #171b2a 100%);
   color: var(--foreground);
   min-height: 100dvh;
   overflow-x: clip;
@@ -88,11 +90,11 @@ html {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(26, 167, 230, 0.42);
+  background: rgba(194, 154, 98, 0.42);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(26, 167, 230, 0.6);
+  background: rgba(194, 154, 98, 0.6);
 }
 
 .scrollbar-hide::-webkit-scrollbar {
@@ -108,8 +110,8 @@ html {
 }
 
 ::selection {
-  background: rgba(26, 167, 230, 0.3);
-  color: #ffffff;
+  background: rgba(194, 154, 98, 0.3);
+  color: #fff8ee;
 }
 
 @keyframes scroll-cue {
@@ -175,7 +177,7 @@ html {
     background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.35) 45%, rgba(0, 0, 0, 0.92) 100%);
   }
   .tile-hover-card {
-    background: linear-gradient(180deg, rgba(5, 6, 7, 0.55) 0%, rgba(5, 6, 7, 0.97) 40%);
+    background: linear-gradient(180deg, rgba(20, 24, 39, 0.55) 0%, rgba(20, 24, 39, 0.97) 40%);
   }
   .eyebrow-label {
     font-family: var(--font-heading);

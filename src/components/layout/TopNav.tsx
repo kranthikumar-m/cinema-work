@@ -8,7 +8,7 @@ import { AccountMenu } from "@/components/layout/AccountMenu";
 
 export function TopNav() {
   return (
-    <header className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-[rgba(5,6,7,0.88)] backdrop-blur-xl">
+    <header className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-[rgba(28,33,51,0.92)] backdrop-blur-xl">
       <div className="flex h-[64px] items-center justify-between px-[var(--app-page-gutter)]">
         <div className="flex items-center">
           <Link href="/" className="ml-14 block lg:hidden">

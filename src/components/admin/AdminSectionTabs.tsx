@@ -36,7 +36,7 @@ export function AdminSectionTabs({
                 "inline-flex h-10 items-center justify-center rounded-full px-4 text-sm transition",
                 isActive
                   ? "bg-[var(--color-accent)] text-[var(--color-accent-contrast)]"
-                  : "border border-[var(--color-border)] text-[var(--color-text)] hover:border-[rgba(26,167,230,0.34)] hover:bg-[rgba(255,255,255,0.03)]"
+                  : "border border-[var(--color-border)] text-[var(--color-text)] hover:border-[rgba(194,154,98,0.34)] hover:bg-[rgba(255,255,255,0.03)]"
               )}
             >
               {item.label}

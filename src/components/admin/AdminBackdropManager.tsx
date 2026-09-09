@@ -175,7 +175,7 @@ export function AdminBackdropManager() {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search Telugu movies or TMDB id"
-            className="h-12 w-full rounded-xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.72)] pl-12 pr-4 text-sm text-[var(--color-text)] outline-none transition focus:border-[rgba(26,167,230,0.46)]"
+            className="h-12 w-full rounded-xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.72)] pl-12 pr-4 text-sm text-[var(--color-text)] outline-none transition focus:border-[rgba(194,154,98,0.46)]"
           />
           <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-accent)]" />
         </div>
@@ -204,7 +204,7 @@ export function AdminBackdropManager() {
                   onClick={() => loadChoices(movie)}
                   className={`flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition ${
                     selectedMovie?.id === movie.id
-                      ? "border-[rgba(26,167,230,0.42)] bg-[rgba(26,167,230,0.08)]"
+                      ? "border-[rgba(194,154,98,0.42)] bg-[rgba(194,154,98,0.08)]"
                       : "border-transparent bg-transparent hover:border-[var(--color-border)] hover:bg-white/2"
                   }`}
                 >
@@ -297,7 +297,7 @@ export function AdminBackdropManager() {
                       key={image.filePath}
                       className={`overflow-hidden rounded-2xl border ${
                         image.isSelected
-                          ? "border-[rgba(26,167,230,0.42)] bg-[rgba(26,167,230,0.06)]"
+                          ? "border-[rgba(194,154,98,0.42)] bg-[rgba(194,154,98,0.06)]"
                           : "border-[var(--color-border)] bg-[rgba(15,19,34,0.48)]"
                       }`}
                     >

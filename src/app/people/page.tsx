@@ -40,8 +40,8 @@ export default async function PeoplePage({ searchParams }: PeoplePageProps) {
               href={`/people?category=${category.key}`}
               className={`rounded-full px-4 py-2 text-sm font-medium transition ${
                 isActive
-                  ? "border border-[rgba(26,167,230,0.46)] bg-[var(--color-accent-soft)] text-[var(--color-accent)]"
-                  : "border border-[var(--color-border)] text-[var(--color-muted-strong)] hover:border-[rgba(26,167,230,0.4)] hover:text-[var(--color-text)]"
+                  ? "border border-[rgba(194,154,98,0.46)] bg-[var(--color-accent-soft)] text-[var(--color-accent)]"
+                  : "border border-[var(--color-border)] text-[var(--color-muted-strong)] hover:border-[rgba(194,154,98,0.4)] hover:text-[var(--color-text)]"
               }`}
             >
               {category.label}

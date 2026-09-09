@@ -12,7 +12,7 @@ interface AdminUserManagementProps {
 type UserStatusFilter = "all" | "active" | "disabled";
 
 const fieldClassName =
-  "h-11 rounded-xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.72)] px-4 text-sm text-[var(--color-text)] outline-none transition focus:border-[rgba(26,167,230,0.46)]";
+  "h-11 rounded-xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.72)] px-4 text-sm text-[var(--color-text)] outline-none transition focus:border-[rgba(194,154,98,0.46)]";
 
 export function AdminUserManagement({
   initialUsers,

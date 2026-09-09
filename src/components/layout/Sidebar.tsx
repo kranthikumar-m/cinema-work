@@ -22,7 +22,7 @@ function RailBrand() {
       className="flex h-[72px] w-full flex-col items-center justify-center gap-1 text-[var(--color-text)]"
       aria-label="Telugu Cinema Updates home"
     >
-      <span className="flex h-8 w-8 items-center justify-center rounded-md border border-[rgba(26,167,230,0.45)] text-[var(--color-accent)]">
+      <span className="flex h-8 w-8 items-center justify-center rounded-md border border-[rgba(194,154,98,0.45)] text-[var(--color-accent)]">
         <Clapperboard className="h-4 w-4" strokeWidth={2} />
       </span>
       <span className="eyebrow-label text-[0.5rem] text-[var(--color-muted-strong)]">Cinema</span>

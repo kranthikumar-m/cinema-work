@@ -6,7 +6,7 @@ import { useOptionalAuthUser } from "@/components/auth/AuthUserProvider";
 import type { AuthUser } from "@/types/auth";
 
 const fieldClassName =
-  "h-12 w-full rounded-xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.72)] px-4 text-sm text-[var(--color-text)] outline-none transition focus:border-[rgba(26,167,230,0.46)]";
+  "h-12 w-full rounded-xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.72)] px-4 text-sm text-[var(--color-text)] outline-none transition focus:border-[rgba(194,154,98,0.46)]";
 
 interface AccountProfileFormProps {
   initialUser: AuthUser;

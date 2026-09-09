@@ -42,7 +42,7 @@ export function MoviesAdminMenu() {
         className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
           open || calibration?.active
             ? "border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)]"
-            : "border-[rgba(26,167,230,0.32)] text-[var(--color-accent)] hover:border-[rgba(26,167,230,0.6)] hover:bg-[var(--color-accent-soft)]"
+            : "border-[rgba(194,154,98,0.32)] text-[var(--color-accent)] hover:border-[rgba(194,154,98,0.6)] hover:bg-[var(--color-accent-soft)]"
         }`}
       >
         <Wrench className="h-4 w-4" />
@@ -206,7 +206,7 @@ function AddMovieModal({ onClose }: { onClose: () => void }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search for a movie to add…"
-              className="h-11 w-full rounded-xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.72)] pl-10 pr-4 text-sm text-[var(--color-text)] outline-none transition focus:border-[rgba(26,167,230,0.46)]"
+              className="h-11 w-full rounded-xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.72)] pl-10 pr-4 text-sm text-[var(--color-text)] outline-none transition focus:border-[rgba(194,154,98,0.46)]"
             />
             <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-accent)]" />
           </div>

@@ -95,7 +95,7 @@ export function SearchClient() {
             value={query}
             onChange={(e) => handleInput(e.target.value)}
             placeholder="Search Telugu movies..."
-            className="h-14 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] pl-12 pr-12 text-lg text-[var(--color-text)] placeholder:text-[var(--color-muted)] focus:border-[rgba(26,167,230,0.48)] focus:outline-none"
+            className="h-14 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] pl-12 pr-12 text-lg text-[var(--color-text)] placeholder:text-[var(--color-muted)] focus:border-[rgba(194,154,98,0.48)] focus:outline-none"
           />
           {query && (
             <button
@@ -124,7 +124,7 @@ export function SearchClient() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2 }}
-            className="mt-4 max-h-[60vh] overflow-y-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] divide-y divide-[rgba(26,167,230,0.08)]"
+            className="mt-4 max-h-[60vh] overflow-y-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] divide-y divide-[rgba(194,154,98,0.08)]"
           >
             {results.map((movie) => (
               <Link

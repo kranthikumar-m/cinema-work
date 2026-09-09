@@ -22,7 +22,7 @@ export function TopNavAccountControls() {
       <div className="flex items-center gap-3">
         <Link
           href="/login"
-          className="inline-flex h-11 items-center justify-center rounded-full border border-[var(--color-border)] px-5 text-sm text-[var(--color-text)] transition hover:border-[rgba(26,167,230,0.34)] hover:bg-[rgba(255,255,255,0.03)]"
+          className="inline-flex h-11 items-center justify-center rounded-full border border-[var(--color-border)] px-5 text-sm text-[var(--color-text)] transition hover:border-[rgba(194,154,98,0.34)] hover:bg-[rgba(255,255,255,0.03)]"
         >
           Log In
         </Link>
@@ -41,7 +41,7 @@ export function TopNavAccountControls() {
       {user.role === "admin" ? (
         <Link
           href="/admin"
-          className="inline-flex h-11 items-center gap-2 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text)] transition hover:border-[rgba(26,167,230,0.34)] hover:bg-[rgba(255,255,255,0.03)]"
+          className="inline-flex h-11 items-center gap-2 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text)] transition hover:border-[rgba(194,154,98,0.34)] hover:bg-[rgba(255,255,255,0.03)]"
         >
           <Shield className="h-4 w-4 text-[var(--color-accent)]" />
           <span>Admin</span>
@@ -49,7 +49,7 @@ export function TopNavAccountControls() {
       ) : null}
       <Link
         href="/account"
-        className="inline-flex h-11 items-center gap-3 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text)] transition hover:border-[rgba(26,167,230,0.34)] hover:bg-[rgba(255,255,255,0.03)]"
+        className="inline-flex h-11 items-center gap-3 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text)] transition hover:border-[rgba(194,154,98,0.34)] hover:bg-[rgba(255,255,255,0.03)]"
       >
         <UserRound className="h-4 w-4 text-[var(--color-accent)]" />
         <span className="max-w-[160px] truncate">
