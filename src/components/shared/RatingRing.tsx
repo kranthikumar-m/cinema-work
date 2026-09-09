@@ -7,21 +7,25 @@ interface RatingRingProps {
   rating: number | null | undefined;
   size?: number;
   className?: string;
+  /** Scale the rating is on (10 for IMDb, 5 for critic and user scores). */
+  max?: number;
 }
 
-export function RatingRing({ rating, size = 48, className }: RatingRingProps) {
+export function RatingRing({ rating, size = 48, className, max = 10 }: RatingRingProps) {
   const radius = (size - 6) / 2;
   const circumference = 2 * Math.PI * radius;
   const hasRating = typeof rating === "number" && rating > 0;
   const value = hasRating ? (rating as number) : 0;
-  const progress = (value / 10) * circumference;
+  const progress = (Math.min(value, max) / max) * circumference;
+  // Colour thresholds are defined on the 10-point scale.
+  const scaled = (value / max) * 10;
   const display = hasRating ? value.toFixed(1) : "NR";
 
   const color = !hasRating
     ? "rgba(123,133,158,0.5)"
-    : value >= 7
+    : scaled >= 7
       ? "#c29a62"
-      : value >= 5
+      : scaled >= 5
         ? "#d9b27f"
         : "#996d58";
 

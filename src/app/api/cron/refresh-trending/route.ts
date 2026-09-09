@@ -8,6 +8,7 @@ import {
   VALIDATED_CATALOG_CACHE_TAG,
 } from "@/services/telugu-movies";
 import { getRecentMentionCount } from "@/services/twitter-mentions";
+import { warmBirthdayRoster } from "@/services/telugu-birthdays";
 import { upsertTrendingMentionCount, hasDatabaseConfiguration } from "@/lib/database";
 import type { Movie } from "@/types/tmdb";
 
@@ -83,6 +84,9 @@ export async function GET(request: Request) {
       );
     }
 
+    // Warm the birthdays roster (TMDB person lookups) off the request path.
+    const birthdayRosterSize = await warmBirthdayRoster();
+
     const updatedAt = new Date().toISOString();
     let processed = 0;
 
@@ -101,6 +105,7 @@ export async function GET(request: Request) {
         processedQuarters: backfill.processedQuarters,
         frozenYears: backfill.frozenYears,
       },
+      birthdayRosterSize,
       updatedAt,
     });
   } catch (error) {

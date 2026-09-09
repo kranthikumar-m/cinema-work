@@ -21,11 +21,19 @@ import {
 import { getManuallyAddedMovies, mergeUnique } from "@/services/manual-movies";
 import { attachImdbRatings } from "@/services/omdb";
 import { HomeLandingHero } from "@/components/home/HomeLandingHero";
-import { MovieGrid } from "@/components/movie/MovieGrid";
-import { MovieListWidget } from "@/components/movie/SidebarWidgets";
-import { HomeStoriesFeed } from "@/components/news/HomeStoriesFeed";
-import { SectionHeader } from "@/components/shared/SectionHeader";
-import { getHomeNewsFeed, type NewsItem } from "@/services/telugu-news";
+import { FeedStream } from "@/components/feed/FeedStream";
+import { ReleasesWidget } from "@/components/home/widgets/ReleasesWidget";
+import { OttWidget } from "@/components/home/widgets/OttWidget";
+import { BirthdaysWidget } from "@/components/home/widgets/BirthdaysWidget";
+import { CriticVerdictWidget } from "@/components/home/widgets/CriticVerdictWidget";
+import { getHomeFeed } from "@/services/home-feed";
+import { getCriticVerdicts } from "@/services/critic-reviews";
+import { getBirthdayBuckets, type BirthdayBuckets } from "@/services/telugu-birthdays";
+import { getTeluguOttCalendar, type OttCalendarEntry } from "@/services/telugu-ott";
+import { getIndianTodayIsoDate } from "@/lib/date";
+import { getTitleSimilarityScore, normalizeMovieTitle } from "@/lib/title-matching";
+import type { FeedItem } from "@/types/feed";
+import type { CriticVerdictSummary, OttWidgetEntry } from "@/types/widgets";
 import { featuredHomepageHeroSeed } from "@/data/homepage";
 import { formatRuntime } from "@/lib/utils";
 import type { HomepageHeroItem, HomepageHeroSlide } from "@/types/homepage";
@@ -290,16 +298,66 @@ async function buildFeaturedBundle(movie: Movie | null): Promise<HomepageHeroSli
 const TOP_RATED_MIN_VOTE_AVG = 7.0;
 const TOP_RATED_MIN_VOTE_COUNT = 50;
 
-async function getData() {
+const EMPTY_BIRTHDAYS: BirthdayBuckets = { yesterday: [], today: [], tomorrow: [] };
+
+interface HomeData {
+  heroSlides: HomepageHeroSlide[];
+  latestReleases: Movie[];
+  upcoming: Movie[];
+  feed: FeedItem[];
+  verdicts: CriticVerdictSummary[];
+  birthdays: BirthdayBuckets;
+  ott: OttWidgetEntry[];
+  todayIso: string;
+}
+
+// Finds the catalogue movie a scraped title refers to (exact normalized match,
+// else a strong similarity match) so widgets can link to our movie page.
+function matchMovieByTitle(title: string, pool: Movie[]): Movie | null {
+  const key = normalizeMovieTitle(title);
+  if (!key) return null;
+  let best: { movie: Movie; score: number } | null = null;
+  for (const movie of pool) {
+    const candidates = [movie.title, ...(movie.aliases ?? [])];
+    for (const candidate of candidates) {
+      const normalized = normalizeMovieTitle(candidate);
+      if (normalized === key) return movie;
+      const score = getTitleSimilarityScore(key, normalized);
+      if (!best || score > best.score) best = { movie, score };
+    }
+  }
+  return best && best.score >= 0.85 ? best.movie : null;
+}
+
+function toOttWidgetEntries(calendar: OttCalendarEntry[], pool: Movie[]): OttWidgetEntry[] {
+  return calendar
+    .filter((entry) => entry.language !== "other")
+    .map((entry) => {
+      const movie = matchMovieByTitle(entry.title, pool);
+      return {
+        title: entry.title,
+        platform: entry.platform,
+        logoPath: entry.logoPath,
+        date: entry.date,
+        url: entry.url,
+        language: entry.language,
+        movieId: movie?.id ?? null,
+        posterPath: movie?.poster_url ?? movie?.poster_path ?? null,
+      };
+    });
+}
+
+async function getData(): Promise<HomeData> {
+  const todayIso = getIndianTodayIsoDate();
   try {
     // Latest releases and upcoming already fold in admin-added movies at the
     // service layer; only the top-rated section needs a homepage-local merge
     // because it applies its own vote-average / vote-count thresholds.
     const [latestReleasesResult, popularResult, upcomingResult, topRatedResult, manualMovies] =
       await Promise.all([
-        getLatestTeluguReleases(10).catch(() => [] as Movie[]),
+        getLatestTeluguReleases(12).catch(() => [] as Movie[]),
         getPopularTeluguMovies(10).catch(() => [] as Movie[]),
-        getUpcomingTeluguMovies(10).catch(() => [] as Movie[]),
+        getUpcomingTeluguMovies(12).catch(() => [] as Movie[]),
         getTopRatedTeluguMovies(10).catch(() => [] as Movie[]),
         getManuallyAddedMovies().catch(() => [] as Movie[]),
       ]);
@@ -321,8 +379,8 @@ async function getData() {
       topRated = topRated.slice(0, 10);
     }
 
-    // Attach IMDb ratings so every rating shown on the homepage (grids, hero,
-    // sidebar widgets) reflects IMDb rather than TMDB.
+    // Attach IMDb ratings so every rating shown on the homepage (hero, widgets)
+    // reflects IMDb rather than TMDB.
     [latestReleases, popular, upcoming, topRated] = await Promise.all([
       attachImdbRatings(latestReleases),
       attachImdbRatings(popular),
@@ -336,9 +394,15 @@ async function getData() {
       topRated,
       upcoming,
     });
-    const heroSlideResults = await Promise.allSettled(
-      heroCandidates.map((movie) => buildFeaturedBundle(movie))
-    );
+
+    const [heroSlideResults, feed, rawVerdicts, birthdays, ottCalendar] = await Promise.all([
+      Promise.allSettled(heroCandidates.map((movie) => buildFeaturedBundle(movie))),
+      getHomeFeed(),
+      getCriticVerdicts(8),
+      getBirthdayBuckets(todayIso).catch(() => EMPTY_BIRTHDAYS),
+      getTeluguOttCalendar().catch(() => [] as OttCalendarEntry[]),
+    ]);
+
     const heroSlides = heroSlideResults
       .reduce<HomepageHeroSlide[]>((slides, result) => {
         if (result.status === "fulfilled" && isUsableHeroSlide(result.value)) {
@@ -353,104 +417,70 @@ async function getData() {
       heroSlides.push(await buildFallbackFeatureBundle());
     }
 
-    const newsFeed = await getHomeNewsFeed().catch(() => [] as NewsItem[]);
+    const pool = dedupeMovies([latestReleases, upcoming, popular, topRated]);
+    const verdicts: CriticVerdictSummary[] = rawVerdicts.map((verdict) => {
+      const movie = matchMovieByTitle(verdict.movieTitle, pool);
+      return {
+        movieTitle: movie?.title ?? verdict.movieTitle,
+        average: verdict.average,
+        count: verdict.count,
+        image: verdict.image,
+        movieId: movie?.id ?? null,
+        posterPath: movie?.poster_url ?? movie?.poster_path ?? null,
+        latestUrl: verdict.reviews[0]?.url ?? null,
+      };
+    });
 
-    return { heroSlides, latestReleases, popular, upcoming, topRated, newsFeed };
+    return {
+      heroSlides,
+      latestReleases,
+      upcoming,
+      feed,
+      verdicts,
+      birthdays,
+      ott: toOttWidgetEntries(ottCalendar, pool),
+      todayIso,
+    };
   } catch (error) {
     console.error("Failed to load homepage data:", error);
     return {
       heroSlides: [await buildFallbackFeatureBundle()],
       latestReleases: [],
-      popular: [],
       upcoming: [],
-      topRated: [],
-      newsFeed: [] as NewsItem[],
+      feed: [],
+      verdicts: [],
+      birthdays: EMPTY_BIRTHDAYS,
+      ott: [],
+      todayIso,
     };
   }
 }
 
 export default async function HomePage() {
-  const data = await getData();
+  const { heroSlides, latestReleases, upcoming, feed, verdicts, birthdays, ott, todayIso } =
+    await getData();
 
-  const { heroSlides, latestReleases, popular, upcoming, topRated, newsFeed } = data;
-  const panelClass =
-    "rounded-[28px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgba(39,44,64,0.92)_0%,rgba(29,34,51,0.9)_100%)] p-6 shadow-[0_24px_70px_rgba(7,10,18,0.22)] md:p-8";
+  const releasesToday = [...latestReleases, ...upcoming].filter(
+    (movie) => movie.release_date === todayIso
+  );
 
   return (
     <div className="overflow-x-clip bg-[var(--color-bg)]">
-      <HomeLandingHero
-        slides={heroSlides}
-        scrollTargetId="validated-releases-panel"
-      />
+      <HomeLandingHero slides={heroSlides} scrollTargetId="home-feed" />
 
-      <section id="home-content" className="scroll-mt-6 py-16">
+      <section id="home-content" className="scroll-mt-6 py-8 md:py-10">
         <div className="app-page-shell">
-          <div className="flex flex-col gap-10 xl:flex-row xl:items-start xl:gap-10">
-            <div className="min-w-0 flex-1 space-y-10">
-              <div
-                id="validated-releases-panel"
-                className={panelClass}
-              >
-                <SectionHeader
-                  title="Recent Releases"
-                  href="/movies"
-                />
-                <MovieGrid
-                  movies={latestReleases}
-                  columns="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5"
-                />
-              </div>
-
-              {newsFeed.length > 0 && (
-                <div className={panelClass}>
-                  <SectionHeader
-                    title="Telugu Cinema Stories"
-                    href="/news"
-                  />
-                  <HomeStoriesFeed items={newsFeed} limit={6} />
-                </div>
-              )}
-
-              <div className={panelClass}>
-                <SectionHeader
-                  title="Popular Telugu Picks"
-                  href="/movies/popular"
-                />
-                <MovieGrid
-                  movies={popular}
-                  columns="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5"
-                />
-              </div>
-
-              <div className={panelClass}>
-                <SectionHeader
-                  title="Upcoming Telugu Releases"
-                  href="/movies/upcoming"
-                />
-                <MovieGrid
-                  movies={upcoming}
-                  columns="grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5"
-                />
-              </div>
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
+            <div id="home-feed" className="min-w-0 scroll-mt-4">
+              <FeedStream items={feed} />
             </div>
 
-            <div className="w-full flex-shrink-0 space-y-6 xl:w-[320px]">
-              <MovieListWidget
-                title="Upcoming Telugu Releases"
-                movies={upcoming}
-                href="/movies/upcoming"
-              />
-              <MovieListWidget
-                title="Top Rated Telugu Movies"
-                movies={topRated}
-                href="/movies/top-rated"
-              />
-              <MovieListWidget
-                title="Recent Releases"
-                movies={latestReleases.slice(0, 5)}
-                href="/movies"
-              />
-            </div>
+            <aside className="space-y-4 xl:sticky xl:top-4">
+              <ReleasesWidget today={releasesToday} upcoming={upcoming} latest={latestReleases} />
+              <CriticVerdictWidget verdicts={verdicts} />
+              <BirthdaysWidget buckets={birthdays} todayIso={todayIso} />
+              <OttWidget entries={ott} todayIso={todayIso} />
+            </aside>
           </div>
         </div>
       </section>
