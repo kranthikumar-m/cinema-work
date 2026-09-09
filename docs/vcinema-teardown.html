@@ -1,0 +1,365 @@
+<title>vcinema vs Telugu Cinema Updates</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Public+Sans:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+  :root {
+    --bg: #F5F6F8; --surface: #FFFFFF; --ink: #161A20; --muted: #626B78; --line: #D8DDE5; --soft: #EEF1F5;
+    --vc: #1191CC; --vc-soft: #E1F2FB; --tcu: #B8862B; --tcu-soft: #FBF1DC;
+    --good: #2F9E6B; --good-soft: #E1F4EA; --warn: #C8552E; --warn-soft: #FBE7DF;
+    --shadow: 0 1px 2px rgba(22,26,32,.06), 0 8px 24px rgba(22,26,32,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F1216; --surface: #171B21; --ink: #E9ECF1; --muted: #9AA4B2; --line: #2A313B; --soft: #1F252D;
+      --vc: #45B8F0; --vc-soft: #0F2B3A; --tcu: #E0B15A; --tcu-soft: #332A14;
+      --good: #5CC98A; --good-soft: #143224; --warn: #F08A66; --warn-soft: #3A2016;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F1216; --surface: #171B21; --ink: #E9ECF1; --muted: #9AA4B2; --line: #2A313B; --soft: #1F252D;
+    --vc: #45B8F0; --vc-soft: #0F2B3A; --tcu: #E0B15A; --tcu-soft: #332A14;
+    --good: #5CC98A; --good-soft: #143224; --warn: #F08A66; --warn-soft: #3A2016;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: "Public Sans", "Segoe UI", system-ui, sans-serif; font-size: 16.5px; line-height: 1.55; margin: 0; }
+  h1, h2, h3 { font-family: "Manrope", "Segoe UI", system-ui, sans-serif; text-wrap: balance; letter-spacing: -0.015em; }
+  h1 { font-size: clamp(32px, 4.6vw, 46px); line-height: 1.05; margin: 0 0 12px; font-weight: 800; }
+  h2 { font-size: 26px; margin: 0 0 8px; font-weight: 800; }
+  h3 { font-size: 18px; margin: 0 0 6px; font-weight: 700; }
+  p { margin: 0 0 12px; max-width: 68ch; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 40px 20px 80px; }
+  .eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); font-weight: 600; margin-bottom: 10px; }
+  header { padding-bottom: 24px; border-bottom: 1px solid var(--line); margin-bottom: 32px; }
+  .lede { font-size: 19px; color: var(--muted); max-width: 62ch; }
+  section { margin-bottom: 52px; }
+  .tag { display: inline-block; font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; }
+  .tag-vc { background: var(--vc-soft); color: var(--vc); }
+  .tag-tcu { background: var(--tcu-soft); color: var(--tcu); }
+  .tag-good { background: var(--good-soft); color: var(--good); }
+  .tag-warn { background: var(--warn-soft); color: var(--warn); }
+  .tag-s, .tag-m, .tag-l { background: var(--soft); color: var(--muted); }
+
+  .verdict { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 18px; }
+  .verdict .card { border-top: 3px solid var(--line); }
+  .verdict .card.vc { border-top-color: var(--vc); }
+  .verdict .card.tcu { border-top-color: var(--tcu); }
+  .verdict .card.plan { border-top-color: var(--good); }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; box-shadow: var(--shadow); }
+  .card p { font-size: 15.5px; color: var(--muted); margin: 0; }
+  .card h3 { margin-bottom: 6px; }
+
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow); margin-top: 14px; }
+  table { border-collapse: collapse; width: 100%; min-width: 720px; font-size: 15px; }
+  th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); background: var(--soft); padding: 10px 14px; font-weight: 700; }
+  td { padding: 11px 14px; border-top: 1px solid var(--line); vertical-align: top; }
+  td:first-child { font-weight: 600; white-space: nowrap; }
+  th.vc { color: var(--vc); } th.tcu { color: var(--tcu); }
+
+  .finding { display: grid; grid-template-columns: 44px 1fr; gap: 0 16px; padding: 18px 0; border-top: 1px solid var(--line); }
+  .finding:last-child { border-bottom: 1px solid var(--line); }
+  .num { font-family: "Manrope", sans-serif; font-weight: 800; font-size: 26px; color: var(--vc); line-height: 1; font-variant-numeric: tabular-nums; }
+  .finding h3 { margin-bottom: 4px; }
+  .finding .meta { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 10px; }
+  .pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 8px; }
+  .pair div { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; font-size: 15px; }
+  .pair .lbl { font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
+  .pair .they .lbl { color: var(--vc); } .pair .we .lbl { color: var(--tcu); } .pair .how .lbl { color: var(--good); }
+  .pair .how { border-color: var(--good); }
+  code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 13.5px; background: var(--soft); padding: 1px 5px; border-radius: 4px; }
+
+  figure { margin: 14px 0 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 14px 10px; box-shadow: var(--shadow); overflow-x: auto; }
+  figure svg { display: block; width: 100%; height: auto; min-width: 640px; color: var(--ink); font-family: "Public Sans", system-ui, sans-serif; }
+  figcaption { font-size: 14px; color: var(--muted); margin-top: 8px; }
+  .b { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+  .bvc { fill: var(--vc-soft); stroke: var(--vc); stroke-width: 1.5; }
+  .btcu { fill: var(--tcu-soft); stroke: var(--tcu); stroke-width: 1.5; }
+  .bsoft { fill: var(--soft); stroke: var(--line); stroke-width: 1; }
+  .t { fill: currentColor; font-size: 12px; }
+  .ts { fill: var(--muted); font-size: 10.5px; }
+  .tb { fill: currentColor; font-size: 12.5px; font-weight: 700; }
+  .th { fill: currentColor; font-size: 14px; font-weight: 800; font-family: "Manrope", sans-serif; }
+  .tvc { fill: var(--vc); font-size: 11px; font-weight: 700; }
+  .ttcu { fill: var(--tcu); font-size: 11px; font-weight: 700; }
+
+  .swatches { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+  .sw { width: 120px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); font-size: 12.5px; }
+  .sw i { display: block; height: 44px; }
+  .sw span { display: block; padding: 6px 8px; color: var(--muted); }
+  .sw b { color: var(--ink); display: block; }
+
+  .phase { display: grid; grid-template-columns: 120px 1fr; gap: 0 18px; padding: 16px 0; border-top: 1px solid var(--line); }
+  .phase:last-child { border-bottom: 1px solid var(--line); }
+  .phase .lbl { font-family: "Manrope", sans-serif; font-weight: 800; font-size: 15px; }
+  .phase .lbl small { display: block; font-family: "Public Sans", sans-serif; font-weight: 400; color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .phase ul { margin: 0; padding-left: 18px; font-size: 15.5px; }
+  .phase li { margin: 4px 0; }
+  .phase li .tag { margin-left: 6px; vertical-align: middle; }
+  .dont { border-left: 3px solid var(--warn); background: var(--warn-soft); padding: 10px 14px; border-radius: 0 8px 8px 0; margin-top: 12px; font-size: 15.5px; }
+  .dont ul { margin: 6px 0 0; padding-left: 18px; }
+  @media (max-width: 640px) { .finding, .phase { grid-template-columns: 1fr; } .num { margin-bottom: 4px; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Competitive teardown · 9 Sep 2026</div>
+    <h1>vcinema vs Telugu Cinema Updates</h1>
+    <p class="lede">What vcinema.com does better than our site, what we already do better, and a phased plan to bring their best ideas into our codebase. Based on a page-by-page walk of both sites today.</p>
+    <div class="verdict">
+      <div class="card vc"><h3><span class="tag tag-vc">vcinema</span> wins on</h3><p>Presentation. One visual feed instead of shelves, edge-to-edge poster tiles, rich per-movie sections (categorised gallery and videos, lyrics with a pinned player), and community data we lack: critic verdicts, user ratings, birthdays, box office, polls and quizzes.</p></div>
+      <div class="card tcu"><h3><span class="tag tag-tcu">Ours</span> wins on</h3><p>Freshness and speed. Their feed's newest item is dated 15 Jan 2025 and their hero still shows Sankranti 2025 releases. Their movie and celebrity pages spun for 10 seconds or more and search never returned. Ours is automated, server-rendered and current.</p></div>
+      <div class="card plan"><h3><span class="tag tag-good">Plan</span></h3><p>Copy the layout and the section model first (pure design work on data we already have), then add the widgets our sources can already feed, then the community features that need new tables. Do not copy their manual content pipeline.</p></div>
+    </div>
+  </header>
+
+  <section>
+    <h2>Side by side</h2>
+    <p>Our navigation already mirrors theirs (Feeds, Movies, Cast &amp; Crew, Music, Gallery, Videos, About). The differences are in what each page contains and how it is drawn.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Area</th><th class="vc">vcinema</th><th class="tcu">Ours today</th><th>Gap</th></tr></thead>
+        <tbody>
+          <tr><td>Homepage</td><td>Trailer hero, then one mixed masonry feed (photo, video, trailer, interview, news, review, quiz, poll) with 10 filter tabs and a widget column.</td><td>Hero with long synopsis, then four poster shelves, a text-heavy news grid, three list widgets.</td><td><span class="tag tag-warn">Large</span></td></tr>
+          <tr><td>Hero</td><td>Trailer-first: duration, YouTube view count, Watch Now, director and actor links, release date.</td><td>Synopsis-first with Trailers / Audio / Images buttons, IMDb badge, genres, director.</td><td><span class="tag tag-s">Small</span></td></tr>
+          <tr><td>Widgets</td><td>Movie Releases (Today / Upcoming / Latest), V Verdict critic score, Birthdays (Yesterday / Today / Tomorrow), Box Office gross, OTT Releases (Today / Streaming / Upcoming), Quiz, Polls.</td><td>Upcoming, Top Rated, Recent Releases poster lists.</td><td><span class="tag tag-warn">Large</span></td></tr>
+          <tr><td>Movies grid</td><td>Gapless poster tiles, title overlaid, hover card with certificate, runtime, genres, rating, director, actors, producer, trailer / audio / video counts.</td><td>Padded cards with rating badge. Latest tab shows many grey placeholders where TMDB has no poster.</td><td><span class="tag tag-m">Medium</span></td></tr>
+          <tr><td>Movie page</td><td>Full-screen snap panels, sidebar swaps to per-movie sections, each section has its own filter bar with counts.</td><td>Long scroll with an 8-tab sub-nav and scroll-spy. Same sections, thinner content.</td><td><span class="tag tag-m">Medium</span></td></tr>
+          <tr><td>Reviews</td><td>Aggregated critic score (29 critics), user star rating, Watched / Want to watch, write and read reviews.</td><td>IMDb score, TMDB text reviews. No user actions.</td><td><span class="tag tag-warn">Large</span></td></tr>
+          <tr><td>Music</td><td>Album art, singer / lyricist / label / cast, full lyrics, view and like counts, share, dedicate, pinned YouTube player, per-track singers and choreographer.</td><td>Spotify album, tracks matched to YouTube, lyrics from Genius. Plain list.</td><td><span class="tag tag-m">Medium</span></td></tr>
+          <tr><td>Gallery</td><td>Categorised: Wallpapers, Posters, Pre-release, Press meets, Behind the scenes, Personal, Vintage. Lightbox with credits and people tags.</td><td>Movie posters that link to the movie page. Per-movie: Backdrops and Posters only.</td><td><span class="tag tag-warn">Large</span></td></tr>
+          <tr><td>Videos</td><td>Site-wide video grid: Popular, Songs, Personal, Events, Behind scenes. Duration, view count, date on every tile.</td><td>Movie poster grid with placeholders. Per-movie: Trailers, Teasers, Songs.</td><td><span class="tag tag-warn">Large</span></td></tr>
+          <tr><td>Interviews</td><td>First-class section per movie and in the feed.</td><td>Scraped interview links exist in news, not surfaced per movie.</td><td><span class="tag tag-m">Medium</span></td></tr>
+          <tr><td>Cast &amp; Crew</td><td>Curated portrait tiles, one Popular tab plus a filter.</td><td>Role tabs with counts (Actors 583, Directors 72 …), TMDB headshots, known-for and filmography.</td><td><span class="tag tag-good">We lead</span></td></tr>
+          <tr><td>Freshness</td><td>Manually curated. Feed frozen since Jan 2025.</td><td>Automated: TMDB, Wikipedia validation, news scrapes, 3-hourly cron.</td><td><span class="tag tag-good">We lead</span></td></tr>
+          <tr><td>Performance</td><td>Client-rendered SPA. Movie page 10s+ spinner, celebrity page and search never loaded.</td><td>Server-rendered, cached, loads in seconds.</td><td><span class="tag tag-good">We lead</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Homepage anatomy</h2>
+    <p>The biggest single difference. Their homepage is a feed with a widget rail. Ours is a catalogue with shelves. A feed reads as "something new every hour"; shelves read as "a library".</p>
+    <figure>
+      <svg viewBox="0 0 960 400" role="img" aria-label="Two homepage wireframes. vcinema: icon rail, trailer hero, filter tabs, masonry feed of mixed cards on the left and a column of widgets on the right. Ours: labelled sidebar, synopsis hero, four horizontal poster shelves, a news grid and three list widgets.">
+        <text x="40" y="24" class="th">vcinema</text><text x="120" y="24" class="tvc">feed + widget rail</text>
+        <rect x="40" y="36" width="36" height="340" class="bsoft"/>
+        <text x="58" y="210" text-anchor="middle" class="ts" transform="rotate(-90 58 210)">icon rail</text>
+        <rect x="82" y="36" width="380" height="96" class="bvc"/>
+        <text x="272" y="78" text-anchor="middle" class="tb">Trailer hero</text>
+        <text x="272" y="96" text-anchor="middle" class="ts">duration · views · Watch Now · director · actors</text>
+        <rect x="82" y="140" width="270" height="18" class="bsoft"/>
+        <text x="90" y="153" class="ts">ALL  NEWS  FEATURES  TRAILERS  REVIEWS  INTERVIEWS  VIDEOS  PHOTOS  QUIZ  POLLS</text>
+        <rect x="82" y="166" width="130" height="90" class="b"/><text x="88" y="180" class="tvc">PHOTO</text>
+        <rect x="218" y="166" width="134" height="60" class="b"/><text x="224" y="180" class="tvc">VIDEO</text>
+        <rect x="82" y="262" width="130" height="60" class="b"/><text x="88" y="276" class="tvc">TRAILER</text>
+        <rect x="218" y="232" width="134" height="90" class="b"/><text x="224" y="246" class="tvc">INTERVIEW</text>
+        <rect x="82" y="328" width="130" height="48" class="b"/><text x="88" y="342" class="tvc">NEWS</text>
+        <rect x="218" y="328" width="134" height="48" class="b"/><text x="224" y="342" class="tvc">PHOTO</text>
+        <rect x="360" y="140" width="102" height="44" class="b"/><text x="366" y="156" class="ts">Movie Releases</text><text x="366" y="170" class="ts">Today · Upcoming · Latest</text>
+        <rect x="360" y="190" width="102" height="36" class="b"/><text x="366" y="206" class="ts">V Verdict</text><text x="366" y="219" class="ts">critic scores</text>
+        <rect x="360" y="232" width="102" height="36" class="b"/><text x="366" y="248" class="ts">Birthdays</text><text x="366" y="261" class="ts">yesterday · today · tomorrow</text>
+        <rect x="360" y="274" width="102" height="30" class="b"/><text x="366" y="290" class="ts">Box Office</text>
+        <rect x="360" y="310" width="102" height="30" class="b"/><text x="366" y="326" class="ts">OTT Releases</text>
+        <rect x="360" y="346" width="102" height="30" class="b"/><text x="366" y="362" class="ts">Quiz · Polls</text>
+
+        <text x="520" y="24" class="th">Ours</text><text x="570" y="24" class="ttcu">catalogue + shelves</text>
+        <rect x="520" y="36" width="70" height="340" class="bsoft"/>
+        <text x="555" y="210" text-anchor="middle" class="ts" transform="rotate(-90 555 210)">sidebar with labels + account</text>
+        <rect x="596" y="36" width="324" height="110" class="btcu"/>
+        <text x="758" y="80" text-anchor="middle" class="tb">Synopsis hero</text>
+        <text x="758" y="98" text-anchor="middle" class="ts">6-line overview · Trailers / Audio / Images buttons</text>
+        <rect x="596" y="154" width="222" height="40" class="b"/><text x="602" y="168" class="ttcu">RECENT RELEASES</text><text x="602" y="186" class="ts">▢ ▢ ▢ ▢ ▢ ▢</text>
+        <rect x="596" y="200" width="222" height="40" class="b"/><text x="602" y="214" class="ttcu">TELUGU CINEMA STORIES</text><text x="602" y="232" class="ts">news cards, Telugu headlines</text>
+        <rect x="596" y="246" width="222" height="40" class="b"/><text x="602" y="260" class="ttcu">POPULAR PICKS</text><text x="602" y="278" class="ts">▢ ▢ ▢ ▢ ▢ ▢</text>
+        <rect x="596" y="292" width="222" height="40" class="b"/><text x="602" y="306" class="ttcu">UPCOMING</text><text x="602" y="324" class="ts">▢ ▢ ▢ ▢ ▢ ▢</text>
+        <rect x="596" y="338" width="222" height="38" class="b"/><text x="602" y="352" class="ttcu">TOP RATED</text><text x="602" y="370" class="ts">▢ ▢ ▢ ▢ ▢ ▢</text>
+        <rect x="826" y="154" width="94" height="70" class="b"/><text x="832" y="170" class="ts">Upcoming list</text>
+        <rect x="826" y="230" width="94" height="70" class="b"/><text x="832" y="246" class="ts">Top rated list</text>
+        <rect x="826" y="306" width="94" height="70" class="b"/><text x="832" y="322" class="ts">Recent list</text>
+      </svg>
+      <figcaption>Their homepage is 70% feed and 30% widgets. Ours is 80% poster shelves. Everything in their feed is something we already fetch (news, reviews, interviews, trailers, songs, stills), just not arranged as a feed.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>What they do better, ranked by impact</h2>
+    <p>Each item says what they do, where we stand, and how to replicate it in our code. Effort: S is a day or two, M is about a week, L is more than a week.</p>
+
+    <div class="finding">
+      <div class="num">1</div>
+      <div>
+        <h3>The homepage is a mixed-media feed</h3>
+        <div class="meta"><span class="tag tag-m">Effort M</span><span class="tag tag-good">Data already exists</span></div>
+        <div class="pair">
+          <div class="they"><div class="lbl">They</div>A masonry stream where every card is a photo set, a video, a trailer, an interview, a news item, a review, a quiz or a poll. A colour-coded type badge sits on each card. Ten filter tabs narrow it. New items land at the top, so the page changes every time you open it.</div>
+          <div class="we"><div class="lbl">We</div>Four poster shelves and a "Stories" grid of Telugu headlines. Posters rarely change day to day, so the page looks the same on repeat visits.</div>
+          <div class="how"><div class="lbl">How to replicate</div>Build a <code>FeedItem</code> type (kind, title, image, date, movie link, source) and a <code>getHomeFeed()</code> that merges: news, reviews and interviews from <code>telugu-news.ts</code>; trailers and songs from stored <code>movie_videos</code>; stills from TMDB images for the latest releases. Sort by date, render as a two-column masonry with the type badge, filter with a <code>?type=</code> param. Keep our hero. Move the shelves to the widget rail or the Movies page.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="num">2</div>
+      <div>
+        <h3>Gapless poster tiles with a hover card</h3>
+        <div class="meta"><span class="tag tag-s">Effort S</span><span class="tag tag-good">Design only</span></div>
+        <div class="pair">
+          <div class="they"><div class="lbl">They</div>Posters touch edge to edge with a 2px gap, title overlaid on a gradient at the bottom, no card chrome. Hovering slides in a card: release date, certificate, runtime, genres, rating ring, director, actors, producer, and counts for trailers, audio and videos, each a link.</div>
+          <div class="we"><div class="lbl">We</div>Padded cards on a dark surface with a rating badge and the date under the poster. Clean, but it uses about 30% of the screen for gaps and labels. On the Latest tab most 2026 titles show a grey placeholder because TMDB has no poster yet.</div>
+          <div class="how"><div class="lbl">How to replicate</div>Restyle <code>MovieCard.tsx</code> and <code>MovieGrid.tsx</code>: 6 columns, gap 2px, title overlay, hover panel fed from data we already carry (genres, runtime, director from credits). For missing posters, run the Google fallback eagerly for the latest 24 titles and let the admin upload posters; drop poster-less titles from the grid the way Upcoming already does.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="num">3</div>
+      <div>
+        <h3>Categorised gallery and videos, site-wide and per movie</h3>
+        <div class="meta"><span class="tag tag-m">Effort M</span></div>
+        <div class="pair">
+          <div class="they"><div class="lbl">They</div>Gallery tabs: Photos, Posters, Wallpapers, Personal, Events, Behind scenes, Vintage. Videos tabs: Popular, Songs, Personal, Events, Behind scenes. Each tile is labelled "Category · Movie or event". Per movie, the same categories appear with counts (144 all photos, 19 wallpapers, 96 events). A lightbox shows credits and tags the people in the photo.</div>
+          <div class="we"><div class="lbl">We</div>Gallery and Videos pages are both a grid of movie posters that link to the movie page. Per movie we have Backdrops and Posters, and Trailers, Teasers, Songs.</div>
+          <div class="how"><div class="lbl">How to replicate</div>Add a <code>category</code> column to <code>movie_videos</code> and to <code>movie_custom_images</code> (trailer, song, lyrical, promo, event, interview, behind-the-scenes). Classify auto-found YouTube videos by title keywords in <code>song-sync.ts</code>. Make the Gallery page a real image masonry from TMDB stills of the latest 30 films plus admin uploads, and the Videos page a real video grid with duration, view count and date, which YouTube already returns to us.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="num">4</div>
+      <div>
+        <h3>Widgets built from calendar data</h3>
+        <div class="meta"><span class="tag tag-m">Effort M</span><span class="tag tag-good">Sources exist</span></div>
+        <div class="pair">
+          <div class="they"><div class="lbl">They</div>Movie Releases with Today / Upcoming / Latest tabs. OTT Releases with Today / Streaming Now / Upcoming. Birthdays with Yesterday / Today / Tomorrow and ages. Box Office with worldwide gross per film.</div>
+          <div class="we"><div class="lbl">We</div>Three plain poster lists. We already scrape the AndhraBoxOffice release calendar and the 123telugu OTT page, and TMDB gives us every person's birthday.</div>
+          <div class="how"><div class="lbl">How to replicate</div>Releases widget: reuse Latest and Upcoming with a "today" filter. OTT widget: extend <code>telugu-ott.ts</code> to keep the streaming date and platform. Birthdays: add a people table filled by the cron from <code>telugu-people.ts</code> with TMDB birthdays, then query by month and day. Box office: no free source, so make it admin-entered per film with a "source" note.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="num">5</div>
+      <div>
+        <h3>A critic verdict and user ratings</h3>
+        <div class="meta"><span class="tag tag-l">Effort L</span><span class="tag tag-warn">Needs new tables</span></div>
+        <div class="pair">
+          <div class="they"><div class="lbl">They</div>"V Verdict" averages critic scores and shows the count (3.2 from 29 critics). Users can rate out of five, mark Watched / Want to watch / No, and write a review. The score sits in the hero as a ring.</div>
+          <div class="we"><div class="lbl">We</div>IMDb score in the hero. TMDB text reviews at the bottom. Visitors cannot rate or react, even though we have accounts and sessions.</div>
+          <div class="how"><div class="lbl">How to replicate</div>Critic score: the Gulte and 123telugu review pages carry a rating like "3/5"; parse it in <code>telugu-news.ts</code> and average per film to show "Critics 3.1 · 4 reviews". User side: new <code>movie_ratings</code> and <code>movie_reviews</code> tables keyed by user id, a star control on the movie page, and an aggregate shown next to IMDb. Moderation lives in the admin console.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="num">6</div>
+      <div>
+        <h3>The music panel</h3>
+        <div class="meta"><span class="tag tag-s">Effort S</span><span class="tag tag-good">Data already exists</span></div>
+        <div class="pair">
+          <div class="they"><div class="lbl">They</div>Album art on the left with album, singers, lyricist, music, label and cast as links. Full lyrics in the centre with view and like counts, share and "Dedicate this song". Track list on the right with singers, lyricist and choreographer per track. A YouTube player pinned bottom-right keeps playing as you scroll.</div>
+          <div class="we"><div class="lbl">We</div>We fetch the same things: Spotify album and tracks, a matching YouTube video per track, Genius lyrics. It renders as an album card and a plain list, and lyrics are hidden behind a click.</div>
+          <div class="how"><div class="lbl">How to replicate</div>Rework <code>MovieSongs.tsx</code> into the three-column layout with the first track's lyrics open by default and a sticky mini player. Views and likes come from the YouTube statistics we already request.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="num">7</div>
+      <div>
+        <h3>Movie page as full-screen panels with a section sidebar</h3>
+        <div class="meta"><span class="tag tag-m">Effort M</span></div>
+        <div class="pair">
+          <div class="they"><div class="lbl">They</div>On a movie page the left rail changes to the movie's own sections (Overview, Reviews, Cast &amp; Crew, Music, Gallery, Videos, Interviews, Feeds, Similar). Each section fills the screen and has its own filter bar at the top with counts. A back arrow returns to the site.</div>
+          <div class="we"><div class="lbl">We</div>An 8-tab sub-nav under the header with scroll-spy, and a long page. Same idea, but sections have no local filters and the sidebar stays global.</div>
+          <div class="how"><div class="lbl">How to replicate</div>In the movie layout, swap <code>Sidebar.tsx</code> items for the section list from <code>MovieDetailSubnav.tsx</code>, give each section <code>min-height: 100vh</code> with <code>scroll-snap-align: start</code>, and move each section's filters (video kinds, photo categories, review tabs) into a sticky bar at its top. Add Interviews and Feeds sections fed by the news scraper filtered to the film's title and aliases.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="num">8</div>
+      <div>
+        <h3>Polls and quizzes</h3>
+        <div class="meta"><span class="tag tag-l">Effort L</span><span class="tag tag-warn">Needs new tables</span></div>
+        <div class="pair">
+          <div class="they"><div class="lbl">They</div>A quiz widget with a question, four options, participants and percentage correct. A poll widget with vote counts. Both are also feed card types.</div>
+          <div class="we"><div class="lbl">We</div>Nothing comparable.</div>
+          <div class="how"><div class="lbl">How to replicate</div>Admin-authored <code>polls</code> and <code>quiz_questions</code> tables with an answers table keyed by user or anonymous cookie. Render as widget and feed card. Cheap to build once the feed exists; the value is repeat visits.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Design language to adopt</h2>
+    <p>You said you like their design. These are the choices that make it feel the way it does. Our navy and gold can stay if we prefer, but the tile rules and type scale are the real difference.</p>
+    <div class="swatches">
+      <div class="sw"><i style="background:#000000"></i><span><b>#000000</b>page ground</span></div>
+      <div class="sw"><i style="background:#111111"></i><span><b>#111111</b>tiles and panels</span></div>
+      <div class="sw"><i style="background:#1AA7E6"></i><span><b>#1AA7E6</b>single cyan accent</span></div>
+      <div class="sw"><i style="background:#3DBE7A"></i><span><b>green</b>PHOTO badge</span></div>
+      <div class="sw"><i style="background:#2FB8C9"></i><span><b>teal</b>VIDEO badge</span></div>
+      <div class="sw"><i style="background:#E0B22E"></i><span><b>amber</b>TRAILER badge</span></div>
+      <div class="sw"><i style="background:#9B6CE0"></i><span><b>violet</b>INTERVIEW badge</span></div>
+    </div>
+    <div class="pair" style="margin-top:16px">
+      <div class="they"><div class="lbl">Layout rules</div>Icon rail 48px wide with 9px uppercase labels. Content starts immediately after it. Tiles are gapless (2px) and edge to edge. Titles overlay images on a bottom gradient. No borders, no shadows, no rounded cards. Whitespace comes from the black ground, not from padding.</div>
+      <div class="they"><div class="lbl">Type rules</div>A rounded geometric sans (Quicksand or Comfortaa family) at 500 weight. Section labels are 10 to 11px uppercase with wide tracking. Titles are 13px on tiles, 28px in the hero. Metadata rows use "Label:" in grey followed by cyan links.</div>
+      <div class="they"><div class="lbl">Content rules</div>Every tile carries a type badge and a date. Every person and company name is a link. Every video shows duration and view count. Numbers are shown as social proof (18,957,977 views, 29 critics, 321 participants).</div>
+    </div>
+    <p style="margin-top:14px">Where to change it in our code: sidebar width and labels in <code>sidebar-config.ts</code> and <code>Sidebar.tsx</code>, colour tokens in <code>globals.css</code> and <code>tailwind.config.ts</code>, tile styling in <code>MovieCard.tsx</code>, badges in <code>NewsCard.tsx</code>.</p>
+  </section>
+
+  <section>
+    <h2>What not to copy</h2>
+    <div class="dont">
+      <strong>Their weaknesses are exactly where we are strong. Keep our engine, change our skin.</strong>
+      <ul>
+        <li><strong>Manual content.</strong> Their feed stopped on 15 Jan 2025 and the hero still promotes Sankranti 2025 films. Our pipeline updates itself. Any feature we add must be fed automatically, with the admin curating, not typing.</li>
+        <li><strong>Client-side rendering.</strong> Their pages spin for 10 seconds and the URL bar never changes, which hurts sharing and search engines. Keep our server-rendered pages and real URLs.</li>
+        <li><strong>Broken corners.</strong> Search never returned results, the celebrity page never loaded, and a direct link to Cast &amp; Crew gave a 404. Ours all work today.</li>
+        <li><strong>Cookie banner.</strong> We do not need one unless we add analytics cookies.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Suggested order of work</h2>
+    <p>Phases are ordered so each one ships something visible on its own. Effort tags are per bullet.</p>
+    <div class="phase">
+      <div class="lbl">Phase 1<small>Look and feel</small></div>
+      <ul>
+        <li>Gapless tile grid with hover card on Movies, Music, Gallery, Videos <span class="tag tag-s">S</span></li>
+        <li>Collapse sidebar to an icon rail, move account controls to the top bar <span class="tag tag-s">S</span></li>
+        <li>Fix poster gaps on Latest: eager fallback plus admin upload prompt <span class="tag tag-s">S</span></li>
+        <li>Type badges and dates on every card, view counts on videos <span class="tag tag-s">S</span></li>
+      </ul>
+    </div>
+    <div class="phase">
+      <div class="lbl">Phase 2<small>The feed</small></div>
+      <ul>
+        <li>Unified feed model and homepage masonry with filter tabs <span class="tag tag-m">M</span></li>
+        <li>Widget rail: Releases, OTT Releases, Birthdays <span class="tag tag-m">M</span></li>
+        <li>Critic verdict parsed from review scrapes <span class="tag tag-m">M</span></li>
+      </ul>
+    </div>
+    <div class="phase">
+      <div class="lbl">Phase 3<small>Richer movie pages</small></div>
+      <ul>
+        <li>Video and image categories, real Gallery and Videos pages <span class="tag tag-m">M</span></li>
+        <li>Three-column music panel with sticky player and open lyrics <span class="tag tag-s">S</span></li>
+        <li>Snap-scroll sections with per-movie sidebar and local filter bars <span class="tag tag-m">M</span></li>
+        <li>Interviews and Feeds sections per movie <span class="tag tag-s">S</span></li>
+      </ul>
+    </div>
+    <div class="phase">
+      <div class="lbl">Phase 4<small>Community</small></div>
+      <ul>
+        <li>User star ratings, Watched / Want to watch, written reviews with admin moderation <span class="tag tag-l">L</span></li>
+        <li>Polls and quizzes as widgets and feed cards <span class="tag tag-l">L</span></li>
+        <li>Admin-entered box office widget <span class="tag tag-s">S</span></li>
+      </ul>
+    </div>
+  </section>
+</div>
