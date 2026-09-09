@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Eye, Images, Newspaper, Play } from "lucide-react";
+import { BarChart3, BrainCircuit, Eye, Images, Newspaper, Play } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { TypeBadge } from "@/components/shared/TypeBadge";
 import type { FeedItem } from "@/types/feed";
@@ -35,6 +35,37 @@ const isVideo = (kind: FeedItem["kind"]) =>
  */
 export function FeedCard({ item }: { item: FeedItem }) {
   const views = formatViews(item.meta?.views);
+
+  // Interactive kinds have no image: a compact text tile that jumps to the widget.
+  if (item.kind === "poll" || item.kind === "quiz") {
+    const Icon = item.kind === "poll" ? BarChart3 : BrainCircuit;
+    return (
+      <a
+        href={item.href}
+        className="group relative block overflow-hidden bg-[var(--color-surface)] p-4 outline-none transition-colors hover:bg-[var(--color-surface-strong)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-accent)]"
+      >
+        <div className="flex items-start gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
+            <Icon className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <TypeBadge kind={item.kind} />
+            <h3 className="mt-1.5 line-clamp-3 font-[family-name:var(--font-heading)] text-[15px] font-semibold leading-snug text-[var(--color-text)]">
+              {item.title}
+            </h3>
+            <p className="mt-1 text-[11px] text-[var(--color-muted)]">
+              {item.subtitle}
+              {item.date ? ` · ${formatDate(item.date)}` : ""}
+            </p>
+            <span className="mt-2 inline-block text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--color-accent)]">
+              {item.kind === "poll" ? "Vote now" : "Play now"}
+            </span>
+          </div>
+        </div>
+      </a>
+    );
+  }
+
   const body = (
     <>
       <div className={`relative w-full overflow-hidden ${aspectFor(item.kind)}`}>

@@ -240,6 +240,135 @@ interface UpsertMovieDetailOverrideInput {
   updatedAt: string;
 }
 
+export type WatchStatus = "watched" | "want" | "no";
+export type UserReviewStatus = "published" | "hidden";
+
+export interface DatabaseUserRatingRow {
+  user_id: number;
+  movie_id: number;
+  rating: number | null;
+  watch_status: WatchStatus | null;
+  updated_at: string;
+}
+
+export interface DatabaseUserReviewRow {
+  id: number;
+  user_id: number;
+  movie_id: number;
+  movie_title: string;
+  author_name: string;
+  title: string;
+  body: string;
+  rating: number | null;
+  status: UserReviewStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DatabasePollRow {
+  id: number;
+  question: string;
+  /** JSON array of option labels. */
+  options: string;
+  movie_id: number | null;
+  movie_title: string | null;
+  is_active: number;
+  created_by_user_id: number | null;
+  created_at: string;
+}
+
+export interface DatabasePollVoteRow {
+  poll_id: number;
+  voter_key: string;
+  option_index: number;
+  created_at: string;
+}
+
+export interface DatabaseQuizQuestionRow {
+  id: number;
+  question: string;
+  /** JSON array of option labels. */
+  options: string;
+  correct_index: number;
+  category: string;
+  is_active: number;
+  created_by_user_id: number | null;
+  created_at: string;
+}
+
+export interface DatabaseQuizAnswerRow {
+  question_id: number;
+  voter_key: string;
+  option_index: number;
+  is_correct: number;
+  created_at: string;
+}
+
+export interface DatabaseBoxOfficeRow {
+  movie_id: number;
+  movie_title: string;
+  poster_path: string | null;
+  release_date: string | null;
+  worldwide_gross: string;
+  note: string | null;
+  as_of: string | null;
+  added_by_user_id: number | null;
+  updated_at: string;
+}
+
+interface UpsertUserRatingInput {
+  userId: number;
+  movieId: number;
+  rating: number | null;
+  watchStatus: WatchStatus | null;
+  updatedAt: string;
+}
+
+interface UpsertUserReviewInput {
+  userId: number;
+  movieId: number;
+  movieTitle: string;
+  authorName: string;
+  title: string;
+  body: string;
+  rating: number | null;
+  status: UserReviewStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface InsertPollInput {
+  question: string;
+  options: string[];
+  movieId: number | null;
+  movieTitle: string | null;
+  isActive: boolean;
+  createdByUserId: number | null;
+  createdAt: string;
+}
+
+interface InsertQuizQuestionInput {
+  question: string;
+  options: string[];
+  correctIndex: number;
+  category: string;
+  isActive: boolean;
+  createdByUserId: number | null;
+  createdAt: string;
+}
+
+interface UpsertBoxOfficeInput {
+  movieId: number;
+  movieTitle: string;
+  posterPath: string | null;
+  releaseDate: string | null;
+  worldwideGross: string;
+  note: string | null;
+  asOf: string | null;
+  addedByUserId: number | null;
+  updatedAt: string;
+}
+
 interface StorageProvider {
   getUserByEmail(email: string): Promise<DatabaseUserRow | null>;
   getUserByIdentifier(identifier: string): Promise<DatabaseUserRow | null>;
@@ -312,6 +441,40 @@ interface StorageProvider {
     frozenAt: string,
     movieCount: number
   ): Promise<void>;
+  // Community: ratings, reviews, polls, quiz, box office.
+  getUserRating(userId: number, movieId: number): Promise<DatabaseUserRatingRow | null>;
+  listUserRatingsForMovie(movieId: number): Promise<DatabaseUserRatingRow[]>;
+  upsertUserRating(input: UpsertUserRatingInput): Promise<void>;
+  listUserReviewsForMovie(movieId: number, includeHidden: boolean): Promise<DatabaseUserReviewRow[]>;
+  listAllUserReviews(limit: number): Promise<DatabaseUserReviewRow[]>;
+  getUserReview(userId: number, movieId: number): Promise<DatabaseUserReviewRow | null>;
+  upsertUserReview(input: UpsertUserReviewInput): Promise<DatabaseUserReviewRow | null>;
+  setUserReviewStatus(id: number, status: UserReviewStatus, updatedAt: string): Promise<void>;
+  deleteUserReview(id: number): Promise<void>;
+  listPolls(activeOnly: boolean): Promise<DatabasePollRow[]>;
+  getPoll(id: number): Promise<DatabasePollRow | null>;
+  insertPoll(input: InsertPollInput): Promise<DatabasePollRow | null>;
+  setPollActive(id: number, isActive: boolean): Promise<void>;
+  deletePoll(id: number): Promise<void>;
+  listPollVotes(pollId: number): Promise<DatabasePollVoteRow[]>;
+  upsertPollVote(pollId: number, voterKey: string, optionIndex: number, createdAt: string): Promise<void>;
+  listQuizQuestions(activeOnly: boolean): Promise<DatabaseQuizQuestionRow[]>;
+  getQuizQuestion(id: number): Promise<DatabaseQuizQuestionRow | null>;
+  insertQuizQuestion(input: InsertQuizQuestionInput): Promise<DatabaseQuizQuestionRow | null>;
+  setQuizQuestionActive(id: number, isActive: boolean): Promise<void>;
+  deleteQuizQuestion(id: number): Promise<void>;
+  listQuizAnswers(questionId: number): Promise<DatabaseQuizAnswerRow[]>;
+  insertQuizAnswer(
+    questionId: number,
+    voterKey: string,
+    optionIndex: number,
+    isCorrect: boolean,
+    createdAt: string
+  ): Promise<void>;
+  listBoxOffice(): Promise<DatabaseBoxOfficeRow[]>;
+  getBoxOffice(movieId: number): Promise<DatabaseBoxOfficeRow | null>;
+  upsertBoxOffice(input: UpsertBoxOfficeInput): Promise<void>;
+  deleteBoxOffice(movieId: number): Promise<void>;
   clearValidatedYearFreeze(year: number): Promise<void>;
 }
 
@@ -350,6 +513,15 @@ const CUSTOM_IMAGE_SELECT =
   "id,movie_id,image_type,file_name,mime_type,uploaded_by_user_id,created_at";
 const MANUAL_MOVIE_SELECT =
   "movie_id,tmdb_title,release_date,added_by_user_id,created_at";
+const USER_RATING_SELECT = "user_id,movie_id,rating,watch_status,updated_at";
+const USER_REVIEW_SELECT =
+  "id,user_id,movie_id,movie_title,author_name,title,body,rating,status,created_at,updated_at";
+const POLL_SELECT = "id,question,options,movie_id,movie_title,is_active,created_by_user_id,created_at";
+const POLL_VOTE_SELECT = "poll_id,voter_key,option_index,created_at";
+const QUIZ_SELECT = "id,question,options,correct_index,category,is_active,created_by_user_id,created_at";
+const QUIZ_ANSWER_SELECT = "question_id,voter_key,option_index,is_correct,created_at";
+const BOX_OFFICE_SELECT =
+  "movie_id,movie_title,poster_path,release_date,worldwide_gross,note,as_of,added_by_user_id,updated_at";
 const MOVIE_VIDEO_SELECT =
   "id,movie_id,youtube_key,title,category,added_by_user_id,created_at";
 const HIDDEN_VIDEO_SELECT = "id,movie_id,youtube_key,created_at";
@@ -564,6 +736,92 @@ function initializeSqliteDatabase(database: BetterSqlite3Database) {
       movie_count INTEGER NOT NULL,
       completed_at TEXT NOT NULL,
       PRIMARY KEY (year, quarter)
+    );
+
+    CREATE TABLE IF NOT EXISTS movie_user_ratings (
+      user_id INTEGER NOT NULL,
+      movie_id INTEGER NOT NULL,
+      rating INTEGER CHECK (rating IS NULL OR (rating >= 1 AND rating <= 5)),
+      watch_status TEXT CHECK (watch_status IS NULL OR watch_status IN ('watched', 'want', 'no')),
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (user_id, movie_id),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_movie_user_ratings_movie_id ON movie_user_ratings(movie_id);
+
+    CREATE TABLE IF NOT EXISTS movie_user_reviews (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      movie_id INTEGER NOT NULL,
+      movie_title TEXT NOT NULL,
+      author_name TEXT NOT NULL,
+      title TEXT NOT NULL,
+      body TEXT NOT NULL,
+      rating INTEGER CHECK (rating IS NULL OR (rating >= 1 AND rating <= 5)),
+      status TEXT NOT NULL CHECK (status IN ('published', 'hidden')),
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      UNIQUE(user_id, movie_id),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_movie_user_reviews_movie_id ON movie_user_reviews(movie_id);
+
+    CREATE TABLE IF NOT EXISTS polls (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      question TEXT NOT NULL,
+      options TEXT NOT NULL,
+      movie_id INTEGER,
+      movie_title TEXT,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_by_user_id INTEGER,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS poll_votes (
+      poll_id INTEGER NOT NULL,
+      voter_key TEXT NOT NULL,
+      option_index INTEGER NOT NULL,
+      created_at TEXT NOT NULL,
+      PRIMARY KEY (poll_id, voter_key),
+      FOREIGN KEY (poll_id) REFERENCES polls(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS quiz_questions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      question TEXT NOT NULL,
+      options TEXT NOT NULL,
+      correct_index INTEGER NOT NULL,
+      category TEXT NOT NULL DEFAULT 'General',
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_by_user_id INTEGER,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS quiz_answers (
+      question_id INTEGER NOT NULL,
+      voter_key TEXT NOT NULL,
+      option_index INTEGER NOT NULL,
+      is_correct INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      PRIMARY KEY (question_id, voter_key),
+      FOREIGN KEY (question_id) REFERENCES quiz_questions(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS movie_box_office (
+      movie_id INTEGER PRIMARY KEY,
+      movie_title TEXT NOT NULL,
+      poster_path TEXT,
+      release_date TEXT,
+      worldwide_gross TEXT NOT NULL,
+      note TEXT,
+      as_of TEXT,
+      added_by_user_id INTEGER,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (added_by_user_id) REFERENCES users(id) ON DELETE SET NULL
     );
   `);
 
@@ -1338,6 +1596,241 @@ function createSqliteStorageProvider(databaseUrl: string): StorageProvider {
       database.prepare("DELETE FROM validated_year_progress WHERE year = ?").run(year);
       database.prepare("DELETE FROM validated_year_movies WHERE year = ?").run(year);
     },
+    async getUserRating(userId, movieId) {
+      return (
+        database
+          .prepare(`SELECT ${USER_RATING_SELECT} FROM movie_user_ratings WHERE user_id = ? AND movie_id = ?`)
+          .get<DatabaseUserRatingRow>(userId, movieId) ?? null
+      );
+    },
+    async listUserRatingsForMovie(movieId) {
+      return database
+        .prepare(`SELECT ${USER_RATING_SELECT} FROM movie_user_ratings WHERE movie_id = ?`)
+        .all<DatabaseUserRatingRow>(movieId);
+    },
+    async upsertUserRating(input) {
+      database
+        .prepare(
+          `INSERT INTO movie_user_ratings (user_id, movie_id, rating, watch_status, updated_at)
+           VALUES (?, ?, ?, ?, ?)
+           ON CONFLICT(user_id, movie_id) DO UPDATE SET
+             rating = excluded.rating,
+             watch_status = excluded.watch_status,
+             updated_at = excluded.updated_at`
+        )
+        .run(input.userId, input.movieId, input.rating, input.watchStatus, input.updatedAt);
+    },
+    async listUserReviewsForMovie(movieId, includeHidden) {
+      return database
+        .prepare(
+          `SELECT ${USER_REVIEW_SELECT} FROM movie_user_reviews
+           WHERE movie_id = ? ${includeHidden ? "" : "AND status = 'published'"}
+           ORDER BY created_at DESC`
+        )
+        .all<DatabaseUserReviewRow>(movieId);
+    },
+    async listAllUserReviews(limit) {
+      return database
+        .prepare(`SELECT ${USER_REVIEW_SELECT} FROM movie_user_reviews ORDER BY created_at DESC LIMIT ?`)
+        .all<DatabaseUserReviewRow>(limit);
+    },
+    async getUserReview(userId, movieId) {
+      return (
+        database
+          .prepare(`SELECT ${USER_REVIEW_SELECT} FROM movie_user_reviews WHERE user_id = ? AND movie_id = ?`)
+          .get<DatabaseUserReviewRow>(userId, movieId) ?? null
+      );
+    },
+    async upsertUserReview(input) {
+      database
+        .prepare(
+          `INSERT INTO movie_user_reviews
+             (user_id, movie_id, movie_title, author_name, title, body, rating, status, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(user_id, movie_id) DO UPDATE SET
+             movie_title = excluded.movie_title,
+             author_name = excluded.author_name,
+             title = excluded.title,
+             body = excluded.body,
+             rating = excluded.rating,
+             status = excluded.status,
+             updated_at = excluded.updated_at`
+        )
+        .run(
+          input.userId,
+          input.movieId,
+          input.movieTitle,
+          input.authorName,
+          input.title,
+          input.body,
+          input.rating,
+          input.status,
+          input.createdAt,
+          input.updatedAt
+        );
+      return (
+        database
+          .prepare(`SELECT ${USER_REVIEW_SELECT} FROM movie_user_reviews WHERE user_id = ? AND movie_id = ?`)
+          .get<DatabaseUserReviewRow>(input.userId, input.movieId) ?? null
+      );
+    },
+    async setUserReviewStatus(id, status, updatedAt) {
+      database
+        .prepare("UPDATE movie_user_reviews SET status = ?, updated_at = ? WHERE id = ?")
+        .run(status, updatedAt, id);
+    },
+    async deleteUserReview(id) {
+      database.prepare("DELETE FROM movie_user_reviews WHERE id = ?").run(id);
+    },
+    async listPolls(activeOnly) {
+      return database
+        .prepare(
+          `SELECT ${POLL_SELECT} FROM polls ${activeOnly ? "WHERE is_active = 1" : ""} ORDER BY created_at DESC`
+        )
+        .all<DatabasePollRow>();
+    },
+    async getPoll(id) {
+      return database.prepare(`SELECT ${POLL_SELECT} FROM polls WHERE id = ?`).get<DatabasePollRow>(id) ?? null;
+    },
+    async insertPoll(input) {
+      const result = database
+        .prepare(
+          `INSERT INTO polls (question, options, movie_id, movie_title, is_active, created_by_user_id, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`
+        )
+        .run(
+          input.question,
+          JSON.stringify(input.options),
+          input.movieId,
+          input.movieTitle,
+          input.isActive ? 1 : 0,
+          input.createdByUserId,
+          input.createdAt
+        );
+      return (
+        database
+          .prepare(`SELECT ${POLL_SELECT} FROM polls WHERE id = ?`)
+          .get<DatabasePollRow>(Number(result.lastInsertRowid)) ?? null
+      );
+    },
+    async setPollActive(id, isActive) {
+      database.prepare("UPDATE polls SET is_active = ? WHERE id = ?").run(isActive ? 1 : 0, id);
+    },
+    async deletePoll(id) {
+      database.prepare("DELETE FROM poll_votes WHERE poll_id = ?").run(id);
+      database.prepare("DELETE FROM polls WHERE id = ?").run(id);
+    },
+    async listPollVotes(pollId) {
+      return database
+        .prepare(`SELECT ${POLL_VOTE_SELECT} FROM poll_votes WHERE poll_id = ?`)
+        .all<DatabasePollVoteRow>(pollId);
+    },
+    async upsertPollVote(pollId, voterKey, optionIndex, createdAt) {
+      database
+        .prepare(
+          `INSERT INTO poll_votes (poll_id, voter_key, option_index, created_at)
+           VALUES (?, ?, ?, ?)
+           ON CONFLICT(poll_id, voter_key) DO UPDATE SET option_index = excluded.option_index`
+        )
+        .run(pollId, voterKey, optionIndex, createdAt);
+    },
+    async listQuizQuestions(activeOnly) {
+      return database
+        .prepare(
+          `SELECT ${QUIZ_SELECT} FROM quiz_questions ${activeOnly ? "WHERE is_active = 1" : ""} ORDER BY created_at DESC`
+        )
+        .all<DatabaseQuizQuestionRow>();
+    },
+    async getQuizQuestion(id) {
+      return (
+        database.prepare(`SELECT ${QUIZ_SELECT} FROM quiz_questions WHERE id = ?`).get<DatabaseQuizQuestionRow>(id) ??
+        null
+      );
+    },
+    async insertQuizQuestion(input) {
+      const result = database
+        .prepare(
+          `INSERT INTO quiz_questions (question, options, correct_index, category, is_active, created_by_user_id, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`
+        )
+        .run(
+          input.question,
+          JSON.stringify(input.options),
+          input.correctIndex,
+          input.category,
+          input.isActive ? 1 : 0,
+          input.createdByUserId,
+          input.createdAt
+        );
+      return (
+        database
+          .prepare(`SELECT ${QUIZ_SELECT} FROM quiz_questions WHERE id = ?`)
+          .get<DatabaseQuizQuestionRow>(Number(result.lastInsertRowid)) ?? null
+      );
+    },
+    async setQuizQuestionActive(id, isActive) {
+      database.prepare("UPDATE quiz_questions SET is_active = ? WHERE id = ?").run(isActive ? 1 : 0, id);
+    },
+    async deleteQuizQuestion(id) {
+      database.prepare("DELETE FROM quiz_answers WHERE question_id = ?").run(id);
+      database.prepare("DELETE FROM quiz_questions WHERE id = ?").run(id);
+    },
+    async listQuizAnswers(questionId) {
+      return database
+        .prepare(`SELECT ${QUIZ_ANSWER_SELECT} FROM quiz_answers WHERE question_id = ?`)
+        .all<DatabaseQuizAnswerRow>(questionId);
+    },
+    async insertQuizAnswer(questionId, voterKey, optionIndex, isCorrect, createdAt) {
+      database
+        .prepare(
+          `INSERT OR IGNORE INTO quiz_answers (question_id, voter_key, option_index, is_correct, created_at)
+           VALUES (?, ?, ?, ?, ?)`
+        )
+        .run(questionId, voterKey, optionIndex, isCorrect ? 1 : 0, createdAt);
+    },
+    async listBoxOffice() {
+      return database
+        .prepare(`SELECT ${BOX_OFFICE_SELECT} FROM movie_box_office ORDER BY updated_at DESC`)
+        .all<DatabaseBoxOfficeRow>();
+    },
+    async getBoxOffice(movieId) {
+      return (
+        database
+          .prepare(`SELECT ${BOX_OFFICE_SELECT} FROM movie_box_office WHERE movie_id = ?`)
+          .get<DatabaseBoxOfficeRow>(movieId) ?? null
+      );
+    },
+    async upsertBoxOffice(input) {
+      database
+        .prepare(
+          `INSERT INTO movie_box_office
+             (movie_id, movie_title, poster_path, release_date, worldwide_gross, note, as_of, added_by_user_id, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(movie_id) DO UPDATE SET
+             movie_title = excluded.movie_title,
+             poster_path = excluded.poster_path,
+             release_date = excluded.release_date,
+             worldwide_gross = excluded.worldwide_gross,
+             note = excluded.note,
+             as_of = excluded.as_of,
+             added_by_user_id = excluded.added_by_user_id,
+             updated_at = excluded.updated_at`
+        )
+        .run(
+          input.movieId,
+          input.movieTitle,
+          input.posterPath,
+          input.releaseDate,
+          input.worldwideGross,
+          input.note,
+          input.asOf,
+          input.addedByUserId,
+          input.updatedAt
+        );
+    },
+    async deleteBoxOffice(movieId) {
+      database.prepare("DELETE FROM movie_box_office WHERE movie_id = ?").run(movieId);
+    },
   };
 }
 
@@ -2023,6 +2516,231 @@ function createSupabaseStorageProvider(databaseUrl: string): StorageProvider {
         query: { year: `eq.${year}` },
       });
     },
+    async getUserRating(userId, movieId) {
+      return selectSingleRow<DatabaseUserRatingRow>("movie_user_ratings", {
+        select: USER_RATING_SELECT,
+        user_id: `eq.${userId}`,
+        movie_id: `eq.${movieId}`,
+      });
+    },
+    async listUserRatingsForMovie(movieId) {
+      return selectRows<DatabaseUserRatingRow>("movie_user_ratings", {
+        select: USER_RATING_SELECT,
+        movie_id: `eq.${movieId}`,
+      });
+    },
+    async upsertUserRating(input) {
+      await request("movie_user_ratings", {
+        method: "POST",
+        query: { on_conflict: "user_id,movie_id" },
+        body: {
+          user_id: input.userId,
+          movie_id: input.movieId,
+          rating: input.rating,
+          watch_status: input.watchStatus,
+          updated_at: input.updatedAt,
+        },
+        prefer: ["resolution=merge-duplicates"],
+      });
+    },
+    async listUserReviewsForMovie(movieId, includeHidden) {
+      return selectRows<DatabaseUserReviewRow>("movie_user_reviews", {
+        select: USER_REVIEW_SELECT,
+        movie_id: `eq.${movieId}`,
+        ...(includeHidden ? {} : { status: "eq.published" }),
+        order: "created_at.desc",
+      });
+    },
+    async listAllUserReviews(limit) {
+      return selectRows<DatabaseUserReviewRow>("movie_user_reviews", {
+        select: USER_REVIEW_SELECT,
+        order: "created_at.desc",
+        limit,
+      });
+    },
+    async getUserReview(userId, movieId) {
+      return selectSingleRow<DatabaseUserReviewRow>("movie_user_reviews", {
+        select: USER_REVIEW_SELECT,
+        user_id: `eq.${userId}`,
+        movie_id: `eq.${movieId}`,
+      });
+    },
+    async upsertUserReview(input) {
+      const rows = await request<DatabaseUserReviewRow[]>("movie_user_reviews", {
+        method: "POST",
+        query: { on_conflict: "user_id,movie_id", select: USER_REVIEW_SELECT },
+        body: {
+          user_id: input.userId,
+          movie_id: input.movieId,
+          movie_title: input.movieTitle,
+          author_name: input.authorName,
+          title: input.title,
+          body: input.body,
+          rating: input.rating,
+          status: input.status,
+          created_at: input.createdAt,
+          updated_at: input.updatedAt,
+        },
+        prefer: ["resolution=merge-duplicates", "return=representation"],
+      });
+      return rows?.[0] ?? null;
+    },
+    async setUserReviewStatus(id, status, updatedAt) {
+      await request("movie_user_reviews", {
+        method: "PATCH",
+        query: { id: `eq.${id}` },
+        body: { status, updated_at: updatedAt },
+      });
+    },
+    async deleteUserReview(id) {
+      await request("movie_user_reviews", { method: "DELETE", query: { id: `eq.${id}` } });
+    },
+    async listPolls(activeOnly) {
+      return selectRows<DatabasePollRow>("polls", {
+        select: POLL_SELECT,
+        ...(activeOnly ? { is_active: "eq.1" } : {}),
+        order: "created_at.desc",
+      });
+    },
+    async getPoll(id) {
+      return selectSingleRow<DatabasePollRow>("polls", { select: POLL_SELECT, id: `eq.${id}` });
+    },
+    async insertPoll(input) {
+      const rows = await request<DatabasePollRow[]>("polls", {
+        method: "POST",
+        query: { select: POLL_SELECT },
+        body: {
+          question: input.question,
+          options: JSON.stringify(input.options),
+          movie_id: input.movieId,
+          movie_title: input.movieTitle,
+          is_active: input.isActive ? 1 : 0,
+          created_by_user_id: input.createdByUserId,
+          created_at: input.createdAt,
+        },
+        prefer: ["return=representation"],
+      });
+      return rows?.[0] ?? null;
+    },
+    async setPollActive(id, isActive) {
+      await request("polls", {
+        method: "PATCH",
+        query: { id: `eq.${id}` },
+        body: { is_active: isActive ? 1 : 0 },
+      });
+    },
+    async deletePoll(id) {
+      await request("poll_votes", { method: "DELETE", query: { poll_id: `eq.${id}` } });
+      await request("polls", { method: "DELETE", query: { id: `eq.${id}` } });
+    },
+    async listPollVotes(pollId) {
+      return selectRows<DatabasePollVoteRow>("poll_votes", {
+        select: POLL_VOTE_SELECT,
+        poll_id: `eq.${pollId}`,
+      });
+    },
+    async upsertPollVote(pollId, voterKey, optionIndex, createdAt) {
+      await request("poll_votes", {
+        method: "POST",
+        query: { on_conflict: "poll_id,voter_key" },
+        body: { poll_id: pollId, voter_key: voterKey, option_index: optionIndex, created_at: createdAt },
+        prefer: ["resolution=merge-duplicates"],
+      });
+    },
+    async listQuizQuestions(activeOnly) {
+      return selectRows<DatabaseQuizQuestionRow>("quiz_questions", {
+        select: QUIZ_SELECT,
+        ...(activeOnly ? { is_active: "eq.1" } : {}),
+        order: "created_at.desc",
+      });
+    },
+    async getQuizQuestion(id) {
+      return selectSingleRow<DatabaseQuizQuestionRow>("quiz_questions", {
+        select: QUIZ_SELECT,
+        id: `eq.${id}`,
+      });
+    },
+    async insertQuizQuestion(input) {
+      const rows = await request<DatabaseQuizQuestionRow[]>("quiz_questions", {
+        method: "POST",
+        query: { select: QUIZ_SELECT },
+        body: {
+          question: input.question,
+          options: JSON.stringify(input.options),
+          correct_index: input.correctIndex,
+          category: input.category,
+          is_active: input.isActive ? 1 : 0,
+          created_by_user_id: input.createdByUserId,
+          created_at: input.createdAt,
+        },
+        prefer: ["return=representation"],
+      });
+      return rows?.[0] ?? null;
+    },
+    async setQuizQuestionActive(id, isActive) {
+      await request("quiz_questions", {
+        method: "PATCH",
+        query: { id: `eq.${id}` },
+        body: { is_active: isActive ? 1 : 0 },
+      });
+    },
+    async deleteQuizQuestion(id) {
+      await request("quiz_answers", { method: "DELETE", query: { question_id: `eq.${id}` } });
+      await request("quiz_questions", { method: "DELETE", query: { id: `eq.${id}` } });
+    },
+    async listQuizAnswers(questionId) {
+      return selectRows<DatabaseQuizAnswerRow>("quiz_answers", {
+        select: QUIZ_ANSWER_SELECT,
+        question_id: `eq.${questionId}`,
+      });
+    },
+    async insertQuizAnswer(questionId, voterKey, optionIndex, isCorrect, createdAt) {
+      await request("quiz_answers", {
+        method: "POST",
+        query: { on_conflict: "question_id,voter_key" },
+        body: {
+          question_id: questionId,
+          voter_key: voterKey,
+          option_index: optionIndex,
+          is_correct: isCorrect ? 1 : 0,
+          created_at: createdAt,
+        },
+        prefer: ["resolution=ignore-duplicates"],
+      });
+    },
+    async listBoxOffice() {
+      return selectRows<DatabaseBoxOfficeRow>("movie_box_office", {
+        select: BOX_OFFICE_SELECT,
+        order: "updated_at.desc",
+      });
+    },
+    async getBoxOffice(movieId) {
+      return selectSingleRow<DatabaseBoxOfficeRow>("movie_box_office", {
+        select: BOX_OFFICE_SELECT,
+        movie_id: `eq.${movieId}`,
+      });
+    },
+    async upsertBoxOffice(input) {
+      await request("movie_box_office", {
+        method: "POST",
+        query: { on_conflict: "movie_id" },
+        body: {
+          movie_id: input.movieId,
+          movie_title: input.movieTitle,
+          poster_path: input.posterPath,
+          release_date: input.releaseDate,
+          worldwide_gross: input.worldwideGross,
+          note: input.note,
+          as_of: input.asOf,
+          added_by_user_id: input.addedByUserId,
+          updated_at: input.updatedAt,
+        },
+        prefer: ["resolution=merge-duplicates"],
+      });
+    },
+    async deleteBoxOffice(movieId) {
+      await request("movie_box_office", { method: "DELETE", query: { movie_id: `eq.${movieId}` } });
+    },
   };
 }
 
@@ -2366,4 +3084,125 @@ export async function upsertValidatedYearFreeze(
 
 export async function clearValidatedYearFreeze(year: number) {
   return requireStorageProvider().clearValidatedYearFreeze(year);
+}
+
+// --- Community -------------------------------------------------------------
+
+export async function getUserRatingRecord(userId: number, movieId: number) {
+  return requireStorageProvider().getUserRating(userId, movieId);
+}
+
+export async function listUserRatingRecordsForMovie(movieId: number) {
+  return requireStorageProvider().listUserRatingsForMovie(movieId);
+}
+
+export async function upsertUserRatingRecord(input: UpsertUserRatingInput) {
+  return requireStorageProvider().upsertUserRating(input);
+}
+
+export async function listUserReviewRecordsForMovie(movieId: number, includeHidden = false) {
+  return requireStorageProvider().listUserReviewsForMovie(movieId, includeHidden);
+}
+
+export async function listAllUserReviewRecords(limit = 100) {
+  return requireStorageProvider().listAllUserReviews(limit);
+}
+
+export async function getUserReviewRecord(userId: number, movieId: number) {
+  return requireStorageProvider().getUserReview(userId, movieId);
+}
+
+export async function upsertUserReviewRecord(input: UpsertUserReviewInput) {
+  return requireStorageProvider().upsertUserReview(input);
+}
+
+export async function setUserReviewStatusRecord(id: number, status: UserReviewStatus, updatedAt: string) {
+  return requireStorageProvider().setUserReviewStatus(id, status, updatedAt);
+}
+
+export async function deleteUserReviewRecord(id: number) {
+  return requireStorageProvider().deleteUserReview(id);
+}
+
+export async function listPollRecords(activeOnly = false) {
+  return requireStorageProvider().listPolls(activeOnly);
+}
+
+export async function getPollRecord(id: number) {
+  return requireStorageProvider().getPoll(id);
+}
+
+export async function insertPollRecord(input: InsertPollInput) {
+  return requireStorageProvider().insertPoll(input);
+}
+
+export async function setPollActiveRecord(id: number, isActive: boolean) {
+  return requireStorageProvider().setPollActive(id, isActive);
+}
+
+export async function deletePollRecord(id: number) {
+  return requireStorageProvider().deletePoll(id);
+}
+
+export async function listPollVoteRecords(pollId: number) {
+  return requireStorageProvider().listPollVotes(pollId);
+}
+
+export async function upsertPollVoteRecord(
+  pollId: number,
+  voterKey: string,
+  optionIndex: number,
+  createdAt: string
+) {
+  return requireStorageProvider().upsertPollVote(pollId, voterKey, optionIndex, createdAt);
+}
+
+export async function listQuizQuestionRecords(activeOnly = false) {
+  return requireStorageProvider().listQuizQuestions(activeOnly);
+}
+
+export async function getQuizQuestionRecord(id: number) {
+  return requireStorageProvider().getQuizQuestion(id);
+}
+
+export async function insertQuizQuestionRecord(input: InsertQuizQuestionInput) {
+  return requireStorageProvider().insertQuizQuestion(input);
+}
+
+export async function setQuizQuestionActiveRecord(id: number, isActive: boolean) {
+  return requireStorageProvider().setQuizQuestionActive(id, isActive);
+}
+
+export async function deleteQuizQuestionRecord(id: number) {
+  return requireStorageProvider().deleteQuizQuestion(id);
+}
+
+export async function listQuizAnswerRecords(questionId: number) {
+  return requireStorageProvider().listQuizAnswers(questionId);
+}
+
+export async function insertQuizAnswerRecord(
+  questionId: number,
+  voterKey: string,
+  optionIndex: number,
+  isCorrect: boolean,
+  createdAt: string
+) {
+  return requireStorageProvider().insertQuizAnswer(questionId, voterKey, optionIndex, isCorrect, createdAt);
+}
+
+export async function listBoxOfficeRecords() {
+  return requireStorageProvider().listBoxOffice();
+}
+
+export async function getBoxOfficeRecord(movieId: number) {
+  return requireStorageProvider().getBoxOffice(movieId);
+}
+
+export async function upsertBoxOfficeRecord(input: UpsertBoxOfficeInput) {
+  return requireStorageProvider().upsertBoxOffice(input);
+}
+
+export async function deleteBoxOfficeRecord(movieId: number) {
+  return requireStorageProvider().deleteBoxOffice(movieId);
 }

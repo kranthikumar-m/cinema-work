@@ -48,6 +48,11 @@ import { getMovieRelatedNews, type NewsItem } from "@/services/telugu-news";
 import { getCriticVerdictForMovie, type CriticVerdict } from "@/services/critic-reviews";
 import { classifyVideoTitle } from "@/lib/video-category";
 import { CriticReviewsPanel } from "@/components/movie/CriticReviewsPanel";
+import { MovieCommunityPanel } from "@/components/movie/MovieCommunityPanel";
+import { MovieBoxOfficeEditor } from "@/components/movie/MovieBoxOfficeEditor";
+import { getMovieCommunity } from "@/services/community";
+import { getCurrentUser } from "@/lib/auth";
+import { getBoxOfficeRecord } from "@/lib/database";
 import { MovieDetailsAdminEditor } from "@/components/movie/MovieDetailsAdminEditor";
 import {
   getCustomImageRecordsByMovieId,
@@ -343,11 +348,23 @@ export default async function MovieDetailPage({ params }: Props) {
   // 123telugu OTT data (matched by title/alias, given TMDB logos); US = TMDB only.
   const toOttProviders = (list: WatchProvider[]): OttProvider[] =>
     list.map((p) => ({ name: p.provider_name, logoPath: p.logo_path }));
-  const [indiaFrom123, movieNews, criticVerdict] = await Promise.all([
+  const currentUser = await getCurrentUser().catch(() => null);
+  const [indiaFrom123, movieNews, criticVerdict, community, boxOffice] = await Promise.all([
     getMovieIndiaOttProviders(movie.title, aliasTags).catch(() => [] as OttProvider[]),
     getMovieRelatedNews(movie.title, aliasTags, 12).catch(() => [] as NewsItem[]),
     getCriticVerdictForMovie(movie.title, aliasTags).catch(() => null as CriticVerdict | null),
+    getMovieCommunity(id, currentUser),
+    hasDatabaseConfiguration() ? getBoxOfficeRecord(id).catch(() => null) : Promise.resolve(null),
   ]);
+  if (boxOffice) {
+    detailFacts = [
+      ...detailFacts.filter((row) => row.label !== "Worldwide Gross"),
+      {
+        label: "Worldwide Gross",
+        values: [boxOffice.worldwide_gross + (boxOffice.as_of ? ` (as of ${formatDate(boxOffice.as_of)})` : "")],
+      },
+    ];
+  }
   // Interviews get their own section; everything else stays in Feeds.
   const movieInterviews = movieNews.filter((item) => item.category === "interview");
   const movieStories = movieNews.filter((item) => item.category !== "interview");
@@ -707,6 +724,7 @@ export default async function MovieDetailPage({ params }: Props) {
         <section id="reviews" className="mt-12 scroll-mt-[112px] lg:scroll-mt-6">
           <SectionHeader title="Reviews" />
           <CriticReviewsPanel verdict={criticVerdict} imdbRating={movie.imdb_rating ?? null} imdbVotes={movie.imdb_votes ?? null} />
+          <MovieCommunityPanel movieId={id} movieTitle={movie.title} initial={community} />
           {reviews.results.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2">
               {reviews.results.slice(0, 4).map((r) => (
@@ -750,12 +768,22 @@ export default async function MovieDetailPage({ params }: Props) {
             <h2 className="font-[family-name:var(--font-heading)] text-xl font-bold text-[var(--color-text)] md:text-2xl">
               Movie Facts
             </h2>
-            <MovieDetailsAdminEditor
-              movieId={id}
-              facts={detailFacts.map((r) => ({ label: r.label, values: r.values }))}
-              companies={companyCredits}
-              hasOverride={hasDetailOverride}
-            />
+            <div className="flex items-center gap-2">
+              <MovieBoxOfficeEditor
+                movieId={id}
+                current={
+                  boxOffice
+                    ? { worldwideGross: boxOffice.worldwide_gross, note: boxOffice.note, asOf: boxOffice.as_of }
+                    : null
+                }
+              />
+              <MovieDetailsAdminEditor
+                movieId={id}
+                facts={detailFacts.map((r) => ({ label: r.label, values: r.values }))}
+                companies={companyCredits}
+                hasOverride={hasDetailOverride}
+              />
+            </div>
           </div>
           <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.5)] sm:grid sm:grid-cols-2">
             {detailFacts.map((row) => (

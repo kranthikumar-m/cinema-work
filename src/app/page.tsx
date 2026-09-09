@@ -26,6 +26,12 @@ import { ReleasesWidget } from "@/components/home/widgets/ReleasesWidget";
 import { OttWidget } from "@/components/home/widgets/OttWidget";
 import { BirthdaysWidget } from "@/components/home/widgets/BirthdaysWidget";
 import { CriticVerdictWidget } from "@/components/home/widgets/CriticVerdictWidget";
+import { PollWidget } from "@/components/home/widgets/PollWidget";
+import { QuizWidget } from "@/components/home/widgets/QuizWidget";
+import { BoxOfficeWidget } from "@/components/home/widgets/BoxOfficeWidget";
+import { getBoxOfficeViews, getPollViews, getQuizViews, type BoxOfficeView, type PollView, type QuizView } from "@/services/community";
+import { getCurrentUser } from "@/lib/auth";
+import { peekVoterKey } from "@/lib/voter-key";
 import { getHomeFeed } from "@/services/home-feed";
 import { getCriticVerdicts } from "@/services/critic-reviews";
 import { getBirthdayBuckets, type BirthdayBuckets } from "@/services/telugu-birthdays";
@@ -308,7 +314,37 @@ interface HomeData {
   verdicts: CriticVerdictSummary[];
   birthdays: BirthdayBuckets;
   ott: OttWidgetEntry[];
+  polls: PollView[];
+  quiz: QuizView[];
+  boxOffice: BoxOfficeView[];
   todayIso: string;
+}
+
+// Polls and quiz questions also appear as feed cards, so the stream carries the
+// same interactive items vcinema-style readers expect.
+function communityFeedItems(polls: PollView[], quiz: QuizView[]): FeedItem[] {
+  return [
+    ...polls.map<FeedItem>((poll) => ({
+      id: `poll-${poll.id}`,
+      kind: "poll",
+      title: poll.question,
+      subtitle: poll.movieTitle ? `Poll · ${poll.movieTitle}` : `Poll · ${poll.totalVotes} votes`,
+      image: null,
+      date: poll.createdAt,
+      href: `#poll-${poll.id}`,
+      external: false,
+    })),
+    ...quiz.map<FeedItem>((question) => ({
+      id: `quiz-${question.id}`,
+      kind: "quiz",
+      title: question.question,
+      subtitle: `Quiz · ${question.category}`,
+      image: null,
+      date: question.createdAt,
+      href: `#quiz-${question.id}`,
+      external: false,
+    })),
+  ];
 }
 
 // Finds the catalogue movie a scraped title refers to (exact normalized match,
@@ -349,6 +385,8 @@ function toOttWidgetEntries(calendar: OttCalendarEntry[], pool: Movie[]): OttWid
 
 async function getData(): Promise<HomeData> {
   const todayIso = getIndianTodayIsoDate();
+  const user = await getCurrentUser().catch(() => null);
+  const voterKey = peekVoterKey(user);
   try {
     // Latest releases and upcoming already fold in admin-added movies at the
     // service layer; only the top-rated section needs a homepage-local merge
@@ -395,13 +433,17 @@ async function getData(): Promise<HomeData> {
       upcoming,
     });
 
-    const [heroSlideResults, feed, rawVerdicts, birthdays, ottCalendar] = await Promise.all([
-      Promise.allSettled(heroCandidates.map((movie) => buildFeaturedBundle(movie))),
-      getHomeFeed(),
-      getCriticVerdicts(8),
-      getBirthdayBuckets(todayIso).catch(() => EMPTY_BIRTHDAYS),
-      getTeluguOttCalendar().catch(() => [] as OttCalendarEntry[]),
-    ]);
+    const [heroSlideResults, feed, rawVerdicts, birthdays, ottCalendar, polls, quiz, boxOffice] =
+      await Promise.all([
+        Promise.allSettled(heroCandidates.map((movie) => buildFeaturedBundle(movie))),
+        getHomeFeed(),
+        getCriticVerdicts(8),
+        getBirthdayBuckets(todayIso).catch(() => EMPTY_BIRTHDAYS),
+        getTeluguOttCalendar().catch(() => [] as OttCalendarEntry[]),
+        getPollViews(voterKey, { activeOnly: true, limit: 5 }),
+        getQuizViews(voterKey, { activeOnly: true, limit: 5 }),
+        getBoxOfficeViews(6),
+      ]);
 
     const heroSlides = heroSlideResults
       .reduce<HomepageHeroSlide[]>((slides, result) => {
@@ -435,10 +477,13 @@ async function getData(): Promise<HomeData> {
       heroSlides,
       latestReleases,
       upcoming,
-      feed,
+      feed: [...communityFeedItems(polls, quiz), ...feed],
       verdicts,
       birthdays,
       ott: toOttWidgetEntries(ottCalendar, pool),
+      polls,
+      quiz,
+      boxOffice,
       todayIso,
     };
   } catch (error) {
@@ -451,14 +496,28 @@ async function getData(): Promise<HomeData> {
       verdicts: [],
       birthdays: EMPTY_BIRTHDAYS,
       ott: [],
+      polls: [],
+      quiz: [],
+      boxOffice: [],
       todayIso,
     };
   }
 }
 
 export default async function HomePage() {
-  const { heroSlides, latestReleases, upcoming, feed, verdicts, birthdays, ott, todayIso } =
-    await getData();
+  const {
+    heroSlides,
+    latestReleases,
+    upcoming,
+    feed,
+    verdicts,
+    birthdays,
+    ott,
+    polls,
+    quiz,
+    boxOffice,
+    todayIso,
+  } = await getData();
 
   const releasesToday = [...latestReleases, ...upcoming].filter(
     (movie) => movie.release_date === todayIso
@@ -479,7 +538,10 @@ export default async function HomePage() {
               <ReleasesWidget today={releasesToday} upcoming={upcoming} latest={latestReleases} />
               <CriticVerdictWidget verdicts={verdicts} />
               <BirthdaysWidget buckets={birthdays} todayIso={todayIso} />
+              <BoxOfficeWidget entries={boxOffice} />
               <OttWidget entries={ott} todayIso={todayIso} />
+              <QuizWidget questions={quiz} />
+              <PollWidget polls={polls} />
             </aside>
           </div>
         </div>

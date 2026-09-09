@@ -4,6 +4,7 @@ import { AdminImageUploader } from "@/components/admin/AdminImageUploader";
 import { AdminMovieAdder } from "@/components/admin/AdminMovieAdder";
 import { AdminTrendingManager } from "@/components/admin/AdminTrendingManager";
 import { AdminVideoManager } from "@/components/admin/AdminVideoManager";
+import { AdminCommunityManager } from "@/components/admin/AdminCommunityManager";
 import { listUsers, requireAdminUser, userCanManageUsers } from "@/lib/auth";
 
 export default async function AdminDashboardPage() {
@@ -102,6 +103,8 @@ export default async function AdminDashboardPage() {
       <AdminTrendingManager />
 
       <AdminVideoManager />
+
+      <AdminCommunityManager />
 
       <AdminImageUploader />
     </div>
