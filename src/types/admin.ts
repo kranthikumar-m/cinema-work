@@ -1,4 +1,5 @@
 import type { AuthUser, StoredUserRole } from "@/types/auth";
+import type { VideoCategory } from "@/lib/video-category";
 
 export const ADMIN_ROLES = ["admin", "editor"] as const;
 export const MANAGEABLE_USER_ROLES = ["admin", "user"] as const;
@@ -98,7 +99,7 @@ export interface MovieCustomImagesPayload {
   customBackdrop: CustomImageRecord | null;
 }
 
-export type VideoCategory = "trailer" | "teaser" | "song" | "review" | "miscellaneous";
+export type { VideoCategory } from "@/lib/video-category";
 
 export interface MovieVideoRecord {
   id: number;

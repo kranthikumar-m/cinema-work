@@ -1,28 +1,29 @@
-import { getLatestTeluguReleases } from "@/services/telugu-movies";
-import { MovieGrid } from "@/components/movie/MovieGrid";
+import { Suspense } from "react";
+import { getVideoWall } from "@/services/videos-feed";
+import { VideoWall } from "@/components/video/VideoWall";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 
 export const metadata = { title: "Videos & Trailers - Telugu Cinema Updates" };
 export const dynamic = "force-dynamic";
 
 export default async function VideosPage() {
-  try {
-    const movies = await getLatestTeluguReleases(24);
-    return (
-      <div className="app-page-shell py-8">
-        <SectionHeader title="Telugu Trailers & Videos" />
-        <p className="text-gray-400 mb-6">
-          Browse validated Telugu releases and open each movie page to watch available trailers.
+  const items = await getVideoWall();
+
+  return (
+    <div className="app-page-shell py-8">
+      <SectionHeader title="Videos" />
+      <p className="-mt-3 mb-5 text-sm text-[var(--color-muted-strong)]">
+        Trailers, teasers, songs, promos, interviews and event videos from the latest Telugu films.
+      </p>
+      {items.length ? (
+        <Suspense fallback={null}>
+          <VideoWall items={items} />
+        </Suspense>
+      ) : (
+        <p className="py-16 text-center text-sm text-[var(--color-muted)]">
+          Videos are still loading. Please refresh in a moment.
         </p>
-        <MovieGrid movies={movies} />
-      </div>
-    );
-  } catch {
-    return (
-      <div className="app-page-shell py-8">
-        <SectionHeader title="Telugu Trailers & Videos" />
-        <p className="text-gray-400">Unable to load videos. Please try again later.</p>
-      </div>
-    );
-  }
+      )}
+    </div>
+  );
 }

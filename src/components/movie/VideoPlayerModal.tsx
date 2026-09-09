@@ -4,6 +4,7 @@ import { useEffect, useCallback, useState } from "react";
 import Image from "next/image";
 import { X, Play } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { VIDEO_CATEGORY_LABELS, isVideoCategory } from "@/lib/video-category";
 
 export interface VideoPlayerItem {
   key: string;
@@ -18,16 +19,10 @@ interface VideoPlayerModalProps {
   onClose: () => void;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  trailer: "TRAILERS",
-  teaser: "TEASERS",
-  song: "SONGS",
-  review: "REVIEWS",
-  miscellaneous: "MISC",
-};
-
 function formatDuration(category: string) {
-  return CATEGORY_LABELS[category] || category.toUpperCase();
+  return isVideoCategory(category)
+    ? VIDEO_CATEGORY_LABELS[category].toUpperCase()
+    : category.toUpperCase();
 }
 
 export function VideoPlayerModal({ videoKey, title, videos = [], onClose }: VideoPlayerModalProps) {

@@ -1,28 +1,29 @@
-import { getPopularTeluguMovies } from "@/services/telugu-movies";
-import { MovieGrid } from "@/components/movie/MovieGrid";
+import { Suspense } from "react";
+import { getGalleryWall } from "@/services/gallery";
+import { GalleryMasonry } from "@/components/gallery/GalleryMasonry";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 
-export const metadata = { title: "Photos - Telugu Cinema Updates" };
+export const metadata = { title: "Gallery - Telugu Cinema Updates" };
 export const dynamic = "force-dynamic";
 
 export default async function PhotosPage() {
-  try {
-    const movies = await getPopularTeluguMovies(24);
-    return (
-      <div className="app-page-shell py-8">
-        <SectionHeader title="Telugu Movie Photos & Galleries" />
-        <p className="text-gray-400 mb-6">
-          Explore stills from popular Telugu movies. Visit each movie&apos;s detail page for full galleries.
+  const items = await getGalleryWall();
+
+  return (
+    <div className="app-page-shell py-8">
+      <SectionHeader title="Gallery" />
+      <p className="-mt-3 mb-5 text-sm text-[var(--color-muted-strong)]">
+        Stills and posters from the latest and upcoming Telugu films. Open any image for the full-size view.
+      </p>
+      {items.length ? (
+        <Suspense fallback={null}>
+          <GalleryMasonry items={items} />
+        </Suspense>
+      ) : (
+        <p className="py-16 text-center text-sm text-[var(--color-muted)]">
+          The gallery is still loading. Please refresh in a moment.
         </p>
-        <MovieGrid movies={movies} />
-      </div>
-    );
-  } catch {
-    return (
-      <div className="app-page-shell py-8">
-        <SectionHeader title="Telugu Movie Photos & Galleries" />
-        <p className="text-gray-400">Unable to load photos. Please try again later.</p>
-      </div>
-    );
-  }
+      )}
+    </div>
+  );
 }

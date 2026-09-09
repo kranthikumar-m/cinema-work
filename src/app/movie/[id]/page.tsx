@@ -45,6 +45,9 @@ import { getMovieMusic, type MovieMusic } from "@/services/movie-music";
 import { getMovieTrailers, type MovieTrailerVideo } from "@/services/movie-trailers";
 import { getMovieIndiaOttProviders, type OttProvider } from "@/services/telugu-ott";
 import { getMovieRelatedNews, type NewsItem } from "@/services/telugu-news";
+import { getCriticVerdictForMovie, type CriticVerdict } from "@/services/critic-reviews";
+import { classifyVideoTitle } from "@/lib/video-category";
+import { CriticReviewsPanel } from "@/components/movie/CriticReviewsPanel";
 import { MovieDetailsAdminEditor } from "@/components/movie/MovieDetailsAdminEditor";
 import {
   getCustomImageRecordsByMovieId,
@@ -340,10 +343,14 @@ export default async function MovieDetailPage({ params }: Props) {
   // 123telugu OTT data (matched by title/alias, given TMDB logos); US = TMDB only.
   const toOttProviders = (list: WatchProvider[]): OttProvider[] =>
     list.map((p) => ({ name: p.provider_name, logoPath: p.logo_path }));
-  const [indiaFrom123, movieNews] = await Promise.all([
+  const [indiaFrom123, movieNews, criticVerdict] = await Promise.all([
     getMovieIndiaOttProviders(movie.title, aliasTags).catch(() => [] as OttProvider[]),
-    getMovieRelatedNews(movie.title, aliasTags).catch(() => [] as NewsItem[]),
+    getMovieRelatedNews(movie.title, aliasTags, 12).catch(() => [] as NewsItem[]),
+    getCriticVerdictForMovie(movie.title, aliasTags).catch(() => null as CriticVerdict | null),
   ]);
+  // Interviews get their own section; everything else stays in Feeds.
+  const movieInterviews = movieNews.filter((item) => item.category === "interview");
+  const movieStories = movieNews.filter((item) => item.category !== "interview");
   const dedupeProviders = (list: OttProvider[]): OttProvider[] => {
     const seen = new Set<string>();
     return list.filter((p) => {
@@ -404,14 +411,6 @@ export default async function MovieDetailPage({ params }: Props) {
   }
   const hasPhotos = images.backdrops.length > 0 || images.posters.length > 0 || customGalleryImages.length > 0;
 
-  const tmdbVideoTypeToCategory = (type: string, name: string): string => {
-    const lower = type.toLowerCase();
-    if (lower === "trailer") return "trailer";
-    if (lower === "teaser") return "teaser";
-    const nameLower = name.toLowerCase();
-    if (nameLower.includes("song") || nameLower.includes("lyric") || nameLower.includes("music video")) return "song";
-    return "miscellaneous";
-  };
 
   // Assemble the detail-page videos from authoritative sources, deduped by key:
   //   • Trailers/teasers  → getMovieTrailers (TMDB, else auto-fetched)
@@ -453,10 +452,12 @@ export default async function MovieDetailPage({ params }: Props) {
     .map((v) => ({
       key: v.key,
       title: v.name,
-      category: tmdbVideoTypeToCategory(v.type, v.name),
+      category: classifyVideoTitle(v.name, v.type),
       source: "tmdb" as const,
     }))
-    .filter((v) => v.category === "review" || v.category === "miscellaneous");
+    // Trailers/teasers come from getMovieTrailers and songs from getMovieMusic,
+    // so only the remaining kinds are taken straight from TMDB here.
+    .filter((v) => !["trailer", "teaser", "song"].includes(v.category));
 
   const videosByKey = new Map<string, VideoItem>();
   for (const item of [...adminCustomItems, ...trailerItems, ...songItems, ...otherTmdbItems]) {
@@ -492,7 +493,7 @@ export default async function MovieDetailPage({ params }: Props) {
         {/* Movie info overlaid on backdrop */}
         <div
           id="overview"
-          className="relative z-10 flex min-h-[100dvh] items-end scroll-mt-[170px]"
+          className="relative z-10 flex min-h-[100dvh] items-end scroll-mt-[112px] lg:scroll-mt-6"
         >
           <div className="app-page-shell-detail w-full pb-12 pt-24">
             <div className="flex flex-col md:flex-row gap-8">
@@ -521,7 +522,18 @@ export default async function MovieDetailPage({ params }: Props) {
                 )}
 
                 <div className="flex flex-wrap items-center gap-3 mb-4">
-                  <RatingRing rating={movie.imdb_rating ?? null} size={56} />
+                  <div className="flex items-center gap-2" title="IMDb rating">
+                    <RatingRing rating={movie.imdb_rating ?? null} size={56} />
+                    <span className="eyebrow-label text-gray-400">IMDb</span>
+                  </div>
+                  {criticVerdict && (
+                    <a href="#reviews" className="flex items-center gap-2" title="Critic verdict">
+                      <RatingRing rating={criticVerdict.average} max={5} size={56} />
+                      <span className="eyebrow-label text-gray-400">
+                        Critics · {criticVerdict.count}
+                      </span>
+                    </a>
+                  )}
                   {movie.imdb_votes ? (
                     <>
                       <span className="text-sm text-gray-300">
@@ -593,7 +605,7 @@ export default async function MovieDetailPage({ params }: Props) {
       <div className="app-page-shell-detail">
 
         {/* Cast & Crew — full cast from IMDb (billing order), falling back to TMDB. */}
-        <div id="cast-crew" className="mt-12 scroll-mt-[150px]">
+        <div id="cast-crew" className="mt-12 scroll-mt-[112px] lg:scroll-mt-6">
           <SectionHeader title="Cast" />
           {imdbCredits && imdbCredits.cast.length > 0 ? (
             <ImdbCastCarousel cast={imdbCredits.cast} />
@@ -620,20 +632,21 @@ export default async function MovieDetailPage({ params }: Props) {
 
         {/* Songs — dedicated soundtrack track list (also reachable at /music/[id]) */}
         {music.songs.length > 0 && (
-          <div id="songs" className="mt-12 scroll-mt-[150px]">
+          <div id="songs" className="mt-12 scroll-mt-[112px] lg:scroll-mt-6">
             <SectionHeader title="Songs" />
             <MovieSongs
               music={music}
               movieId={id}
               movieTitle={movie.title}
               albumImage={posterImage}
+              cast={credits.cast.slice(0, 3).map((member) => member.name)}
             />
           </div>
         )}
 
         {/* Videos */}
         {allVideos.length > 0 && (
-          <div id="videos" className="mt-12 scroll-mt-[100px]">
+          <div id="videos" className="mt-12 scroll-mt-[112px] lg:scroll-mt-6">
             <SectionHeader title="Videos" />
             <Suspense fallback={null}>
               <VideoSection videos={allVideos} movieId={id} movieTitle={movie.title} />
@@ -643,7 +656,7 @@ export default async function MovieDetailPage({ params }: Props) {
 
         {/* Gallery */}
         {hasPhotos && (
-          <div id="gallery" className="mt-12 scroll-mt-[150px]">
+          <div id="gallery" className="mt-12 scroll-mt-[112px] lg:scroll-mt-6">
             <SectionHeader title="Photos" />
             <PhotoGallery
               images={images.backdrops}
@@ -691,8 +704,9 @@ export default async function MovieDetailPage({ params }: Props) {
         )}
 
         {/* Reviews */}
-        <section id="reviews" className="mt-12 scroll-mt-[170px]">
+        <section id="reviews" className="mt-12 scroll-mt-[112px] lg:scroll-mt-6">
           <SectionHeader title="Reviews" />
+          <CriticReviewsPanel verdict={criticVerdict} imdbRating={movie.imdb_rating ?? null} imdbVotes={movie.imdb_votes ?? null} />
           {reviews.results.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2">
               {reviews.results.slice(0, 4).map((r) => (
@@ -706,12 +720,24 @@ export default async function MovieDetailPage({ params }: Props) {
           )}
         </section>
 
-        {/* News — recent Telugu coverage mentioning this title (links out to source) */}
-        {movieNews.length > 0 && (
-          <section id="news" className="mt-12 scroll-mt-[150px]">
-            <SectionHeader title="News" />
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {movieNews.map((item) => (
+        {/* Interviews — cast & crew conversations about this title */}
+        {movieInterviews.length > 0 && (
+          <section id="interviews" className="mt-12 scroll-mt-[112px] lg:scroll-mt-6">
+            <SectionHeader title="Interviews" href="/interviews" />
+            <div className="tile-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              {movieInterviews.map((item) => (
+                <NewsCard key={item.id} item={item} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Feeds — recent Telugu coverage mentioning this title (links out to source) */}
+        {movieStories.length > 0 && (
+          <section id="news" className="mt-12 scroll-mt-[112px] lg:scroll-mt-6">
+            <SectionHeader title="Feeds" href="/news" />
+            <div className="tile-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+              {movieStories.map((item) => (
                 <NewsCard key={item.id} item={item} />
               ))}
             </div>
@@ -719,7 +745,7 @@ export default async function MovieDetailPage({ params }: Props) {
         )}
 
         {/* Facts Panel — clean definition rows with chips for multi-value fields */}
-        <section id="box-office" className="mt-12 scroll-mt-[170px]">
+        <section id="details" className="mt-12 scroll-mt-[112px] lg:scroll-mt-6">
           <div className="mb-6 flex items-center justify-between gap-3">
             <h2 className="font-[family-name:var(--font-heading)] text-xl font-bold text-[var(--color-text)] md:text-2xl">
               Movie Facts
@@ -765,7 +791,7 @@ export default async function MovieDetailPage({ params }: Props) {
         {(companyCredits.production.length > 0 ||
           companyCredits.distributors.length > 0 ||
           companyCredits.other.length > 0) && (
-          <section className="mt-12">
+          <section id="companies" className="mt-12 scroll-mt-[112px] lg:scroll-mt-6">
             <SectionHeader title="Company Credits" />
             <div className="grid items-start gap-6 md:grid-cols-2 xl:grid-cols-3">
               <CompanyGroup label="Production" items={companyCredits.production} />
@@ -777,7 +803,7 @@ export default async function MovieDetailPage({ params }: Props) {
 
         {/* Similar Movies */}
         {similarTeluguMovies.length > 0 && (
-          <div id="similar" className="mt-12 pb-12 scroll-mt-[150px]">
+          <div id="similar" className="mt-12 pb-12 scroll-mt-[112px] lg:scroll-mt-6">
             <SectionHeader title="Similar Movies" />
             <MovieGrid
               movies={similarTeluguMovies}

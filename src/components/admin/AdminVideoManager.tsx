@@ -6,20 +6,23 @@ import { Search, Plus, Trash2, Play, Film, Music, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { YouTubeSearchResult, MovieVideoRecord, VideoCategory } from "@/types/admin";
 import type { AdminMovieSearchResult } from "@/types/admin";
+import { VIDEO_CATEGORIES, VIDEO_CATEGORY_SINGULAR } from "@/lib/video-category";
 
-const CATEGORIES: { value: VideoCategory; label: string }[] = [
-  { value: "trailer", label: "Trailer" },
-  { value: "teaser", label: "Teaser" },
-  { value: "song", label: "Song" },
-  { value: "review", label: "Review" },
-  { value: "miscellaneous", label: "Miscellaneous" },
-];
+const CATEGORIES: { value: VideoCategory; label: string }[] = VIDEO_CATEGORIES.map((value) => ({
+  value,
+  label: VIDEO_CATEGORY_SINGULAR[value],
+}));
 
 function CategoryBadge({ category }: { category: string }) {
   const colors: Record<string, string> = {
     trailer: "bg-[rgba(194,154,98,0.15)] text-[var(--color-accent)]",
     teaser: "bg-[rgba(100,160,255,0.12)] text-[#80b0ff]",
     song: "bg-[rgba(255,120,180,0.12)] text-[#ff80b4]",
+    lyrical: "bg-[rgba(255,120,180,0.12)] text-[#ff80b4]",
+    promo: "bg-[rgba(100,160,255,0.12)] text-[#80b0ff]",
+    interview: "bg-[rgba(180,140,220,0.12)] text-[#b88cdc]",
+    event: "bg-[rgba(240,180,80,0.12)] text-[#f0c060]",
+    bts: "bg-[rgba(120,200,220,0.12)] text-[#80d0e0]",
     review: "bg-[rgba(60,180,100,0.12)] text-[#60c880]",
     miscellaneous: "bg-[rgba(180,140,220,0.12)] text-[#b88cdc]",
   };

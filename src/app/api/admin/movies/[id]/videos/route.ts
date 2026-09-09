@@ -7,13 +7,12 @@ import {
   addHiddenVideoKey,
   removeHiddenVideoKey,
 } from "@/lib/database";
-import type { VideoCategory } from "@/types/admin";
+import { VIDEO_CATEGORIES, isVideoCategory } from "@/lib/video-category";
 
 interface RouteContext {
   params: { id: string };
 }
 
-const VALID_CATEGORIES: VideoCategory[] = ["trailer", "teaser", "song", "review", "miscellaneous"];
 
 export async function GET(_request: Request, { params }: RouteContext) {
   const auth = await requireAdminApiUser(["admin", "editor"]);
@@ -63,9 +62,9 @@ export async function POST(request: Request, { params }: RouteContext) {
       return NextResponse.json({ error: "youtubeKey and title are required." }, { status: 400 });
     }
 
-    if (!category || !VALID_CATEGORIES.includes(category as VideoCategory)) {
+    if (!isVideoCategory(category)) {
       return NextResponse.json(
-        { error: `category must be one of: ${VALID_CATEGORIES.join(", ")}` },
+        { error: `category must be one of: ${VIDEO_CATEGORIES.join(", ")}` },
         { status: 400 }
       );
     }
@@ -162,9 +161,9 @@ export async function PATCH(request: Request, { params }: RouteContext) {
         { status: 400 }
       );
     }
-    if (!category || !VALID_CATEGORIES.includes(category as VideoCategory)) {
+    if (!isVideoCategory(category)) {
       return NextResponse.json(
-        { error: `category must be one of: ${VALID_CATEGORIES.join(", ")}` },
+        { error: `category must be one of: ${VIDEO_CATEGORIES.join(", ")}` },
         { status: 400 }
       );
     }

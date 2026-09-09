@@ -8,6 +8,7 @@ import { Play, Disc3, ChevronRight } from "lucide-react";
 import { VideoPlayerModal } from "@/components/movie/VideoPlayerModal";
 import { VideoAdminMenu } from "@/components/movie/VideoAdminControls";
 import { useOptionalAuthUser } from "@/components/auth/AuthUserProvider";
+import { VIDEO_CATEGORIES, VIDEO_CATEGORY_LABELS } from "@/lib/video-category";
 
 export interface VideoItem {
   key: string;
@@ -24,14 +25,8 @@ interface VideoSectionProps {
   movieTitle: string;
 }
 
-const CATEGORY_ORDER = ["trailer", "teaser", "song", "review", "miscellaneous"];
-const CATEGORY_LABELS: Record<string, string> = {
-  trailer: "Trailers",
-  teaser: "Teasers",
-  song: "Songs",
-  review: "Reviews",
-  miscellaneous: "Miscellaneous",
-};
+const CATEGORY_ORDER: readonly string[] = VIDEO_CATEGORIES;
+const CATEGORY_LABELS: Record<string, string> = VIDEO_CATEGORY_LABELS;
 
 function VideoCard({ video, onPlay }: { video: VideoItem; onPlay: () => void }) {
   return (
@@ -99,7 +94,7 @@ export function VideoSection({ videos, movieId, movieTitle }: VideoSectionProps)
 
   return (
     <>
-      <div className="mb-5 flex flex-wrap items-center gap-2">
+      <div className="sticky top-[108px] z-10 -mx-1 mb-5 flex flex-wrap items-center gap-2 bg-[var(--color-bg)]/95 px-1 py-2 backdrop-blur lg:top-0">
         {allCategories.map((group) => (
           <button
             key={group.category}

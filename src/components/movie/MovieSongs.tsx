@@ -3,9 +3,18 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Play, Disc3, ChevronRight, Eye } from "lucide-react";
-import { VideoPlayerModal } from "@/components/movie/VideoPlayerModal";
-import type { MovieMusic } from "@/services/movie-music";
+import {
+  AudioLines,
+  Check,
+  ChevronRight,
+  Disc3,
+  Eye,
+  Play,
+  Share2,
+  ThumbsUp,
+  X,
+} from "lucide-react";
+import type { MovieMusic, MovieSong } from "@/services/movie-music";
 
 function formatDuration(ms: number): string {
   const total = Math.round(ms / 1000);
@@ -26,32 +35,64 @@ interface MovieSongsProps {
   movieId: number;
   movieTitle: string;
   albumImage: string | null;
+  cast?: string[];
 }
 
-// Dedicated soundtrack section: album card + a numbered track list. Playable
-// tracks open inline in the shared VideoPlayerModal (with the other songs as the
-// up-next sidebar); the full immersive player lives at /music/[id].
-export function MovieSongs({ music, movieId, movieTitle, albumImage }: MovieSongsProps) {
+function MetaRow({ label, value }: { label: string; value: string | null | undefined }) {
+  return (
+    <div>
+      <dt className="eyebrow-label text-[var(--color-muted)]">{label}</dt>
+      <dd className="mt-0.5 text-sm font-medium text-[var(--color-accent-strong)]">
+        {value && value.trim() ? value : "—"}
+      </dd>
+    </div>
+  );
+}
+
+/**
+ * Soundtrack panel in three columns: album art and credits, the selected
+ * song's lyrics and stats, and the track list. Playing a track opens a small
+ * player pinned to the corner so the lyrics stay readable while it plays.
+ */
+export function MovieSongs({ music, movieId, movieTitle, albumImage, cast = [] }: MovieSongsProps) {
   const { album, songs } = music;
-  const [playingKey, setPlayingKey] = useState<string | null>(null);
+  const firstWithLyrics = Math.max(0, songs.findIndex((song) => song.lyrics));
+  const [selectedIndex, setSelectedIndex] = useState(firstWithLyrics);
+  const [playing, setPlaying] = useState<MovieSong | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   if (!songs.length) return null;
 
+  const selected = songs[Math.min(selectedIndex, songs.length - 1)];
   const cover = album?.imageUrl || albumImage || null;
   const isRemoteCover = cover ? /^https?:\/\//.test(cover) : false;
+  const views = formatCount(selected.youtubeViews);
+  const likes = formatCount(selected.youtubeLikes);
 
-  // Sidebar / up-next list for the modal = every song that has a video.
-  const playerItems = songs
-    .filter((s) => s.youtubeKey)
-    .map((s) => ({ key: s.youtubeKey as string, title: s.title, category: "song" }));
-  const playingTitle = songs.find((s) => s.youtubeKey === playingKey)?.title ?? "";
+  async function share() {
+    const url = selected.youtubeKey
+      ? `https://www.youtube.com/watch?v=${selected.youtubeKey}`
+      : window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `${selected.title} — ${movieTitle}`, url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      /* dismissed */
+    }
+  }
 
   return (
     <>
-      <div className="grid gap-6 md:grid-cols-[220px_minmax(0,1fr)]">
-        {/* Album card */}
-        <div className="flex gap-4 md:flex-col">
-          <div className="relative aspect-square w-28 shrink-0 overflow-hidden rounded-2xl border border-[var(--color-border)] shadow-lg md:w-full">
+      <div className="grid gap-8 lg:grid-cols-[220px_minmax(0,1fr)_320px]">
+        {/* Album + credits */}
+        <aside className="flex gap-4 lg:flex-col">
+          <div className="relative aspect-square w-28 shrink-0 overflow-hidden rounded-2xl border border-[var(--color-border)] shadow-lg lg:w-full">
             {cover ? (
               <Image
                 src={cover}
@@ -67,83 +108,191 @@ export function MovieSongs({ music, movieId, movieTitle, albumImage }: MovieSong
               </div>
             )}
           </div>
-          <div className="min-w-0">
-            <p className="truncate text-base font-semibold text-[var(--color-text)]">
-              {album?.name || movieTitle}
-            </p>
-            {album?.musicDirector && (
-              <p className="mt-1 truncate text-sm text-[var(--color-muted-strong)]">
-                {album.musicDirector}
-              </p>
-            )}
-            <p className="mt-1 text-xs text-[var(--color-muted)]">
-              {songs.length} {songs.length === 1 ? "song" : "songs"}
-            </p>
+          <dl className="min-w-0 space-y-3">
+            <MetaRow label="Album" value={album?.name || movieTitle} />
+            <MetaRow label="Singers" value={selected.artists.join(", ")} />
+            <MetaRow label="Music" value={album?.musicDirector} />
+            <MetaRow label="Music label" value={album?.label} />
+            {cast.length > 0 && <MetaRow label="Cast" value={cast.join(", ")} />}
             <Link
               href={`/music/${movieId}`}
-              className="group mt-3 inline-flex items-center gap-1.5 rounded-full border border-[rgba(194,154,98,0.32)] px-3.5 py-1.5 text-xs font-semibold text-[var(--color-accent)] transition hover:border-[rgba(194,154,98,0.6)] hover:bg-[var(--color-accent-soft)]"
+              className="group inline-flex items-center gap-1.5 rounded-full border border-[rgba(194,154,98,0.32)] px-3.5 py-1.5 text-xs font-semibold text-[var(--color-accent)] transition hover:border-[rgba(194,154,98,0.6)] hover:bg-[var(--color-accent-soft)]"
             >
               <Disc3 className="h-3.5 w-3.5" />
-              Music player
+              Full player
               <ChevronRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
             </Link>
-          </div>
-        </div>
+          </dl>
+        </aside>
 
-        {/* Track list */}
-        <ul className="self-start divide-y divide-[var(--color-border)] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.5)]">
-          {songs.map((song, index) => {
-            const views = formatCount(song.youtubeViews);
-            const playable = Boolean(song.youtubeKey);
-            return (
-              <li key={song.spotifyId}>
-                <button
-                  type="button"
-                  onClick={() => playable && setPlayingKey(song.youtubeKey)}
-                  disabled={!playable}
-                  className={`flex w-full items-center gap-4 px-4 py-3 text-left transition ${
-                    playable ? "hover:bg-[rgba(194,154,98,0.06)]" : "cursor-default opacity-60"
+        {/* Selected song: title, stats, lyrics */}
+        <section className="min-w-0">
+          <p className="eyebrow-label text-[var(--color-accent)]">Song</p>
+          <h3 className="mt-1 font-[family-name:var(--font-heading)] text-xl font-bold text-[var(--color-text)] md:text-2xl">
+            {selected.title}
+            <span className="font-normal text-[var(--color-muted)]"> — {movieTitle}</span>
+          </h3>
+          <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-[var(--color-muted-strong)]">
+            {views && (
+              <span className="inline-flex items-center gap-1.5">
+                <Eye className="h-4 w-4 text-[var(--color-accent)]" />
+                {views}
+              </span>
+            )}
+            {likes && (
+              <span className="inline-flex items-center gap-1.5">
+                <ThumbsUp className="h-4 w-4 text-[var(--color-accent)]" />
+                {likes}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={share}
+              className="inline-flex items-center gap-1.5 transition hover:text-[var(--color-text)]"
+            >
+              {copied ? <Check className="h-4 w-4 text-[var(--color-accent)]" /> : <Share2 className="h-4 w-4" />}
+              {copied ? "Copied" : "Share"}
+            </button>
+            {selected.youtubeKey && (
+              <button
+                type="button"
+                onClick={() => setPlaying(selected)}
+                className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-accent)] px-3.5 py-1.5 text-xs font-semibold text-[var(--color-accent-contrast)] transition hover:brightness-105"
+              >
+                <Play className="h-3.5 w-3.5 fill-current" />
+                Play
+              </button>
+            )}
+          </div>
+
+          <div className="relative mt-5">
+            {selected.lyrics ? (
+              <>
+                <pre
+                  className={`whitespace-pre-wrap font-[family-name:var(--font-body)] text-[15px] leading-7 text-[var(--color-text)]/90 ${
+                    expanded ? "" : "max-h-[26rem] overflow-hidden"
                   }`}
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.05] text-xs font-semibold tabular-nums text-[var(--color-muted)]">
-                    {playable ? (
-                      <Play className="h-4 w-4 fill-current text-[var(--color-accent)]" />
-                    ) : (
-                      index + 1
-                    )}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-[var(--color-text)]">
-                      {song.title}
-                    </p>
-                    {song.artists.length > 0 && (
-                      <p className="mt-0.5 truncate text-xs text-[var(--color-muted)]">
-                        {song.artists.join(", ")}
-                      </p>
-                    )}
+                  {selected.lyrics}
+                </pre>
+                {!expanded && selected.lyrics.split("\n").length > 16 && (
+                  <div className="absolute inset-x-0 bottom-0 flex h-24 items-end justify-center bg-gradient-to-t from-[var(--color-bg)] to-transparent">
+                    <button
+                      type="button"
+                      onClick={() => setExpanded(true)}
+                      className="rounded-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-1.5 text-xs font-semibold text-[var(--color-text)] transition hover:border-[rgba(194,154,98,0.5)]"
+                    >
+                      Show full lyrics
+                    </button>
                   </div>
-                  {views && (
-                    <span className="hidden shrink-0 items-center gap-1 text-xs text-[var(--color-muted)] sm:inline-flex">
-                      <Eye className="h-3.5 w-3.5" />
-                      {views}
+                )}
+                {selected.geniusUrl && (
+                  <p className="mt-3 text-[11px] text-[var(--color-muted)]">
+                    Lyrics via{" "}
+                    <a href={selected.geniusUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-[var(--color-text)]">
+                      Genius
+                    </a>
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="rounded-2xl border border-[var(--color-border)] px-5 py-10 text-center text-sm text-[var(--color-muted)]">
+                Lyrics are not available for this song yet.
+              </p>
+            )}
+          </div>
+        </section>
+
+        {/* Track list */}
+        <aside className="self-start rounded-2xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.5)] p-3">
+          <div className="mb-2 flex items-center justify-between border-b border-[var(--color-border)] px-2 pb-2.5">
+            <h4 className="font-[family-name:var(--font-heading)] text-xs font-bold uppercase tracking-[0.12em] text-[var(--color-text)]">
+              {songs.length} {songs.length === 1 ? "Song" : "Songs"}
+            </h4>
+            <span className="text-[10px] uppercase tracking-[0.1em] text-[var(--color-muted)]">YouTube</span>
+          </div>
+          <ul className="space-y-0.5">
+            {songs.map((song, index) => {
+              const active = index === selectedIndex;
+              const playable = Boolean(song.youtubeKey);
+              const songViews = formatCount(song.youtubeViews);
+              return (
+                <li key={song.spotifyId} className="group flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedIndex(index);
+                      setExpanded(false);
+                    }}
+                    className={`flex min-w-0 flex-1 items-start justify-between gap-3 rounded-lg px-2.5 py-2 text-left transition ${
+                      active ? "bg-[var(--color-accent-soft)]" : "hover:bg-white/[0.04]"
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <p
+                        className={`flex items-center gap-1.5 truncate text-sm font-semibold ${
+                          active ? "text-[var(--color-accent-strong)]" : "text-[var(--color-text)]"
+                        }`}
+                      >
+                        {active && <AudioLines className="h-3.5 w-3.5 shrink-0" />}
+                        <span className="truncate">{song.title}</span>
+                      </p>
+                      <p className="mt-0.5 truncate text-[11px] text-[var(--color-muted)]">
+                        {song.artists.join(", ")}
+                        {songViews ? ` · ${songViews} views` : ""}
+                      </p>
+                    </div>
+                    <span className="shrink-0 pt-0.5 text-[11px] tabular-nums text-[var(--color-muted)]">
+                      {formatDuration(song.durationMs)}
                     </span>
-                  )}
-                  <span className="shrink-0 text-xs tabular-nums text-[var(--color-muted)]">
-                    {formatDuration(song.durationMs)}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!playable}
+                    onClick={() => {
+                      setSelectedIndex(index);
+                      setPlaying(song);
+                    }}
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition ${
+                      playable
+                        ? "text-[var(--color-accent)] hover:bg-[var(--color-accent)] hover:text-[var(--color-accent-contrast)]"
+                        : "cursor-default text-[var(--color-muted)] opacity-40"
+                    }`}
+                    aria-label={playable ? `Play ${song.title}` : `${song.title} has no video`}
+                  >
+                    <Play className="h-3.5 w-3.5 fill-current" />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </aside>
       </div>
 
-      <VideoPlayerModal
-        videoKey={playingKey}
-        title={playingTitle}
-        videos={playerItems}
-        onClose={() => setPlayingKey(null)}
-      />
+      {/* Pinned mini player */}
+      {playing?.youtubeKey && (
+        <div className="fixed bottom-4 right-4 z-[90] w-[min(92vw,380px)] overflow-hidden rounded-xl border border-[var(--color-border)] bg-black shadow-[0_24px_70px_rgba(0,0,0,0.6)]">
+          <div className="flex items-center justify-between gap-3 px-3 py-2">
+            <p className="truncate text-xs font-semibold text-white">{playing.title}</p>
+            <button
+              type="button"
+              onClick={() => setPlaying(null)}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white"
+              aria-label="Close player"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <iframe
+            key={playing.youtubeKey}
+            src={`https://www.youtube.com/embed/${playing.youtubeKey}?autoplay=1&rel=0&modestbranding=1`}
+            title={playing.title}
+            className="aspect-video w-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      )}
     </>
   );
 }

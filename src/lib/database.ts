@@ -484,7 +484,7 @@ function initializeSqliteDatabase(database: BetterSqlite3Database) {
       movie_id INTEGER NOT NULL,
       youtube_key TEXT NOT NULL,
       title TEXT NOT NULL,
-      category TEXT NOT NULL CHECK (category IN ('trailer', 'teaser', 'song', 'review', 'miscellaneous')),
+      category TEXT NOT NULL CHECK (category IN ('trailer', 'teaser', 'song', 'lyrical', 'promo', 'interview', 'event', 'bts', 'review', 'miscellaneous')),
       added_by_user_id INTEGER,
       created_at TEXT NOT NULL,
       FOREIGN KEY (added_by_user_id) REFERENCES users(id) ON DELETE SET NULL,
@@ -587,7 +587,7 @@ function initializeSqliteDatabase(database: BetterSqlite3Database) {
 
 function migrateMovieVideosTable(database: BetterSqlite3Database) {
   try {
-    database.prepare("INSERT INTO movie_videos (movie_id, youtube_key, title, category, created_at) VALUES (0, '__test__', '__test__', 'song', '2000-01-01')").run();
+    database.prepare("INSERT INTO movie_videos (movie_id, youtube_key, title, category, created_at) VALUES (0, '__test__', '__test__', 'interview', '2000-01-01')").run();
     database.prepare("DELETE FROM movie_videos WHERE youtube_key = '__test__'").run();
   } catch {
     const rows = database.prepare("SELECT * FROM movie_videos").all();
@@ -598,7 +598,7 @@ function migrateMovieVideosTable(database: BetterSqlite3Database) {
         movie_id INTEGER NOT NULL,
         youtube_key TEXT NOT NULL,
         title TEXT NOT NULL,
-        category TEXT NOT NULL CHECK (category IN ('trailer', 'teaser', 'song', 'review', 'miscellaneous')),
+        category TEXT NOT NULL CHECK (category IN ('trailer', 'teaser', 'song', 'lyrical', 'promo', 'interview', 'event', 'bts', 'review', 'miscellaneous')),
         added_by_user_id INTEGER,
         created_at TEXT NOT NULL,
         FOREIGN KEY (added_by_user_id) REFERENCES users(id) ON DELETE SET NULL,
