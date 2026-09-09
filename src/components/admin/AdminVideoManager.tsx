@@ -17,7 +17,7 @@ const CATEGORIES: { value: VideoCategory; label: string }[] = [
 
 function CategoryBadge({ category }: { category: string }) {
   const colors: Record<string, string> = {
-    trailer: "bg-[rgba(194,154,98,0.15)] text-[#c29a62]",
+    trailer: "bg-[rgba(26,167,230,0.15)] text-[var(--color-accent)]",
     teaser: "bg-[rgba(100,160,255,0.12)] text-[#80b0ff]",
     song: "bg-[rgba(255,120,180,0.12)] text-[#ff80b4]",
     review: "bg-[rgba(60,180,100,0.12)] text-[#60c880]",
@@ -201,7 +201,7 @@ export function AdminVideoManager() {
                 value={movieQuery}
                 onChange={(e) => setMovieQuery(e.target.value)}
                 placeholder="Search for a movie to manage videos..."
-                className="h-12 w-full rounded-xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.72)] pl-12 pr-4 text-sm text-[var(--color-text)] outline-none transition focus:border-[rgba(194,154,98,0.46)]"
+                className="h-12 w-full rounded-xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.72)] pl-12 pr-4 text-sm text-[var(--color-text)] outline-none transition focus:border-[rgba(26,167,230,0.46)]"
               />
               <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-accent)]" />
             </div>
@@ -379,7 +379,7 @@ export function AdminVideoManager() {
                 value={ytQuery}
                 onChange={(e) => setYtQuery(e.target.value)}
                 placeholder="Search YouTube for videos..."
-                className="h-12 w-full rounded-xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.72)] pl-12 pr-4 text-sm text-[var(--color-text)] outline-none transition focus:border-[rgba(194,154,98,0.46)]"
+                className="h-12 w-full rounded-xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.72)] pl-12 pr-4 text-sm text-[var(--color-text)] outline-none transition focus:border-[rgba(26,167,230,0.46)]"
               />
               <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-accent)]" />
             </div>

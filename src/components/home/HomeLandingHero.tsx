@@ -82,7 +82,7 @@ function HeroButton({
       className={
         primary
           ? "inline-flex h-[clamp(52px,6vh,68px)] items-center gap-[clamp(0.75rem,1vw,1rem)] rounded-[18px] bg-[var(--color-accent)] px-[clamp(1.4rem,2.2vw,2.5rem)] font-[family-name:var(--font-heading)] text-[clamp(0.95rem,1vw,1.05rem)] font-semibold text-[var(--color-accent-contrast)] transition hover:brightness-105"
-          : "inline-flex h-[clamp(52px,6vh,68px)] items-center gap-[clamp(0.75rem,1vw,1rem)] rounded-[18px] border border-[var(--color-border)] bg-[rgba(15,19,34,0.42)] px-[clamp(1.4rem,2.2vw,2.5rem)] font-[family-name:var(--font-heading)] text-[clamp(0.95rem,1vw,1.05rem)] font-semibold text-[var(--color-accent)] transition hover:border-[rgba(194,154,98,0.32)] hover:bg-[rgba(255,255,255,0.03)]"
+          : "inline-flex h-[clamp(52px,6vh,68px)] items-center gap-[clamp(0.75rem,1vw,1rem)] rounded-[18px] border border-[var(--color-border)] bg-[rgba(15,19,34,0.42)] px-[clamp(1.4rem,2.2vw,2.5rem)] font-[family-name:var(--font-heading)] text-[clamp(0.95rem,1vw,1.05rem)] font-semibold text-[var(--color-accent)] transition hover:border-[rgba(26,167,230,0.32)] hover:bg-[rgba(255,255,255,0.03)]"
       }
     >
       <Icon className={primary ? "h-[clamp(1.1rem,1.3vw,1.25rem)] w-[clamp(1.1rem,1.3vw,1.25rem)] fill-current" : "h-[clamp(1.1rem,1.3vw,1.25rem)] w-[clamp(1.1rem,1.3vw,1.25rem)]"} />
@@ -248,7 +248,7 @@ export function HomeLandingHero({
             <button
               type="button"
               onClick={previous}
-              className="flex h-[clamp(2.75rem,4vw,3.25rem)] w-[clamp(2.75rem,4vw,3.25rem)] items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgba(20,24,39,0.5)] text-[var(--color-text)] backdrop-blur-sm transition hover:border-[rgba(194,154,98,0.32)] hover:text-[var(--color-accent)]"
+              className="flex h-[clamp(2.75rem,4vw,3.25rem)] w-[clamp(2.75rem,4vw,3.25rem)] items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgba(20,24,39,0.5)] text-[var(--color-text)] backdrop-blur-sm transition hover:border-[rgba(26,167,230,0.32)] hover:text-[var(--color-accent)]"
               aria-label="Previous featured release"
             >
               <ChevronLeft className="h-[clamp(1rem,1.2vw,1.15rem)] w-[clamp(1rem,1.2vw,1.15rem)]" />
@@ -263,7 +263,7 @@ export function HomeLandingHero({
             <button
               type="button"
               onClick={next}
-              className="flex h-[clamp(2.75rem,4vw,3.25rem)] w-[clamp(2.75rem,4vw,3.25rem)] items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgba(20,24,39,0.5)] text-[var(--color-text)] backdrop-blur-sm transition hover:border-[rgba(194,154,98,0.32)] hover:text-[var(--color-accent)]"
+              className="flex h-[clamp(2.75rem,4vw,3.25rem)] w-[clamp(2.75rem,4vw,3.25rem)] items-center justify-center rounded-full border border-[var(--color-border)] bg-[rgba(20,24,39,0.5)] text-[var(--color-text)] backdrop-blur-sm transition hover:border-[rgba(26,167,230,0.32)] hover:text-[var(--color-accent)]"
               aria-label="Next featured release"
             >
               <ChevronRight className="h-[clamp(1rem,1.2vw,1.15rem)] w-[clamp(1rem,1.2vw,1.15rem)]" />
@@ -277,7 +277,7 @@ export function HomeLandingHero({
             onClick={scrollToContent}
             aria-label="Scroll to content"
             aria-controls={scrollTargetId}
-            className="pointer-events-auto group relative flex h-[38px] w-[24px] items-start justify-center rounded-full border border-[rgba(194,154,98,0.26)] bg-[rgba(11,14,24,0.42)] shadow-[0_18px_40px_rgba(6,8,16,0.18)] backdrop-blur-sm transition hover:border-[rgba(194,154,98,0.42)] hover:bg-[rgba(14,18,31,0.62)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(194,154,98,0.4)] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgba(11,14,24,0.95)]"
+            className="pointer-events-auto group relative flex h-[38px] w-[24px] items-start justify-center rounded-full border border-[rgba(26,167,230,0.26)] bg-[rgba(11,14,24,0.42)] shadow-[0_18px_40px_rgba(6,8,16,0.18)] backdrop-blur-sm transition hover:border-[rgba(26,167,230,0.42)] hover:bg-[rgba(14,18,31,0.62)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(26,167,230,0.4)] focus-visible:ring-offset-2 focus-visible:ring-offset-[rgba(11,14,24,0.95)]"
           >
             <motion.span
               aria-hidden="true"
@@ -300,7 +300,7 @@ export function HomeLandingHero({
             >
               <div className="space-y-[clamp(1.25rem,2.4vh,2.5rem)]">
                 <div className="flex flex-wrap items-center gap-x-5 gap-y-3 [@media(max-height:900px)]:gap-x-4">
-                  <span className="rounded-full border border-[rgba(194,154,98,0.3)] bg-[rgba(194,154,98,0.12)] px-4 py-2 font-[family-name:var(--font-heading)] text-[0.82rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)]">
+                  <span className="rounded-full border border-[rgba(26,167,230,0.3)] bg-[rgba(26,167,230,0.12)] px-4 py-2 font-[family-name:var(--font-heading)] text-[0.82rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)]">
                     Latest Telugu Release
                   </span>
 
@@ -313,7 +313,7 @@ export function HomeLandingHero({
                             className={
                               index < activeStars
                                 ? "h-4 w-4 fill-current"
-                                : "h-4 w-4 text-[rgba(194,154,98,0.32)]"
+                                : "h-4 w-4 text-[rgba(26,167,230,0.32)]"
                             }
                           />
                         ))}

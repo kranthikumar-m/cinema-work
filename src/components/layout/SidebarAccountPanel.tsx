@@ -54,7 +54,7 @@ export function SidebarAccountPanel() {
         <div className="mt-3 grid gap-2 [@media(max-height:900px)]:mt-2.5">
           <Link
             href="/login"
-            className="inline-flex h-8 items-center justify-center rounded-lg border border-[var(--color-border)] text-xs text-[var(--color-text)] transition hover:border-[rgba(194,154,98,0.34)] hover:bg-[rgba(255,255,255,0.03)] [@media(max-height:900px)]:h-[30px]"
+            className="inline-flex h-8 items-center justify-center rounded-lg border border-[var(--color-border)] text-xs text-[var(--color-text)] transition hover:border-[rgba(26,167,230,0.34)] hover:bg-[rgba(255,255,255,0.03)] [@media(max-height:900px)]:h-[30px]"
           >
             Log In
           </Link>
@@ -90,14 +90,14 @@ export function SidebarAccountPanel() {
       <div className="mt-3 flex flex-wrap gap-2 [@media(max-height:900px)]:mt-2.5">
         <Link
           href="/account"
-          className="inline-flex h-8 items-center justify-center rounded-lg border border-[var(--color-border)] px-2.5 text-[11px] uppercase tracking-[0.12em] text-[var(--color-text)] transition hover:border-[rgba(194,154,98,0.34)] hover:bg-[rgba(255,255,255,0.03)] [@media(max-height:900px)]:h-[30px] [@media(max-height:900px)]:px-2 [@media(max-height:900px)]:text-[10px]"
+          className="inline-flex h-8 items-center justify-center rounded-lg border border-[var(--color-border)] px-2.5 text-[11px] uppercase tracking-[0.12em] text-[var(--color-text)] transition hover:border-[rgba(26,167,230,0.34)] hover:bg-[rgba(255,255,255,0.03)] [@media(max-height:900px)]:h-[30px] [@media(max-height:900px)]:px-2 [@media(max-height:900px)]:text-[10px]"
         >
           Account
         </Link>
         {user.role === "admin" ? (
           <Link
             href="/admin"
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-2.5 text-[11px] uppercase tracking-[0.12em] text-[var(--color-text)] transition hover:border-[rgba(194,154,98,0.34)] hover:bg-[rgba(255,255,255,0.03)] [@media(max-height:900px)]:h-[30px] [@media(max-height:900px)]:gap-1 [@media(max-height:900px)]:px-2 [@media(max-height:900px)]:text-[10px]"
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-2.5 text-[11px] uppercase tracking-[0.12em] text-[var(--color-text)] transition hover:border-[rgba(26,167,230,0.34)] hover:bg-[rgba(255,255,255,0.03)] [@media(max-height:900px)]:h-[30px] [@media(max-height:900px)]:gap-1 [@media(max-height:900px)]:px-2 [@media(max-height:900px)]:text-[10px]"
           >
             <Shield className="h-3 w-3 text-[var(--color-accent)]" />
             <span>Admin</span>

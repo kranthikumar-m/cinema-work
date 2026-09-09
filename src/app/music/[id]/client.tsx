@@ -98,7 +98,7 @@ export function MusicPlayerClient({
             <Link
               href={moviePageHref}
               aria-label={`Go to ${movieTitle}`}
-              className="group mx-auto block aspect-square w-52 overflow-hidden rounded-full shadow-[0_24px_70px_rgba(7,10,18,0.55)] ring-2 ring-[rgba(194,154,98,0.4)] transition hover:ring-[rgba(194,154,98,0.8)] focus-visible:outline-none focus-visible:ring-[rgba(194,154,98,0.8)] lg:mx-0"
+              className="group mx-auto block aspect-square w-52 overflow-hidden rounded-full shadow-[0_24px_70px_rgba(7,10,18,0.55)] ring-2 ring-[rgba(26,167,230,0.4)] transition hover:ring-[rgba(26,167,230,0.8)] focus-visible:outline-none focus-visible:ring-[rgba(26,167,230,0.8)] lg:mx-0"
             >
               <Image
                 src={albumImage}

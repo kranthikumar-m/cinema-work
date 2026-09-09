@@ -23,7 +23,7 @@ export default function UnauthorizedPage() {
           </Link>
           <Link
             href="/"
-            className="inline-flex h-11 items-center justify-center rounded-full border border-[var(--color-border)] px-5 text-sm text-[var(--color-text)] transition hover:border-[rgba(194,154,98,0.34)] hover:bg-[rgba(255,255,255,0.03)]"
+            className="inline-flex h-11 items-center justify-center rounded-full border border-[var(--color-border)] px-5 text-sm text-[var(--color-text)] transition hover:border-[rgba(26,167,230,0.34)] hover:bg-[rgba(255,255,255,0.03)]"
           >
             Return Home
           </Link>

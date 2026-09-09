@@ -3,25 +3,35 @@
 @tailwind utilities;
 
 :root {
-  --color-bg: #1a1e2e;
-  --color-bg-elevated: #202538;
-  --color-bg-deep: #141827;
-  --color-surface: #21263a;
-  --color-surface-strong: #272c40;
-  --color-surface-soft: rgba(33, 38, 58, 0.78);
-  --color-sidebar: #1c2133;
-  --color-text: #eef1fa;
-  --color-muted: #7b859e;
-  --color-muted-strong: #98a1b8;
-  --color-border: rgba(194, 154, 98, 0.16);
-  --color-accent: #c29a62;
-  --color-accent-soft: rgba(194, 154, 98, 0.16);
-  --color-accent-strong: #e2bb87;
-  --color-accent-contrast: #25190b;
+  /* Near-black ground with a single cyan accent (vcinema-style). */
+  --color-bg: #050607;
+  --color-bg-elevated: #0f1114;
+  --color-bg-deep: #000000;
+  --color-surface: #101216;
+  --color-surface-strong: #16191e;
+  --color-surface-soft: rgba(16, 18, 22, 0.82);
+  --color-sidebar: #000000;
+  --color-text: #f2f4f7;
+  --color-muted: #7d8794;
+  --color-muted-strong: #a0a9b5;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-accent: #1aa7e6;
+  --color-accent-soft: rgba(26, 167, 230, 0.16);
+  --color-accent-strong: #5cc4f2;
+  --color-accent-contrast: #03131d;
+  /* Feed / card type badges. */
+  --badge-photo: #3dbe7a;
+  --badge-video: #2fb8c9;
+  --badge-trailer: #e0b22e;
+  --badge-interview: #9b6ce0;
+  --badge-news: #1aa7e6;
+  --badge-review: #f0824a;
+  --badge-song: #e05c8a;
+  --badge-feature: #c9c9c9;
   --background: var(--color-bg);
   --foreground: var(--color-text);
   --app-page-gutter: clamp(1rem, 0.55rem + 1.4vw, 3.5rem);
-  --app-sidebar-width: clamp(184px, 10vw + 28px, 208px);
+  --app-sidebar-width: 72px;
   --app-max-content-width: 1600px;
   --app-max-detail-width: 1400px;
   --app-max-compact-width: 1320px;
@@ -29,9 +39,7 @@
 }
 
 body {
-  background:
-    radial-gradient(circle at top, rgba(194, 154, 98, 0.08) 0%, rgba(194, 154, 98, 0) 34%),
-    linear-gradient(180deg, #20253a 0%, #1a1e2e 44%, #171b2a 100%);
+  background: var(--color-bg);
   color: var(--foreground);
   min-height: 100dvh;
   overflow-x: clip;
@@ -80,11 +88,11 @@ html {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(194, 154, 98, 0.42);
+  background: rgba(26, 167, 230, 0.42);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(194, 154, 98, 0.6);
+  background: rgba(26, 167, 230, 0.6);
 }
 
 .scrollbar-hide::-webkit-scrollbar {
@@ -100,8 +108,8 @@ html {
 }
 
 ::selection {
-  background: rgba(194, 154, 98, 0.28);
-  color: #fff8ee;
+  background: rgba(26, 167, 230, 0.3);
+  color: #ffffff;
 }
 
 @keyframes scroll-cue {
@@ -154,4 +162,31 @@ html {
   border: 2px solid var(--color-bg-deep);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
   cursor: pointer;
+}
+
+/* Gapless media tiles (movies, people, feed). Title overlays the image on a
+   bottom gradient; the hover card slides up over the poster. */
+@layer components {
+  .tile-grid {
+    display: grid;
+    gap: 2px;
+  }
+  .tile-overlay {
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.35) 45%, rgba(0, 0, 0, 0.92) 100%);
+  }
+  .tile-hover-card {
+    background: linear-gradient(180deg, rgba(5, 6, 7, 0.55) 0%, rgba(5, 6, 7, 0.97) 40%);
+  }
+  .eyebrow-label {
+    font-family: var(--font-heading);
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-cue-dot { animation: none; }
+  html { scroll-behavior: auto; }
 }

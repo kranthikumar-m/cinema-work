@@ -145,7 +145,7 @@ export default async function PersonPage({ params }: PersonPageProps) {
             {person.name}
           </h1>
           {person.known_for_department && (
-            <span className="mt-2 inline-block rounded-full border border-[rgba(194,154,98,0.32)] bg-[var(--color-accent-soft)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-accent)]">
+            <span className="mt-2 inline-block rounded-full border border-[rgba(26,167,230,0.32)] bg-[var(--color-accent-soft)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-accent)]">
               {person.known_for_department}
             </span>
           )}
@@ -174,7 +174,7 @@ export default async function PersonPage({ params }: PersonPageProps) {
                   href={link.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 py-1.5 text-xs font-medium text-[var(--color-muted-strong)] transition hover:border-[rgba(194,154,98,0.4)] hover:text-[var(--color-text)]"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 py-1.5 text-xs font-medium text-[var(--color-muted-strong)] transition hover:border-[rgba(26,167,230,0.4)] hover:text-[var(--color-text)]"
                 >
                   <link.icon className="h-3.5 w-3.5" />
                   {link.label}

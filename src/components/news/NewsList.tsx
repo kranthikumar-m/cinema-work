@@ -13,7 +13,7 @@ export function NewsList({ title, items, emptyMessage }: NewsListProps) {
     <div className="app-page-shell py-8">
       <SectionHeader title={title} />
       {items.length > 0 ? (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="tile-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((item) => (
             <NewsCard key={item.id} item={item} />
           ))}

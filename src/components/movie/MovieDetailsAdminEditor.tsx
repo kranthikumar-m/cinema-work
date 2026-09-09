@@ -148,14 +148,14 @@ export function MovieDetailsAdminEditor({
   }
 
   const inputClass =
-    "h-9 rounded-lg border border-[var(--color-border)] bg-[rgba(15,19,34,0.72)] px-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[rgba(194,154,98,0.46)]";
+    "h-9 rounded-lg border border-[var(--color-border)] bg-[rgba(15,19,34,0.72)] px-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[rgba(26,167,230,0.46)]";
 
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(194,154,98,0.32)] px-3 py-1.5 text-xs font-semibold text-[var(--color-accent)] transition hover:border-[rgba(194,154,98,0.6)] hover:bg-[var(--color-accent-soft)]"
+        className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(26,167,230,0.32)] px-3 py-1.5 text-xs font-semibold text-[var(--color-accent)] transition hover:border-[rgba(26,167,230,0.6)] hover:bg-[var(--color-accent-soft)]"
       >
         <Pencil className="h-3.5 w-3.5" />
         Edit details

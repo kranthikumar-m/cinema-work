@@ -20,8 +20,8 @@ export function AuthPageShell({
   return (
     <div className="app-page-shell-compact min-h-[calc(100dvh-84px)] py-10">
       <div className="grid gap-8 lg:grid-cols-[0.95fr_minmax(0,1.05fr)] lg:items-stretch">
-        <section className="relative overflow-hidden rounded-[32px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgba(194,154,98,0.14),rgba(26,30,46,0.08))] p-8 shadow-[0_28px_75px_rgba(5,8,18,0.24)] md:p-10">
-          <div className="absolute inset-x-0 top-0 h-40 bg-[radial-gradient(circle_at_top,rgba(194,154,98,0.18),rgba(194,154,98,0))]" />
+        <section className="relative overflow-hidden rounded-[32px] border border-[var(--color-border)] bg-[linear-gradient(180deg,rgba(26,167,230,0.14),rgba(26,30,46,0.08))] p-8 shadow-[0_28px_75px_rgba(5,8,18,0.24)] md:p-10">
+          <div className="absolute inset-x-0 top-0 h-40 bg-[radial-gradient(circle_at_top,rgba(26,167,230,0.18),rgba(26,167,230,0))]" />
           <div className="relative z-10 flex h-full flex-col justify-between gap-10">
             <div>
               <SiteLogo variant="sidebar" />

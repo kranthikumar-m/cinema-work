@@ -96,7 +96,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                 value={query}
                 onChange={(e) => handleInput(e.target.value)}
                 placeholder="Search Telugu movies..."
-                className="h-14 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] pl-12 pr-12 text-lg text-[var(--color-text)] placeholder:text-[var(--color-muted)] focus:border-[rgba(194,154,98,0.48)] focus:outline-none"
+                className="h-14 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] pl-12 pr-12 text-lg text-[var(--color-text)] placeholder:text-[var(--color-muted)] focus:border-[rgba(26,167,230,0.48)] focus:outline-none"
               />
               {query && (
                 <button
@@ -119,7 +119,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
             )}
 
             {!loading && results.length > 0 && (
-              <div className="mt-4 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] divide-y divide-[rgba(194,154,98,0.08)]">
+              <div className="mt-4 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] divide-y divide-[rgba(26,167,230,0.08)]">
                 {results.map((movie) => (
                   <button
                     key={movie.id}

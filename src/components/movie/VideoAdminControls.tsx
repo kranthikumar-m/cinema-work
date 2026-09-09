@@ -286,7 +286,7 @@ function FixMatchModal({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search YouTube for the correct video…"
-              className="h-11 w-full rounded-xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.72)] pl-10 pr-4 text-sm text-[var(--color-text)] outline-none transition focus:border-[rgba(194,154,98,0.46)]"
+              className="h-11 w-full rounded-xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.72)] pl-10 pr-4 text-sm text-[var(--color-text)] outline-none transition focus:border-[rgba(26,167,230,0.46)]"
             />
             <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-accent)]" />
           </div>

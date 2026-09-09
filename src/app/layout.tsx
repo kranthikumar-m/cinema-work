@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
-import { Inter, Montserrat } from "next/font/google";
+import { Nunito_Sans, Quicksand } from "next/font/google";
 import "./globals.css";
 import { AppChrome } from "@/components/layout/AppChrome";
 
-const inter = Inter({
+// Rounded geometric faces: Quicksand carries headings, labels and tile titles;
+// Nunito Sans is the body text.
+const body = Nunito_Sans({
   subsets: ["latin"],
+  weight: ["400", "600", "700"],
   variable: "--font-body",
 });
 
-const montserrat = Montserrat({
+const heading = Quicksand({
   subsets: ["latin"],
+  weight: ["500", "600", "700"],
   variable: "--font-heading",
 });
 
@@ -35,7 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${inter.variable} ${montserrat.variable} bg-[var(--color-bg)] font-[family-name:var(--font-body)] text-[var(--color-text)] antialiased`}
+        className={`${body.variable} ${heading.variable} bg-[var(--color-bg)] font-[family-name:var(--font-body)] text-[var(--color-text)] antialiased`}
       >
         <AppChrome>{children}</AppChrome>
       </body>

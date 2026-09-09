@@ -7,6 +7,7 @@ interface MovieGridProps {
   linkBase?: string;
 }
 
+/** Edge-to-edge poster tiles separated by 2px gutters. */
 export function MovieGrid({
   movies,
   columns = "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6",
@@ -21,7 +22,7 @@ export function MovieGrid({
   }
 
   return (
-    <div className={`grid ${columns} gap-4`}>
+    <div className={`tile-grid ${columns}`}>
       {movies.map((movie, i) => (
         <MovieCard key={movie.id} movie={movie} priority={i < 6} linkBase={linkBase} />
       ))}

@@ -164,7 +164,7 @@ export function AdminTrendingManager() {
                     >
                       {movie.releaseStatus === "upcoming" ? "Upcoming" : "Released"}
                     </span>
-                    <span className="rounded-full bg-[rgba(194,154,98,0.12)] px-2 py-0.5 text-[10px] font-medium text-[var(--color-accent)]">
+                    <span className="rounded-full bg-[rgba(26,167,230,0.12)] px-2 py-0.5 text-[10px] font-medium text-[var(--color-accent)]">
                       {movie.mentionCount} mentions / 48h
                     </span>
                     {movie.adminOrder !== null && movie.releaseStatus === "upcoming" && (

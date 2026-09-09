@@ -46,7 +46,7 @@ export function SiteLogo(props: SiteLogoProps) {
     <div className={cn("flex items-center", styles.wrapper, className)}>
       <div
         className={cn(
-          "flex items-center justify-center bg-[var(--color-accent)] text-[var(--color-bg)] shadow-[0_14px_30px_rgba(194,154,98,0.18)]",
+          "flex items-center justify-center bg-[var(--color-accent)] text-[var(--color-bg)] shadow-[0_14px_30px_rgba(26,167,230,0.18)]",
           styles.iconBox
         )}
       >

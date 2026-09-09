@@ -137,7 +137,7 @@ export function MovieBrowseToolbar({
     (minYear > yearBounds.min || maxYear < yearBounds.max ? 1 : 0);
 
   const selectClass =
-    "h-11 w-full rounded-lg border border-[var(--color-border)] bg-[rgba(15,19,34,0.72)] px-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[rgba(194,154,98,0.46)]";
+    "h-11 w-full rounded-lg border border-[var(--color-border)] bg-[rgba(15,19,34,0.72)] px-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[rgba(26,167,230,0.46)]";
 
   return (
     <div className="sticky top-[84px] z-20 -mx-[var(--app-page-gutter)] mb-6 border-b border-[var(--color-border)] bg-[rgba(26,30,46,0.92)] px-[var(--app-page-gutter)] py-3 backdrop-blur-xl">
@@ -172,7 +172,7 @@ export function MovieBrowseToolbar({
             aria-expanded={open}
             className={`relative inline-flex h-10 w-10 items-center justify-center rounded-lg border transition ${
               open || activeFilterCount > 0
-                ? "border-[rgba(194,154,98,0.5)] text-[var(--color-accent-strong)]"
+                ? "border-[rgba(26,167,230,0.5)] text-[var(--color-accent-strong)]"
                 : "border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-text)]"
             }`}
           >
@@ -214,7 +214,7 @@ export function MovieBrowseToolbar({
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Movies or cast &amp; crew…"
-                    className="h-11 w-full rounded-lg border border-[var(--color-border)] bg-[rgba(15,19,34,0.72)] pl-3 pr-10 text-sm text-[var(--color-text)] outline-none transition focus:border-[rgba(194,154,98,0.46)]"
+                    className="h-11 w-full rounded-lg border border-[var(--color-border)] bg-[rgba(15,19,34,0.72)] pl-3 pr-10 text-sm text-[var(--color-text)] outline-none transition focus:border-[rgba(26,167,230,0.46)]"
                   />
                   <button
                     type="submit"

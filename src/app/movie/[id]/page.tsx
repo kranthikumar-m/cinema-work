@@ -113,7 +113,7 @@ function CompanyGroup({
         {items.map((company, index) => (
           <li
             key={`${company.name}-${index}`}
-            className={`flex items-center justify-between gap-3 px-5 py-3 transition hover:bg-[rgba(194,154,98,0.06)] ${
+            className={`flex items-center justify-between gap-3 px-5 py-3 transition hover:bg-[rgba(26,167,230,0.06)] ${
               index ? "border-t border-[var(--color-border)]" : ""
             }`}
           >
@@ -551,7 +551,7 @@ export default async function MovieDetailPage({ params }: Props) {
                   {aliasTags.map((alias) => (
                     <span
                       key={alias}
-                      className="px-3 py-1 text-xs font-medium rounded-full bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)] border border-[rgba(194,154,98,0.4)] backdrop-blur-sm"
+                      className="px-3 py-1 text-xs font-medium rounded-full bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)] border border-[rgba(26,167,230,0.4)] backdrop-blur-sm"
                       title="Alternate title"
                     >
                       {alias}
@@ -735,7 +735,7 @@ export default async function MovieDetailPage({ params }: Props) {
             {detailFacts.map((row) => (
               <div
                 key={row.label}
-                className="group flex items-start gap-4 border-b border-[var(--color-border)] px-5 py-3.5 transition last:border-b-0 hover:bg-[rgba(194,154,98,0.06)] sm:odd:border-r sm:last:border-r-0 sm:[&:nth-last-child(-n+2)]:border-b-0"
+                className="group flex items-start gap-4 border-b border-[var(--color-border)] px-5 py-3.5 transition last:border-b-0 hover:bg-[rgba(26,167,230,0.06)] sm:odd:border-r sm:last:border-r-0 sm:[&:nth-last-child(-n+2)]:border-b-0"
               >
                 <span className="w-36 shrink-0 pt-0.5 text-[0.68rem] font-semibold uppercase tracking-[0.13em] text-[var(--color-muted)]">
                   {row.label}

@@ -175,7 +175,7 @@ function AboCalibrationSidebar() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Filter releases…"
-            className="h-10 w-full rounded-lg border border-[var(--color-border)] bg-[rgba(15,19,34,0.72)] pl-9 pr-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[rgba(194,154,98,0.46)]"
+            className="h-10 w-full rounded-lg border border-[var(--color-border)] bg-[rgba(15,19,34,0.72)] pl-9 pr-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[rgba(26,167,230,0.46)]"
           />
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-accent)]" />
         </div>
@@ -207,7 +207,7 @@ function AboCalibrationSidebar() {
               e.dataTransfer.setData("text/plain", entry.title);
               e.dataTransfer.effectAllowed = "copy";
             }}
-            className="group flex cursor-grab items-center gap-2.5 rounded-xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.5)] px-3 py-2.5 transition hover:border-[rgba(194,154,98,0.5)] hover:bg-[var(--color-accent-soft)] active:cursor-grabbing"
+            className="group flex cursor-grab items-center gap-2.5 rounded-xl border border-[var(--color-border)] bg-[rgba(15,19,34,0.5)] px-3 py-2.5 transition hover:border-[rgba(26,167,230,0.5)] hover:bg-[var(--color-accent-soft)] active:cursor-grabbing"
           >
             <GripVertical className="h-4 w-4 shrink-0 text-[var(--color-muted)] group-hover:text-[var(--color-accent)]" />
             <div className="min-w-0 flex-1">
@@ -259,8 +259,8 @@ export function MovieCardDropZone({
       }}
       className={`absolute inset-0 z-30 flex items-center justify-center rounded-[22px] border-2 border-dashed text-center transition ${
         over
-          ? "border-[var(--color-accent)] bg-[rgba(194,154,98,0.28)]"
-          : "border-[rgba(194,154,98,0.45)] bg-[rgba(13,16,26,0.55)]"
+          ? "border-[var(--color-accent)] bg-[rgba(26,167,230,0.28)]"
+          : "border-[rgba(26,167,230,0.45)] bg-[rgba(13,16,26,0.55)]"
       }`}
     >
       <span className="rounded-full bg-black/70 px-3 py-1 text-xs font-semibold text-[var(--color-accent)]">

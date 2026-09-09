@@ -1,11 +1,12 @@
 "use client";
 
-import { Search, User } from "lucide-react";
+import { Search } from "lucide-react";
 import { SearchOverlayLauncher } from "@/components/layout/SearchOverlayLauncher";
+import { AccountMenu } from "@/components/layout/AccountMenu";
 
 export function HomeTopOverlayControls() {
   return (
-    <div className="absolute right-4 top-5 z-30 flex items-center gap-3 md:right-8 md:top-7 xl:right-10">
+    <div className="absolute right-4 top-4 z-30 flex items-center gap-4 md:right-8 md:top-5 xl:right-10">
       <SearchOverlayLauncher>
         {(openSearch) => (
           <button
@@ -19,14 +20,7 @@ export function HomeTopOverlayControls() {
           </button>
         )}
       </SearchOverlayLauncher>
-
-      <button
-        type="button"
-        className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/12 bg-black/10 text-white/92 backdrop-blur-[10px] transition hover:border-white/20 hover:bg-black/20 md:h-14 md:w-14"
-        aria-label="Profile"
-      >
-        <User className="h-5 w-5 md:h-6 md:w-6" />
-      </button>
+      <AccountMenu variant="overlay" />
     </div>
   );
 }

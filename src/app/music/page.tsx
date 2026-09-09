@@ -219,7 +219,7 @@ function PageLink({
       className={`${base} ${
         active
           ? "border-transparent bg-[var(--color-accent)] text-[var(--color-accent-contrast)]"
-          : "border-[var(--color-border)] text-[var(--color-text)] hover:border-[rgba(194,154,98,0.46)]"
+          : "border-[var(--color-border)] text-[var(--color-text)] hover:border-[rgba(26,167,230,0.46)]"
       }`}
       {...rest}
     >

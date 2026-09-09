@@ -30,8 +30,8 @@ export function HomeStoriesFeed({ items, limit = 6 }: { items: NewsItem[]; limit
               onClick={() => setTab(t.key)}
               className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
                 isActive
-                  ? "border border-[rgba(194,154,98,0.46)] bg-[var(--color-accent-soft)] text-[var(--color-accent)]"
-                  : "border border-[var(--color-border)] text-[var(--color-muted-strong)] hover:border-[rgba(194,154,98,0.4)] hover:text-[var(--color-text)]"
+                  ? "border border-[rgba(26,167,230,0.46)] bg-[var(--color-accent-soft)] text-[var(--color-accent)]"
+                  : "border border-[var(--color-border)] text-[var(--color-muted-strong)] hover:border-[rgba(26,167,230,0.4)] hover:text-[var(--color-text)]"
               }`}
             >
               {t.label}
@@ -41,7 +41,7 @@ export function HomeStoriesFeed({ items, limit = 6 }: { items: NewsItem[]; limit
       </div>
 
       {filtered.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="tile-grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((item) => (
             <NewsCard key={item.id} item={item} />
           ))}
